@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "533526268311",
+    "project_id": "ozses-11cb2",
+    "storage_bucket": "ozses-11cb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533526268311:android:8f3c217eba18441b4a1cd2",
+        "android_client_info": {
+          "package_name": "com.example.ozses_v1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH038IbGRqmbIgcuJuxM-SFJ6wsqyIFj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "533526268311-tcv8k1qdb944innirdg595jqk7tdr9og.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.ozsesV7Imperium"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533526268311:android:641e182c5a2c733d4a1cd2",
+        "android_client_info": {
+          "package_name": "com.example.ozses_v7_imperium"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH038IbGRqmbIgcuJuxM-SFJ6wsqyIFj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "533526268311-tcv8k1qdb944innirdg595jqk7tdr9og.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.ozsesV7Imperium"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

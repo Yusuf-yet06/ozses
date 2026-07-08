@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Ozses V7 Imperium</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>ozses_v7_imperium</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+	<!-- 🛡 SİBER KALKAN: Arka Planda Ses Çalma İzni -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+	</array>
+
+	<!-- 🛡 SİBER KALKAN: Yerel Proxy (Localhost) HTTP İzni -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	
+	<!-- 🛡 Apple Music / Mikrofon (Eğer just_audio arka planda ihtiyaç duyarsa) -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ÖZSES, ses kalkanlarını yönetmek için medya yetkisine ihtiyaç duyar.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>ÖZSES, müzik akışınızı kontrol etmek için medya yetkisine ihtiyaç duyar.</string>
+
+	<!-- 🍎 Apple Sign In: Xcode'da Signing & Capabilities → + → Sign in with Apple eklenmeli -->
+
+	<!-- 🔐 Google Sign-In: iOS URL Scheme (Firebase Console > iOS App > GoogleService-Info.plist'ten REVERSED_CLIENT_ID al) -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- ⚠️ BU DEĞERİ GoogleService-Info.plist dosyasındaki REVERSED_CLIENT_ID ile değiştir! -->
+				<string>com.googleusercontent.apps.533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob</string>
+			</array>
+		</dict>
+	</array>
+
+</dict>
+</plist>

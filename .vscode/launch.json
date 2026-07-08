@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Siber Web Motoru (Chrome)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "-d",
+                "chrome",
+                "--web-port",
+                "5000",
+                "--web-browser-flag=--no-sandbox",
+                "--web-browser-flag=--disable-gpu"
+            ]
+        },
+        {
+            "name": "Siber Windows Motoru",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "-d",
+                "windows"
+            ]
+        }
+    ]
+}

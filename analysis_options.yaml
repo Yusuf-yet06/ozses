@@ -1,0 +1,17 @@
+# Özses V7 - Temiz Analiz Dosyası
+analyzer:
+  errors:
+    depend_on_referenced_packages: ignore
+    unnecessary_null_comparison: ignore
+    unreachable_switch_default: ignore
+    unused_element: ignore
+    unused_field: ignore
+    unused_import: ignore
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    avoid_print: false
+    prefer_single_quotes: true
+    constant_identifier_names: false
+    non_constant_identifier_names: false

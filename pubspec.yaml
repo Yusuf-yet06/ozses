@@ -1,0 +1,81 @@
+name: ozses_v7
+description: "Özses V7 - Müzik Çalar ve Güvenlik Sistemi"
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+# KRİTİK DÜZELTME BURASI:
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Ses ve Müzik Paketleri
+  just_audio: ^0.9.38 # 🎯 SİBER HAMLE: Donanım DSP (Dijital Sinyal İşleme) Ses Motoru
+  just_audio_windows: ^0.2.1 # 🎯 SİBER KALKAN: Windows C++ Ses Katmanı
+  audio_service: ^0.18.18
+  speech_to_text: ^7.4.0
+  flutter_tts: ^4.2.5
+  record: ^6.2.0 # 🎯 SİBER ŞAPLAK 3: Stabil Sürüm
+
+  # Dosya ve Sistem Paketleri
+  file_picker: ^11.0.2
+  path_provider: ^2.1.2
+  permission_handler: ^11.4.0
+  shared_preferences: ^2.2.2
+  
+  dio: ^5.3.0
+  sqflite: ^2.3.0
+  http: ^1.2.0
+  id3: ^1.0.2
+  
+  # 🎯 SİBER HAMLE: Video Oynatıcı ve Webview Motorları (Platform Mühürleri)
+  webview_flutter_android: ^3.16.2
+  webview_flutter_wkwebview: ^3.13.0
+  
+  # 🎯 SİBER YAPAY ZEKA VE FREKANS MOTORLARI
+  fftea: ^1.5.0+1
+  pitch_detector_dart: ^0.0.7
+  
+  # Tasarım ve Durum Yönetimi
+  flutter_riverpod: ^2.4.9
+  flutter_animate: ^4.5.0
+  google_fonts: ^6.1.0
+  cupertino_icons: ^1.0.6
+  animations: ^2.1.2
+  flutter_slidable: ^4.0.3
+  process_run: ^1.3.2
+  audioplayers: ^6.0.0
+  youtube_player_iframe: ^5.2.0
+  url_launcher: ^6.2.6 # 🎯 SİBER HAMLE: Windows ve PC'de Tarayıcı Köprüsü
+  webview_windows: ^0.4.0 # 🎯 SİBER KALKAN: Windows Uygulama İçi Video Motoru
+  youtube_explode_dart: any
+  
+  # 🎯 SİBER HAMLE: Otonom Kimlik Doğrulama ve Güvenlik Motorları
+  firebase_core: ^3.1.1
+  firebase_auth: ^5.1.1
+  google_sign_in: ^6.2.1
+  google_sign_in_dartio: ^0.3.0
+  sign_in_with_apple: ^6.1.1 # 🍎 SİBER KALKAN: iOS Zorunlu Giriş Motoru
+  screenshot: ^3.0.0
+  share_plus: ^12.0.2
+  palette_generator: ^0.3.3+7
+  geolocator: ^14.0.2
+  weather: ^3.2.1
+  cached_network_image: ^3.4.1
+
+dependency_overrides:
+  # 🛡️ SİBER KALKAN: Eski bozuk paketleri bodoslama ezen nihai mühür!
+  record_linux: ^1.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/frequencies/
