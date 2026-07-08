@@ -162,33 +162,26 @@ final List<String> invidiousInstances = [
           _pendingResolutions.remove(videoId);
         }
 
-        // 🚀 Range destekli HTTP aktarımı
-        var proxyRequest = await HttpClient().getUrl(Uri.parse(targetUrl));
-        proxyRequest.headers.set('User-Agent', 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36');
-        proxyRequest.headers.set('Referer', 'https://www.youtube.com/');
-        
-        String? rangeHeader = request.headers.value('range');
-        if (rangeHeader != null) {
-          proxyRequest.headers.set('Range', rangeHeader);
+        // 🚀 SİBER HAMLE: HttpClient ile 403 yediğimiz için YoutubeExplode'un 
+        // kendi stream motorunu direkt olarak proxy'e bağlıyoruz! (Sınırsız akış)
+        try {
+          var yt = YoutubeExplode();
+          var manifest = await yt.videos.streamsClient.getManifest(videoId);
+          var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+          var streamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
+          
+          request.response.headers.contentType = ContentType('audio', 'mp4');
+          request.response.headers.add('Accept-Ranges', 'bytes');
+          request.response.statusCode = HttpStatus.ok;
+          
+          var ytStream = yt.videos.streamsClient.get(streamInfo);
+          await ytStream.pipe(request.response);
+          yt.close();
+          print("✅ Proxy Akışı Tamamlandı: $videoId");
+        } catch (ytError) {
+          print("❌ Proxy YoutubeExplode Akış Hatası: $ytError");
+          throw ytError;
         }
-        
-        var proxyResponse = await proxyRequest.close();
-        
-        // URL süresi dolmuşsa önbellekten sil
-        if (proxyResponse.statusCode == 403 || proxyResponse.statusCode == 410) {
-          _streamUrlCache.remove(videoId);
-          print("⚠️ Proxy: Akış URL süresi doldu ($videoId), temizlendi");
-        }
-        
-        request.response.statusCode = proxyResponse.statusCode;
-        proxyResponse.headers.forEach((name, values) {
-          if (name.toLowerCase() != 'transfer-encoding') {
-            for (var value in values) {
-              try { request.response.headers.add(name, value); } catch(_) {}
-            }
-          }
-        });
-        await proxyResponse.pipe(request.response);
 
       } catch (e) {
         print("❌ Proxy Hatası: $e");
