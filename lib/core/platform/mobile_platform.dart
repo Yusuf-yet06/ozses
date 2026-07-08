@@ -32,7 +32,7 @@ class MobilePlatform implements SiberPlatform {
       String query = discoveryTerms.first;
       
       try {
-        var searchResults = await _yt.search.search(query);
+        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 8));
         var items = [];
         for (var video in searchResults.take(15)) {
           items.add({
@@ -93,7 +93,7 @@ class MobilePlatform implements SiberPlatform {
     print("--- SİBER ARAMA BAŞLATILIYOR (MOBİL) ---");
     return await _ytMutex.run(() async {
       try {
-        var searchResults = await _yt.search.search(query + " official audio");
+        var searchResults = await _yt.search.search(query + " official audio").timeout(const Duration(seconds: 8));
         var items = [];
         for (var video in searchResults.take(limit)) {
           items.add({
@@ -178,7 +178,7 @@ class MobilePlatform implements SiberPlatform {
     try {
       // Manifest alımı mutex ile (rate limit önleme)
       final manifest = await _ytMutex.run(() =>
-        _yt.videos.streamsClient.getManifest(videoId)
+        _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 8))
       );
       
       var audioStreamList = manifest.audioOnly.where(
