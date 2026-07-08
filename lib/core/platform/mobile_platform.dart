@@ -172,68 +172,9 @@ class MobilePlatform implements SiberPlatform {
 
   @override
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
-    print("🎯 SİBER HAMLE: YoutubeExplode Native Byte Akışı Başlatılıyor...");
-    
-    // 🎯 1. KADEME: Mutex ile tek sıralı YoutubeExplode çağrısı (rate limit engeli)
-    try {
-      // Manifest alımı mutex ile (rate limit önleme)
-      final manifest = await _ytMutex.run(() =>
-        _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 8))
-      );
-      
-      var audioStreamList = manifest.audioOnly.where(
-        (s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')
-      ).toList();
-      var streamInfo = audioStreamList.isNotEmpty 
-          ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
-          : manifest.audioOnly.withHighestBitrate();
-      
-      return {"status": "basarili", "stream_url": streamInfo.url.toString(), "is_file": false};
-      
-    } catch (e) {
-      print("❌ YoutubeExplode Native Hatası: $e");
-    }
-    
-    // 🎯 2. KADEME: Cobalt API (Youtube rate limit ve Piped çökmesine karşı en güçlü alternatif)
-    print("🎯 Cobalt API deneniyor...");
-    final List<String> cobaltInstances = [
-      'https://api.cobalt.tools/api/json',
-      'https://co.wuk.sh/api/json',
-      'https://cobalt.qoid.us/api/json'
-    ];
+    print("🎯 SİBER HAMLE: Alternatif API'ler (Piped/Cobalt) Öncelikli Aranıyor...");
 
-    try {
-      final futures = cobaltInstances.map((instance) async {
-        final response = await http.post(
-          Uri.parse(instance),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            "url": "https://www.youtube.com/watch?v=$videoId",
-            "isAudioOnly": true,
-            "aFormat": "mp3", // m4a veya mp3
-            "isNoTTWatermark": true,
-          }),
-        ).timeout(const Duration(seconds: 4));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['status'] == 'redirect' || data['status'] == 'stream') {
-            return data['url'].toString();
-          }
-        }
-        throw Exception("Cobalt stream bulunamadı");
-      });
-
-      final bestUrl = await firstSuccessful(futures);
-      return {"status": "basarili", "stream_url": bestUrl, "is_file": false};
-    } catch (e) {
-      print("❌ Cobalt API de çöktü: $e");
-    }
-
-    // 🎯 3. KADEME: Piped API (sadece DNS engeli yoksa)
+    // 🎯 1. KADEME: Piped API (En hızlı ve limitsiz)
     print("🎯 Piped API deneniyor...");
     final List<String> pipedInstances = [
       'https://api.piped.private.coffee',
@@ -250,7 +191,6 @@ class MobilePlatform implements SiberPlatform {
     ];
 
     try {
-      // Bütün Piped sunucularına aynı anda istek at, ilk cevap vereni al
       final futures = pipedInstances.map((instance) async {
         final String apiUrl = "$instance/streams/$videoId";
         final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
@@ -289,6 +229,65 @@ class MobilePlatform implements SiberPlatform {
       print("❌ Tüm Piped sunucuları çöktü veya zaman aşımı: $e");
     }
 
+    // 🎯 2. KADEME: Cobalt API
+    print("🎯 Cobalt API deneniyor...");
+    final List<String> cobaltInstances = [
+      'https://api.cobalt.tools/api/json',
+      'https://co.wuk.sh/api/json',
+      'https://cobalt.qoid.us/api/json'
+    ];
+
+    try {
+      final futures = cobaltInstances.map((instance) async {
+        final response = await http.post(
+          Uri.parse(instance),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            "url": "https://www.youtube.com/watch?v=$videoId",
+            "isAudioOnly": true,
+            "aFormat": "mp3", // m4a veya mp3
+            "isNoTTWatermark": true,
+          }),
+        ).timeout(const Duration(seconds: 4));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['status'] == 'redirect' || data['status'] == 'stream') {
+            return data['url'].toString();
+          }
+        }
+        throw Exception("Cobalt stream bulunamadı");
+      });
+
+      final bestUrl = await firstSuccessful(futures);
+      return {"status": "basarili", "stream_url": bestUrl, "is_file": false};
+    } catch (e) {
+      print("❌ Cobalt API de çöktü: $e");
+    }
+
+    // 🎯 3. KADEME: YoutubeExplode Native Byte Akışı
+    print("🎯 YoutubeExplode API deneniyor...");
+    try {
+      final manifest = await _ytMutex.run(() =>
+        _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 8))
+      );
+      
+      var audioStreamList = manifest.audioOnly.where(
+        (s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')
+      ).toList();
+      var streamInfo = audioStreamList.isNotEmpty 
+          ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
+          : manifest.audioOnly.withHighestBitrate();
+      
+      return {"status": "basarili", "stream_url": streamInfo.url.toString(), "is_file": false};
+      
+    } catch (e) {
+      print("❌ YoutubeExplode Native Hatası: $e");
+    }
+    
     // 🎯 4. KADEME: Siber PC Proxy (Kuzen'in Özel Ağı)
     print("🎯 Siber Proxy deneniyor...");
     final List<String> localIps = [
