@@ -66,6 +66,20 @@
 	<key>NSAppleMusicUsageDescription</key>
 	<string>ÖZSES, müzik akışınızı kontrol etmek için medya yetkisine ihtiyaç duyar.</string>
 
+	<!-- 🛡 Konuşma Tanıma (speech_to_text için ZORUNLU, yoksa anında crash olur) -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>ÖZSES, sesli komutları anlamak için konuşma tanıma yetkisine ihtiyaç duyar.</string>
+
+	<!-- 🛡 Fotoğraf Galerisi (file_picker veya screenshot için) -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ÖZSES, medya dosyalarına erişmek için galeri yetkisine ihtiyaç duyar.</string>
+	
+	<!-- 🛡 Lokasyon (geolocator için ZORUNLU, yoksa crash olur) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ÖZSES, hava durumu temalarını (Siber Aura) ayarlamak için konumunuza ihtiyaç duyar.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>ÖZSES, arka planda bile siber aurayı korumak için konumunuza ihtiyaç duyar.</string>
+
 	<!-- 🍎 Apple Sign In: Xcode'da Signing & Capabilities → + → Sign in with Apple eklenmeli -->
 
 	<!-- 🔐 Google Sign-In: iOS URL Scheme (Firebase Console > iOS App > GoogleService-Info.plist'ten REVERSED_CLIENT_ID al) -->
@@ -77,7 +91,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<!-- ⚠️ BU DEĞERİ GoogleService-Info.plist dosyasındaki REVERSED_CLIENT_ID ile değiştir! -->
-				<string>com.googleusercontent.apps.533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob</string>
+				<string>com.googleusercontent.apps.533526268311-tcv8k1qdb944innirdg595jqk7tdr9og</string>
 			</array>
 		</dict>
 	</array>
