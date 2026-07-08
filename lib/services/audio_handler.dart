@@ -372,9 +372,10 @@ class MyAudioHandler extends BaseAudioHandler {
             await _player.play();
             return;
           }
-          // 🚀 SİBER HAMLE: Tüm yerel mobil cihazlarda ve Windows'ta player'lar (MediaFoundation/AVPlayer/ExoPlayer) 
+          // 🚀 SİBER HAMLE: Windows ve iOS üzerinde yerel player'lar (MediaFoundation/AVPlayer) 
           // YouTube 403 Forbidden hatası atabiliyor. Bunu aşmak için yerel proxy üzerinden geçiriyoruz!
-          if (!kIsWeb) {
+          // Android (ExoPlayer) doğrudan URL'leri mükemmel oynattığı için proxy'e sokmuyoruz!
+          if (!kIsWeb && (Platform.isWindows || Platform.isIOS || Platform.isMacOS)) {
              resolvedUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
              print("🎯 Siber Proxy Yönlendirmesi: $resolvedUrl");
           }
