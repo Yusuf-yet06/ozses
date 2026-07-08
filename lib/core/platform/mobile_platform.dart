@@ -176,21 +176,6 @@ class MobilePlatform implements SiberPlatform {
     
     // 🎯 1. KADEME: Mutex ile tek sıralı YoutubeExplode çağrısı (rate limit engeli)
     try {
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File('${tempDir.path}/ozses_cache_$videoId.m4a');
-      
-      // Önbellekte tam dosya var mı? (mutex beklemeden kontrol et)
-      if (await tempFile.exists()) {
-        final fileSize = await tempFile.length();
-        if (fileSize >= 1024 * 1024) {
-          print("✅ Siber Önbelleğinden çekiliyor: ${tempFile.path} ($fileSize byte)");
-          return {"status": "basarili", "stream_url": tempFile.path, "is_file": true};
-        } else {
-          await tempFile.delete();
-          print("🗑️ Kırpık önbelleğ silindi ($fileSize byte)");
-        }
-      }
-
       // Manifest alımı mutex ile (rate limit önleme)
       final manifest = await _ytMutex.run(() =>
         _yt.videos.streamsClient.getManifest(videoId)
@@ -203,28 +188,7 @@ class MobilePlatform implements SiberPlatform {
           ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
           : manifest.audioOnly.withHighestBitrate();
       
-      // TAM dosyayı indir
-      print("⏬️ Tam ses dosyası indiriliyor...");
-      var fileStream = tempFile.openWrite();
-      int downloaded = 0;
-      try {
-        await for (final chunk in _yt.videos.streamsClient.get(streamInfo)) {
-          fileStream.add(chunk);
-          downloaded += chunk.length;
-          if (downloaded % (500 * 1024) < 8192) {
-            print("📥 İndiriliyor: ${(downloaded / 1024 / 1024).toStringAsFixed(1)} MB...");
-          }
-        }
-        await fileStream.flush();
-        await fileStream.close();
-      } catch (e) {
-        await fileStream.close();
-        if (await tempFile.exists()) await tempFile.delete();
-        rethrow;
-      }
-      
-      print("✅ Siber İndirme Tamamlandı: ${(downloaded / 1024 / 1024).toStringAsFixed(2)} MB");
-      return {"status": "basarili", "stream_url": tempFile.path, "is_file": true};
+      return {"status": "basarili", "stream_url": streamInfo.url.toString(), "is_file": false};
       
     } catch (e) {
       print("❌ YoutubeExplode Native Hatası: $e");
