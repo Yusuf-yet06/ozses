@@ -372,11 +372,11 @@ class MyAudioHandler extends BaseAudioHandler {
             await _player.play();
             return;
           }
-          // 🚀 SİBER HAMLE: Windows üzerinde 'media_foundation' başlıkları (headers) göz ardı ettiği için,
-          // YouTube 403 Forbidden hatası atıyor. Bunu aşmak için yerel proxy üzerinden geçiriyoruz!
-          if (!kIsWeb && Platform.isWindows) {
+          // 🚀 SİBER HAMLE: Windows ve iOS üzerinde yerel player'lar (MediaFoundation/AVPlayer) 
+          // YouTube 403 Forbidden hatası atabiliyor. Bunu aşmak için yerel proxy üzerinden geçiriyoruz!
+          if (!kIsWeb && (Platform.isWindows || Platform.isIOS || Platform.isMacOS)) {
              resolvedUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
-             print("🎯 Windows Proxy Yönlendirmesi: $resolvedUrl");
+             print("🎯 Siber Proxy Yönlendirmesi: $resolvedUrl");
           }
         } else {
           print("❌ Hata: Akış çözülemedi, siber kalkan ile oynatma durduruldu!");
