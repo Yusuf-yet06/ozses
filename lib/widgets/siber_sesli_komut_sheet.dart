@@ -186,7 +186,7 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
       decoration: BoxDecoration(
         color: const Color(0xFF060812),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
       ),
       child: SafeArea(
         top: false,
@@ -195,7 +195,7 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
             Container(
               width: 40, height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: color.withOpacity(0.5), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(2)),
             ),
 
             Padding(
@@ -224,9 +224,9 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
                       width: 100, height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _isListening ? color.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                        color: _isListening ? color.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
                         border: Border.all(color: _isListening ? color : Colors.white24, width: 2),
-                        boxShadow: _isListening ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 20, spreadRadius: 5)] : [],
+                        boxShadow: _isListening ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 20, spreadRadius: 5)] : [],
                       ),
                       child: Icon(
                         _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
@@ -255,9 +255,9 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
                 margin: const EdgeInsets.symmetric(horizontal: 30),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.08),
+                  color: color.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.2)),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
                 ),
                 child: Text('"$_recognizedText"',
                     style: const TextStyle(color: Colors.white70, fontSize: 14, fontStyle: FontStyle.italic),
@@ -289,7 +289,7 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
 
             // Geçmiş
             if (_commandHistory.isNotEmpty) ...[
-              Divider(color: color.withOpacity(0.1), indent: 20, endIndent: 20),
+              Divider(color: color.withValues(alpha: 0.1), indent: 20, endIndent: 20),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -297,7 +297,7 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
                   itemBuilder: (context, i) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 3),
                     child: Text(_commandHistory[i],
-                        style: TextStyle(color: i == 0 ? color.withOpacity(0.8) : Colors.white38, fontSize: 11)),
+                        style: TextStyle(color: i == 0 ? color.withValues(alpha: 0.8) : Colors.white38, fontSize: 11)),
                   ),
                 ),
               ),
@@ -315,11 +315,11 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Text(label, style: TextStyle(color: Colors.white54, fontSize: 11)),
+      child: Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
     );
   }
 }

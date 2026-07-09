@@ -6,8 +6,7 @@ import '../main.dart'; // To access audioHandler
 class SiberEkolayzerSheet extends StatefulWidget {
   final Color themeColor;
 
-  const SiberEkolayzerSheet({Key? key, required this.themeColor})
-      : super(key: key);
+  const SiberEkolayzerSheet({super.key, required this.themeColor});
 
   @override
   _SiberEkolayzerSheetState createState() => _SiberEkolayzerSheetState();
@@ -26,10 +25,10 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.8),
+          color: Colors.black.withValues(alpha: 0.8),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border:
-              Border.all(color: widget.themeColor.withOpacity(0.5), width: 1),
+              Border.all(color: widget.themeColor.withValues(alpha: 0.5), width: 1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -42,7 +41,7 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
                   borderRadius: BorderRadius.circular(10)),
             ),
             const SizedBox(height: 20),
-            Text("SİBER EKOLAYZER",
+            Text('SİBER EKOLAYZER',
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -59,7 +58,7 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.themeColor.withOpacity(0.2),
+                        backgroundColor: widget.themeColor.withValues(alpha: 0.2),
                         side: BorderSide(color: widget.themeColor),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20)),
@@ -76,21 +75,21 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildSlider("Bass Motoru", AudioEngine.manualBass, 0.5, 3.0, (val) {
+            _buildSlider('Bass Motoru', AudioEngine.manualBass, 0.5, 3.0, (val) {
               AudioEngine.manualBass = val;
               _updateDSP();
             }),
-            _buildSlider("Tiz (Treble)", AudioEngine.manualTreble, 0.5, 3.0,
+            _buildSlider('Tiz (Treble)', AudioEngine.manualTreble, 0.5, 3.0,
                 (val) {
               AudioEngine.manualTreble = val;
               _updateDSP();
             }),
-            _buildSlider("Vokal Berraklığı", AudioEngine.manualVocal, 0.5, 3.0,
+            _buildSlider('Vokal Berraklığı', AudioEngine.manualVocal, 0.5, 3.0,
                 (val) {
               AudioEngine.manualVocal = val;
               _updateDSP();
             }),
-            _buildSlider("Otonom Tempo", AudioEngine.manualTempo, 0.5, 2.0,
+            _buildSlider('Otonom Tempo', AudioEngine.manualTempo, 0.5, 2.0,
                 (val) {
               AudioEngine.manualTempo = val;
               _updateDSP();
@@ -107,7 +106,7 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("$label: ${value.toStringAsFixed(2)}x",
+        Text('$label: ${value.toStringAsFixed(2)}x',
             style: const TextStyle(color: Colors.white70, fontSize: 14)),
         SliderTheme(
           data: SliderThemeData(

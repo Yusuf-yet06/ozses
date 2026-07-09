@@ -29,14 +29,14 @@ class YtDlpService {
         }
       }
     } catch (e) {
-      print("❌ YtDlpService başlatılamadı: $e");
+      print('❌ YtDlpService başlatılamadı: $e');
     }
   }
 
   Future<void> _downloadExecutable(File file) async {
     if (_isDownloading) return;
     _isDownloading = true;
-    print("⬇️ yt-dlp.exe indiriliyor...");
+    print('⬇️ yt-dlp.exe indiriliyor...');
 
     try {
       final response = await http.get(Uri.parse(
@@ -44,12 +44,12 @@ class YtDlpService {
 
       if (response.statusCode == 200) {
         await file.writeAsBytes(response.bodyBytes);
-        print("✅ yt-dlp.exe başarıyla indirildi ve kuruldu.");
+        print('✅ yt-dlp.exe başarıyla indirildi ve kuruldu.');
       } else {
-        print("❌ yt-dlp.exe indirme hatası: ${response.statusCode}");
+        print('❌ yt-dlp.exe indirme hatası: ${response.statusCode}');
       }
     } catch (e) {
-      print("❌ yt-dlp.exe indirme hatası: $e");
+      print('❌ yt-dlp.exe indirme hatası: $e');
     } finally {
       _isDownloading = false;
     }
@@ -67,7 +67,7 @@ class YtDlpService {
     }
     
     if (_executablePath == null) {
-      throw Exception("YtDlpService başlatılamadı veya Windows değil!");
+      throw Exception('YtDlpService başlatılamadı veya Windows değil!');
     }
     return _executablePath!;
   }

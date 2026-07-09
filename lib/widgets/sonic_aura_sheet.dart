@@ -41,27 +41,27 @@ class _SonicAuraSheetState extends State<SonicAuraSheet> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     if (_auraData == null) {
-      return Container(color: Colors.black.withOpacity(0.9), child: const Center(child: CircularProgressIndicator()));
+      return Container(color: Colors.black.withValues(alpha: 0.9), child: const Center(child: CircularProgressIndicator()));
     }
 
-    final auraName = _auraData!["aura"] as String;
-    final auraColor = Color(_auraData!["color"] as int);
-    final auraDesc = _auraData!["desc"] as String;
+    final auraName = _auraData!['aura'] as String;
+    final auraColor = Color(_auraData!['color'] as int);
+    final auraDesc = _auraData!['desc'] as String;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.95),
+        color: Colors.black.withValues(alpha: 0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        border: Border(top: BorderSide(color: auraColor.withOpacity(0.8), width: 3)),
+        border: Border(top: BorderSide(color: auraColor.withValues(alpha: 0.8), width: 3)),
         boxShadow: [
-          BoxShadow(color: auraColor.withOpacity(0.2), blurRadius: 40, spreadRadius: 10),
+          BoxShadow(color: auraColor.withValues(alpha: 0.2), blurRadius: 40, spreadRadius: 10),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("SİBER SES İZİN", style: TextStyle(color: Colors.white54, fontSize: 16, letterSpacing: 3, fontWeight: FontWeight.bold)),
+          const Text('SİBER SES İZİN', style: TextStyle(color: Colors.white54, fontSize: 16, letterSpacing: 3, fontWeight: FontWeight.bold)),
           const SizedBox(height: 30),
           
           // 3D Dönen Enerji Küresi İllüzyonu
@@ -80,14 +80,14 @@ class _SonicAuraSheetState extends State<SonicAuraSheet> with SingleTickerProvid
                         shape: BoxShape.circle,
                         gradient: SweepGradient(
                           colors: [
-                            auraColor.withOpacity(0.1),
-                            auraColor.withOpacity(0.8),
+                            auraColor.withValues(alpha: 0.1),
+                            auraColor.withValues(alpha: 0.8),
                             auraColor,
-                            auraColor.withOpacity(0.1),
+                            auraColor.withValues(alpha: 0.1),
                           ],
                         ),
                         boxShadow: [
-                          BoxShadow(color: auraColor.withOpacity(0.6), blurRadius: 60, spreadRadius: 20)
+                          BoxShadow(color: auraColor.withValues(alpha: 0.6), blurRadius: 60, spreadRadius: 20)
                         ],
                       ),
                     ),
@@ -103,7 +103,7 @@ class _SonicAuraSheetState extends State<SonicAuraSheet> with SingleTickerProvid
                       ),
                     ),
                   ),
-                  Icon(Icons.fingerprint, size: 80, color: Colors.white.withOpacity(0.9)),
+                  Icon(Icons.fingerprint, size: 80, color: Colors.white.withValues(alpha: 0.9)),
                 ],
               );
             },
@@ -126,12 +126,12 @@ class _SonicAuraSheetState extends State<SonicAuraSheet> with SingleTickerProvid
           const SizedBox(height: 40),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: auraColor.withOpacity(0.3),
+              backgroundColor: auraColor.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: auraColor)),
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
             ),
             onPressed: () => Navigator.pop(context),
-            child: const Text("TAMAM", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
+            child: const Text('TAMAM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
           )
         ],
       ),

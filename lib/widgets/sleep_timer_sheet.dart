@@ -5,7 +5,7 @@ import '../services/timer_service.dart';
 class SleepTimerSheet extends StatefulWidget {
   final Color themeColor;
 
-  const SleepTimerSheet({Key? key, required this.themeColor}) : super(key: key);
+  const SleepTimerSheet({super.key, required this.themeColor});
 
   @override
   _SleepTimerSheetState createState() => _SleepTimerSheetState();
@@ -19,9 +19,9 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.8),
+          color: Colors.black.withValues(alpha: 0.8),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          border: Border.all(color: widget.themeColor.withOpacity(0.5), width: 1),
+          border: Border.all(color: widget.themeColor.withValues(alpha: 0.5), width: 1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -32,9 +32,9 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
               decoration: BoxDecoration(color: widget.themeColor, borderRadius: BorderRadius.circular(10)),
             ),
             const SizedBox(height: 20),
-            Text("KAPANIŞ PROTOKOLÜ", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, shadows: [Shadow(color: widget.themeColor, blurRadius: 10)])),
+            Text('KAPANIŞ PROTOKOLÜ', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, shadows: [Shadow(color: widget.themeColor, blurRadius: 10)])),
             const SizedBox(height: 10),
-            const Text("Müzik otonom olarak ne zaman sonlandırılsın?", style: TextStyle(color: Colors.white70)),
+            const Text('Müzik otonom olarak ne zaman sonlandırılsın?', style: TextStyle(color: Colors.white70)),
             const SizedBox(height: 20),
             ValueListenableBuilder<int>(
               valueListenable: globalSleepTimer,
@@ -48,11 +48,11 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent.withOpacity(0.3), side: const BorderSide(color: Colors.redAccent)),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent.withValues(alpha: 0.3), side: const BorderSide(color: Colors.redAccent)),
                         onPressed: () {
                           startSleepTimer(0);
                         },
-                        child: const Text("İPTAL ET", style: TextStyle(color: Colors.white)),
+                        child: const Text('İPTAL ET', style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   );
@@ -88,14 +88,14 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
         width: 100,
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: widget.themeColor.withOpacity(0.1),
-          border: Border.all(color: widget.themeColor.withOpacity(0.5)),
+          color: widget.themeColor.withValues(alpha: 0.1),
+          border: Border.all(color: widget.themeColor.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
           children: [
-            Text("$minutes", style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
-            const Text("DAKİKA", style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('$minutes', style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+            const Text('DAKİKA', style: TextStyle(color: Colors.white54, fontSize: 12)),
           ],
         ),
       ),

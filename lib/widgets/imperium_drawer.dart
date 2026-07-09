@@ -14,13 +14,13 @@ class ImperiumDrawer extends StatelessWidget {
           DrawerHeader(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [themeColor.withOpacity(0.2), Colors.black],
+                colors: [themeColor.withValues(alpha: 0.2), Colors.black],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
             child: Center(
-              child: Text("ÖZSES V7\nIMPERIUM",
+              child: Text('ÖZSES V7\nIMPERIUM',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       color: themeColor,
@@ -31,7 +31,7 @@ class ImperiumDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: Icon(Icons.person, color: themeColor),
-            title: const Text("Profil ve Ayarlar",
+            title: const Text('Profil ve Ayarlar',
                 style: TextStyle(color: Colors.white)),
             onTap: () {},
           ),
@@ -45,7 +45,7 @@ class ImperiumDrawer extends StatelessWidget {
           const Spacer(),
           const Padding(
             padding: EdgeInsets.all(20.0),
-            child: Text("v7.0.0 Alpha",
+            child: Text('v7.0.0 Alpha',
                 style: TextStyle(color: Colors.white24, fontSize: 10)),
           ),
         ],

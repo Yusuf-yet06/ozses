@@ -15,11 +15,11 @@ class NeonSearchBar extends StatelessWidget {
         onChanged: onChanged,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: "İmparatorlukta Ara...",
+          hintText: 'İmparatorlukta Ara...',
           hintStyle: const TextStyle(color: Colors.white24),
           prefixIcon: Icon(Icons.search, color: themeColor),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.05),
+          fillColor: Colors.white.withValues(alpha: 0.05),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(15),
               borderSide: BorderSide.none),

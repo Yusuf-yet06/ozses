@@ -64,9 +64,9 @@ class BottomPlayerBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.9),
+        color: Colors.black.withValues(alpha: 0.9),
         border: Border(
-            top: BorderSide(color: themeColor.withOpacity(0.5), width: 1)),
+            top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 1)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize
@@ -92,9 +92,9 @@ class BottomPlayerBar extends StatelessWidget {
                     children: [
                       Text(
                         songName == 'Müzik Seçilmedi'
-                            ? "Siber Bağlantı Bekleniyor..."
+                            ? 'Siber Bağlantı Bekleniyor...'
                             : isBuffering
-                                ? "Yükleniyor: $songName..." // 🎯 Şarkı hazır olana kadar bilgi ver
+                                ? 'Yükleniyor: $songName...' // 🎯 Şarkı hazır olana kadar bilgi ver
                                 : songName,
                         style: const TextStyle(
                             color: Colors.white,
@@ -107,7 +107,7 @@ class BottomPlayerBar extends StatelessWidget {
                       Text(
                         artistName,
                         style: TextStyle(
-                            color: themeColor.withOpacity(0.8),
+                            color: themeColor.withValues(alpha: 0.8),
                             fontSize: 10,
                             fontWeight: FontWeight.w500),
                         maxLines: 1,
@@ -234,7 +234,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
         });
       }
     } catch (e) {
-      print("Palette Error: $e");
+      print('Palette Error: $e');
     }
   }
   
@@ -258,7 +258,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
               color: (_dynamicColor ?? widget.themeColor), width: widget.size > 100 ? 3.0 : 1.5),
           boxShadow: [
             BoxShadow(
-              color: (_dynamicColor ?? widget.themeColor).withOpacity(0.5),
+              color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5),
               blurRadius: 8,
               spreadRadius: 1,
             )
@@ -268,7 +268,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
           alignment: Alignment.center,
           children: [
             Icon(Icons.music_note,
-                color: (_dynamicColor ?? widget.themeColor).withOpacity(0.4),
+                color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.4),
                 size: widget.size * 0.45),
 
             // 🎯 SİBER HAMLE: Gerçek Kapak Resmi
@@ -293,7 +293,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
                 color: Colors.black,
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: (_dynamicColor ?? widget.themeColor).withOpacity(0.5), width: 1),
+                    color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5), width: 1),
               ),
             ),
           ],

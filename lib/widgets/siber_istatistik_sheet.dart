@@ -26,8 +26,8 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
 
   int _totalListenMinutes = 0;
   int _totalPlayCount = 0;
-  String _topSongName = "—";
-  String _topArtistName = "—";
+  String _topSongName = '—';
+  String _topArtistName = '—';
 
   @override
   void initState() {
@@ -90,7 +90,7 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
       }
     }
 
-    String topSong = "—";
+    String topSong = '—';
     if (songCounts.isNotEmpty) {
       topSong = songCounts.entries
           .reduce((a, b) => a.value > b.value ? a : b)
@@ -100,7 +100,7 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
       if (topSong.length > 30) topSong = '${topSong.substring(0, 28)}...';
     }
 
-    String topArtist = "—";
+    String topArtist = '—';
     if (artistCounts.isNotEmpty) {
       topArtist = artistCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
     }
@@ -130,7 +130,7 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: widget.themeColor.withOpacity(0.3), width: 1),
+        border: Border.all(color: widget.themeColor.withValues(alpha: 0.3), width: 1),
       ),
       child: SafeArea(
         top: false,
@@ -143,7 +143,7 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
                 width: 40, height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                    color: widget.themeColor.withOpacity(0.5),
+                    color: widget.themeColor.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2)),
               ),
               Padding(
@@ -168,9 +168,9 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                            color: widget.themeColor.withOpacity(0.15),
+                            color: widget.themeColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: widget.themeColor.withOpacity(0.4))),
+                            border: Border.all(color: widget.themeColor.withValues(alpha: 0.4))),
                         child: Text(_showWeekly ? '7 Gün' : '24 Saat',
                             style: TextStyle(
                                 color: widget.themeColor, fontSize: 11, fontWeight: FontWeight.bold)),
@@ -217,15 +217,15 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
                   ),
                 ),
                 const SizedBox(height: 16),
-                if (_topSongName != "—")
+                if (_topSongName != '—')
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                          color: widget.themeColor.withOpacity(0.08),
+                          color: widget.themeColor.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: widget.themeColor.withOpacity(0.2))),
+                          border: Border.all(color: widget.themeColor.withValues(alpha: 0.2))),
                       child: Row(
                         children: [
                           Icon(Icons.stars_rounded, color: widget.themeColor, size: 18),
@@ -235,7 +235,7 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('En Çok Dinlenen',
-                                    style: TextStyle(color: widget.themeColor.withOpacity(0.7), fontSize: 10)),
+                                    style: TextStyle(color: widget.themeColor.withValues(alpha: 0.7), fontSize: 10)),
                                 Text(_topSongName,
                                     style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                                     overflow: TextOverflow.ellipsis),
@@ -259,9 +259,9 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-            color: widget.themeColor.withOpacity(0.07),
+            color: widget.themeColor.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: widget.themeColor.withOpacity(0.2), width: 1)),
+            border: Border.all(color: widget.themeColor.withValues(alpha: 0.2), width: 1)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -309,14 +309,14 @@ class _WeeklyBarPainter extends CustomPainter {
 
       if (isToday && barH > 0) {
         canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x - barWidth / 2 - 4, topPad + chartH - barH - 4, barWidth + 8, barH + 4), const Radius.circular(8)),
-            Paint()..color = color.withOpacity(0.15)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8));
+            Paint()..color = color.withValues(alpha: 0.15)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8));
       }
 
       if (barH > 0) {
         canvas.drawRRect(
           RRect.fromRectAndRadius(Rect.fromLTWH(x - barWidth / 2, topPad + chartH - barH, barWidth, barH), const Radius.circular(5)),
           Paint()..shader = ui.Gradient.linear(Offset(x, topPad + chartH - barH), Offset(x, topPad + chartH),
-              [isToday ? color : color.withOpacity(0.6), isToday ? color.withOpacity(0.3) : color.withOpacity(0.1)]),
+              [isToday ? color : color.withValues(alpha: 0.6), isToday ? color.withValues(alpha: 0.3) : color.withValues(alpha: 0.1)]),
         );
       }
 
@@ -325,11 +325,11 @@ class _WeeklyBarPainter extends CustomPainter {
 
       if (d.minutes > 0 && barH > 20) {
         final minText = d.minutes >= 60 ? '${d.minutes ~/ 60}s' : '${d.minutes}dk';
-        (TextPainter(text: TextSpan(text: minText, style: TextStyle(color: color.withOpacity(0.8), fontSize: 9)), textDirection: TextDirection.ltr)..layout())
+        (TextPainter(text: TextSpan(text: minText, style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 9)), textDirection: TextDirection.ltr)..layout())
             .paint(canvas, Offset(x - 10, topPad + chartH - barH - 14));
       }
     }
-    canvas.drawLine(Offset(0, topPad + chartH), Offset(size.width, topPad + chartH), Paint()..color = color.withOpacity(0.15)..strokeWidth = 1);
+    canvas.drawLine(Offset(0, topPad + chartH), Offset(size.width, topPad + chartH), Paint()..color = color.withValues(alpha: 0.15)..strokeWidth = 1);
   }
   @override bool shouldRepaint(covariant _WeeklyBarPainter old) => old.progress != progress;
 }
@@ -359,12 +359,12 @@ class _HourlyBarPainter extends CustomPainter {
       final x = spacing * i + spacing / 2;
       if (barH > 0) {
         canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x - barWidth / 2, topPad + chartH - barH, barWidth, barH), const Radius.circular(5)),
-            Paint()..shader = ui.Gradient.linear(Offset(x, topPad + chartH - barH), Offset(x, topPad + chartH), [color, color.withOpacity(0.2)]));
+            Paint()..shader = ui.Gradient.linear(Offset(x, topPad + chartH - barH), Offset(x, topPad + chartH), [color, color.withValues(alpha: 0.2)]));
       }
       (TextPainter(text: TextSpan(text: d.label, style: const TextStyle(color: Colors.white38, fontSize: 9)), textDirection: TextDirection.ltr)..layout())
           .paint(canvas, Offset(x - 14, size.height - 18));
     }
-    canvas.drawLine(Offset(0, topPad + chartH), Offset(size.width, topPad + chartH), Paint()..color = color.withOpacity(0.15)..strokeWidth = 1);
+    canvas.drawLine(Offset(0, topPad + chartH), Offset(size.width, topPad + chartH), Paint()..color = color.withValues(alpha: 0.15)..strokeWidth = 1);
   }
   @override bool shouldRepaint(covariant _HourlyBarPainter old) => old.progress != progress;
 }

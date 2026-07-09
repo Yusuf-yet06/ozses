@@ -26,21 +26,21 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
   String? selectedSelection;
 
   final List<Map<String, dynamic>> moods = [
-    {"name": "Enerjik / Spor", "icon": Icons.directions_run, "color": Colors.orangeAccent},
-    {"name": "Melankolik", "icon": Icons.water_drop, "color": Colors.blueAccent},
-    {"name": "Sakin / Odak", "icon": Icons.self_improvement, "color": Colors.tealAccent},
-    {"name": "Parti / Eğlence", "icon": Icons.celebration, "color": Colors.purpleAccent},
-    {"name": "İsyankar / Sert", "icon": Icons.local_fire_department, "color": Colors.redAccent},
-    {"name": "Nostaljik", "icon": Icons.album, "color": Colors.amberAccent},
+    {'name': 'Enerjik / Spor', 'icon': Icons.directions_run, 'color': Colors.orangeAccent},
+    {'name': 'Melankolik', 'icon': Icons.water_drop, 'color': Colors.blueAccent},
+    {'name': 'Sakin / Odak', 'icon': Icons.self_improvement, 'color': Colors.tealAccent},
+    {'name': 'Parti / Eğlence', 'icon': Icons.celebration, 'color': Colors.purpleAccent},
+    {'name': 'İsyankar / Sert', 'icon': Icons.local_fire_department, 'color': Colors.redAccent},
+    {'name': 'Nostaljik', 'icon': Icons.album, 'color': Colors.amberAccent},
   ];
 
   final List<Map<String, dynamic>> genres = [
-    {"name": "Pop / Türkçe Pop", "icon": Icons.mic, "color": Colors.pinkAccent},
-    {"name": "Arabesk", "icon": Icons.nightlife, "color": Colors.indigoAccent},
-    {"name": "Rap / Hip-Hop", "icon": Icons.graphic_eq, "color": Colors.greenAccent},
-    {"name": "Rock / Metal", "icon": Icons.electric_bolt, "color": Colors.deepOrangeAccent},
-    {"name": "Elektronik / EDM", "icon": Icons.headphones, "color": Colors.cyanAccent},
-    {"name": "Türkü / Özgün", "icon": Icons.landscape, "color": Colors.brown},
+    {'name': 'Pop / Türkçe Pop', 'icon': Icons.mic, 'color': Colors.pinkAccent},
+    {'name': 'Arabesk', 'icon': Icons.nightlife, 'color': Colors.indigoAccent},
+    {'name': 'Rap / Hip-Hop', 'icon': Icons.graphic_eq, 'color': Colors.greenAccent},
+    {'name': 'Rock / Metal', 'icon': Icons.electric_bolt, 'color': Colors.deepOrangeAccent},
+    {'name': 'Elektronik / EDM', 'icon': Icons.headphones, 'color': Colors.cyanAccent},
+    {'name': 'Türkü / Özgün', 'icon': Icons.landscape, 'color': Colors.brown},
   ];
 
   @override
@@ -69,15 +69,15 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
       child: Container(
         height: MediaQuery.of(context).size.height * 0.65,
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.95),
+        color: Colors.black.withValues(alpha: 0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         border: Border(
-          top: BorderSide(color: widget.themeColor.withOpacity(0.6), width: 2),
-          left: BorderSide(color: widget.themeColor.withOpacity(0.3), width: 1),
-          right: BorderSide(color: widget.themeColor.withOpacity(0.3), width: 1),
+          top: BorderSide(color: widget.themeColor.withValues(alpha: 0.6), width: 2),
+          left: BorderSide(color: widget.themeColor.withValues(alpha: 0.3), width: 1),
+          right: BorderSide(color: widget.themeColor.withValues(alpha: 0.3), width: 1),
         ),
         boxShadow: [
-          BoxShadow(color: widget.themeColor.withOpacity(0.15), blurRadius: 25, spreadRadius: 2),
+          BoxShadow(color: widget.themeColor.withValues(alpha: 0.15), blurRadius: 25, spreadRadius: 2),
         ],
       ),
       child: ClipRRect(
@@ -107,7 +107,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            "Otonom Çalma Listesi",
+                            'Otonom Çalma Listesi',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -116,9 +116,9 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                             ),
                           ),
                           Text(
-                            "Yapay zeka sizin için en uygun şarkıları seçsin",
+                            'Yapay zeka sizin için en uygun şarkıları seçsin',
                             style: TextStyle(
-                              color: widget.themeColor.withOpacity(0.8),
+                              color: widget.themeColor.withValues(alpha: 0.8),
                               fontSize: 12,
                             ),
                           ),
@@ -138,8 +138,8 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                 unselectedLabelColor: Colors.white54,
                 labelStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
                 tabs: const [
-                  Tab(icon: Icon(Icons.mood), text: "Ruh Hali"),
-                  Tab(icon: Icon(Icons.library_music), text: "Müzik Türü"),
+                  Tab(icon: Icon(Icons.mood), text: 'Ruh Hali'),
+                  Tab(icon: Icon(Icons.library_music), text: 'Müzik Türü'),
                 ],
               ),
               
@@ -148,8 +148,8 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildGrid(moods, "Mood"),
-                    _buildGrid(genres, "Genre"),
+                    _buildGrid(moods, 'Mood'),
+                    _buildGrid(genres, 'Genre'),
                   ],
                 ),
               ),
@@ -160,8 +160,8 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: selectedSelection != null 
-                        ? widget.themeColor.withOpacity(0.8)
-                        : Colors.grey.withOpacity(0.2),
+                        ? widget.themeColor.withValues(alpha: 0.8)
+                        : Colors.grey.withValues(alpha: 0.2),
                     minimumSize: const Size(double.infinity, 55),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     shadowColor: selectedSelection != null ? widget.themeColor : Colors.transparent,
@@ -169,7 +169,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                   ),
                   onPressed: selectedSelection != null
                       ? () {
-                          Navigator.pop(context, {"type": selectedType!, "selection": selectedSelection!});
+                          Navigator.pop(context, {'type': selectedType!, 'selection': selectedSelection!});
                         }
                       : null, // 🎯 SİBER KALKAN: Seçim yoksa butona basılamaz
                   child: Row(
@@ -181,7 +181,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        selectedSelection != null ? "SİBER ZEKAYI BAŞLAT" : "BİR KATEGORİ SEÇİN",
+                        selectedSelection != null ? 'SİBER ZEKAYI BAŞLAT' : 'BİR KATEGORİ SEÇİN',
                         style: TextStyle(
                           color: selectedSelection != null ? Colors.white : Colors.white54, 
                           fontSize: 16, 
@@ -212,13 +212,13 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        final isSelected = selectedSelection == item["name"];
+        final isSelected = selectedSelection == item['name'];
         return _buildNeonCard(
-          title: item["name"],
-          icon: item["icon"],
-          color: item["color"],
+          title: item['name'],
+          icon: item['icon'],
+          color: item['color'],
           isSelected: isSelected,
-          onTap: () => _onItemTapped(type, item["name"]),
+          onTap: () => _onItemTapped(type, item['name']),
         );
       },
     );
@@ -235,12 +235,12 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.black.withOpacity(0.4),
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? color : color.withOpacity(0.4), width: isSelected ? 2.5 : 1.5),
+          border: Border.all(color: isSelected ? color : color.withValues(alpha: 0.4), width: isSelected ? 2.5 : 1.5),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(isSelected ? 0.3 : 0.1),
+              color: color.withValues(alpha: isSelected ? 0.3 : 0.1),
               blurRadius: isSelected ? 25 : 15,
               spreadRadius: isSelected ? 5 : 2,
             ),
@@ -252,7 +252,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 28),

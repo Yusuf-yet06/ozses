@@ -23,17 +23,17 @@ class IntelligenceCore {
   // Duygu Eşleşme Matrisi (Repodaki Classification mantığı)
   static Map<String, dynamic> getMoodProfiles() {
     return {
-      "LOW_ENERGY": {
-        "vibe": "RELAX",
-        "eq": "NORMAL",
-        "response":
-            "Gardaşım, siber sensörler düşük enerji saptadı. Şifa modu aktif."
+      'LOW_ENERGY': {
+        'vibe': 'RELAX',
+        'eq': 'NORMAL',
+        'response':
+            'Gardaşım, siber sensörler düşük enerji saptadı. Şifa modu aktif.'
       },
-      "HIGH_ENERGY": {
-        "vibe": "WAR",
-        "eq": "BASS_BOOST",
-        "response":
-            "Enerji zirvede! Victus savaş moduna geçiyor, baslar mühürlendi!"
+      'HIGH_ENERGY': {
+        'vibe': 'WAR',
+        'eq': 'BASS_BOOST',
+        'response':
+            'Enerji zirvede! Victus savaş moduna geçiyor, baslar mühürlendi!'
       }
     };
   }

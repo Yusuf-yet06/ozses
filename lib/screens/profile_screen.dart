@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../services/history_service.dart';
@@ -25,10 +24,10 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
-  String _username = "Siber Ajan";
+  String _username = 'Siber Ajan';
   String _email = 'Bağlı hesap yok';
-  String _rank = "Acemi Dinleyici";
-  String _nextRank = "Çırak Taktisyen";
+  String _rank = 'Acemi Dinleyici';
+  String _nextRank = 'Çırak Taktisyen';
   int _totalListenHours = 0;
   int _hoursForNextRank = 5;
   double _rankProgress = 0.0;
@@ -36,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 🎯 VİZYON DEĞİŞKENLERİ
 
-  String _avatarUrl = "https://robohash.org/siber_ajan.png?set=set3";
+  String _avatarUrl = 'https://robohash.org/siber_ajan.png?set=set3';
   // 🎯 YENİ SİBER HAMLE: Otonom Sanatçı Podyumu ve YouTube Zekası
   List<MapEntry<String, int>> _topArtists = [];
   Map<String, String> _artistImages = {};
@@ -44,15 +43,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 🎯 YENİ: Haftalık Ruh Hali Motoru
   Map<String, int> _moodStats = {};
-  String _dominantMood = "Belirsiz";
+  final String _dominantMood = 'Belirsiz';
   Color _auraColor = Colors.cyanAccent;
 
   bool _isSyncing = false;
   double _syncProgress = 0.0;
-  String _lastSync = "Senkronize Edilmedi";
+  String _lastSync = 'Senkronize Edilmedi';
 
-  String _instagramHandle = "";
-  String _twitterHandle = "";
+  String _instagramHandle = '';
+  String _twitterHandle = '';
 
   @override
   void initState() {
@@ -64,16 +63,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     final linked = prefs.getBool('siber_is_linked') ?? false;
-    final name = prefs.getString('siber_username') ?? "Siber Ajan";
-    final email = prefs.getString('siber_email') ?? "Bağlı hesap yok";
+    final name = prefs.getString('siber_username') ?? 'Siber Ajan';
+    final email = prefs.getString('siber_email') ?? 'Bağlı hesap yok';
     // final auraValue =
     // prefs.getInt...
     final avatar = prefs.getString('siber_avatar_url') ??
-        "https://robohash.org/$name.png?set=set3";
+        'https://robohash.org/$name.png?set=set3';
     final lastSyncTime =
-        prefs.getString('siber_last_sync') ?? "Henüz mühürlenmedi";
-    final instagram = prefs.getString('siber_instagram') ?? "";
-    final twitter = prefs.getString('siber_twitter') ?? "";
+        prefs.getString('siber_last_sync') ?? 'Henüz mühürlenmedi';
+    final instagram = prefs.getString('siber_instagram') ?? '';
+    final twitter = prefs.getString('siber_twitter') ?? '';
 
     final historyList = await HistoryService.getHistory();
     int totalSeconds = 0;
@@ -98,34 +97,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // 🎯 YENİ 7 KADEMELİ RÜTBE SİSTEMİ
-    String rank = "Yeni Dinleyici";
-    String nextRank = "Amatör";
+    String rank = 'Yeni Dinleyici';
+    String nextRank = 'Amatör';
     int hoursForNextRank = 5;
     double rankProgress = 0.0;
 
     final List<Map<String, dynamic>> rankTiers = [
-      {"name": "Yeni Dinleyici", "hours": 0},
-      {"name": "Amatör", "hours": 5},
-      {"name": "Müziksever", "hours": 25},
-      {"name": "Ritim Tutkunu", "hours": 75},
-      {"name": "Melodi Ustası", "hours": 150},
-      {"name": "Ses Gurmesi", "hours": 300},
-      {"name": "ÖZSES Efsanesi", "hours": 500},
+      {'name': 'Yeni Dinleyici', 'hours': 0},
+      {'name': 'Amatör', 'hours': 5},
+      {'name': 'Müziksever', 'hours': 25},
+      {'name': 'Ritim Tutkunu', 'hours': 75},
+      {'name': 'Melodi Ustası', 'hours': 150},
+      {'name': 'Ses Gurmesi', 'hours': 300},
+      {'name': 'ÖZSES Efsanesi', 'hours': 500},
     ];
 
     for (int i = 0; i < rankTiers.length; i++) {
-      if (totalHours >= rankTiers[i]["hours"]) {
-        rank = rankTiers[i]["name"];
+      if (totalHours >= rankTiers[i]['hours']) {
+        rank = rankTiers[i]['name'];
         if (i < rankTiers.length - 1) {
-          nextRank = rankTiers[i + 1]["name"];
-          int currentTierHours = rankTiers[i]["hours"];
-          int nextTierHours = rankTiers[i + 1]["hours"];
+          nextRank = rankTiers[i + 1]['name'];
+          int currentTierHours = rankTiers[i]['hours'];
+          int nextTierHours = rankTiers[i + 1]['hours'];
           hoursForNextRank = nextTierHours - totalHours;
           int hoursInCurrentTier = totalHours - currentTierHours;
           int tierSpan = nextTierHours - currentTierHours;
           rankProgress = (hoursInCurrentTier / tierSpan).clamp(0.0, 1.0);
         } else {
-          nextRank = "MAX SEVİYE";
+          nextRank = 'MAX SEVİYE';
           hoursForNextRank = 0;
           rankProgress = 1.0;
         }
@@ -141,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           (weeklyMoodCounts[mood] ?? 0) + item.totalListenSeconds;
     }
 
-    String dominantMood = "Belirsiz";
+    String dominantMood = 'Belirsiz';
     if (weeklyMoodCounts.isNotEmpty) {
       var sortedMoods = weeklyMoodCounts.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
@@ -188,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         // YouTube'da sanatçıyı arat
         var searchResults =
-            await yt.search.search("$artistName Official Channel");
+            await yt.search.search('$artistName Official Channel');
         if (searchResults.isNotEmpty) {
           // İlk videonun kanal bilgisini çek
           var firstVideo = searchResults.first;
@@ -196,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fetchedImages[artistName] = channel.logoUrl;
         }
       } catch (e) {
-        debugPrint("YouTube PP Çekme Hatası ($artistName): $e");
+        debugPrint('YouTube PP Çekme Hatası ($artistName): $e');
       }
     }
 
@@ -219,13 +218,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         n.contains('hüzün') ||
         n.contains('ayrılık') ||
         n.contains('yalnızlık') ||
-        n.contains('gözyaşı')) return "Melankolik";
+        n.contains('gözyaşı')) {
+      return 'Melankolik';
+    }
     if (n.contains('arabesk') ||
         n.contains('damar') ||
         n.contains('acı') ||
         n.contains('meyhane') ||
         n.contains('yara') ||
-        n.contains('dert')) return "Efkârlı";
+        n.contains('dert')) {
+      return 'Efkârlı';
+    }
     if (n.contains('rap') ||
         n.contains('trap') ||
         n.contains('drill') ||
@@ -234,99 +237,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
         n.contains('ghetto') ||
         n.contains('çete') ||
         n.contains('ezhel') ||
-        n.contains('ceza')) return "Sokak Ritmi";
+        n.contains('ceza')) {
+      return 'Sokak Ritmi';
+    }
     if (n.contains('remix') ||
         n.contains('club') ||
         n.contains('dance') ||
         n.contains('bass') ||
         n.contains('party') ||
-        n.contains('kop')) return "Kopmalık";
+        n.contains('kop')) {
+      return 'Kopmalık';
+    }
     if (n.contains('pop') ||
         n.contains('hareketli') ||
         n.contains('neşeli') ||
         n.contains('mutlu') ||
         n.contains('yaz') ||
         n.contains('hit') ||
-        n.contains('enerji')) return "Enerjik";
+        n.contains('enerji')) {
+      return 'Enerjik';
+    }
     if (n.contains('focus') ||
         n.contains('study') ||
         n.contains('piano') ||
         n.contains('klasik') ||
         n.contains('zihin') ||
-        n.contains('work')) return "Odaklanma";
+        n.contains('work')) {
+      return 'Odaklanma';
+    }
     if (n.contains('lofi') ||
         n.contains('chill') ||
         n.contains('relax') ||
         n.contains('doğa') ||
         n.contains('huzur') ||
         n.contains('meditasyon') ||
-        n.contains('akustik')) return "Rahatlatıcı";
+        n.contains('akustik')) {
+      return 'Rahatlatıcı';
+    }
     if (n.contains('uyku') ||
         n.contains('sleep') ||
         n.contains('gece') ||
         n.contains('rain') ||
-        n.contains('ninni')) return "Uyku Öncesi";
+        n.contains('ninni')) {
+      return 'Uyku Öncesi';
+    }
     if (n.contains('rock') ||
         n.contains('metal') ||
         n.contains('isyan') ||
         n.contains('hard') ||
         n.contains('heavy') ||
-        n.contains('öfke')) return "İsyankâr";
+        n.contains('öfke')) {
+      return 'İsyankâr';
+    }
     if (n.contains('gym') ||
         n.contains('workout') ||
         n.contains('motivasyon') ||
         n.contains('antrenman') ||
         n.contains('power') ||
-        n.contains('epic')) return "Motivasyon";
+        n.contains('epic')) {
+      return 'Motivasyon';
+    }
     if (n.contains('90lar') ||
         n.contains('80ler') ||
         n.contains('nostalji') ||
         n.contains('kaset') ||
         n.contains('eski') ||
-        n.contains('unutulmaz')) return "Nostaljik";
+        n.contains('unutulmaz')) {
+      return 'Nostaljik';
+    }
     if (n.contains('türkü') ||
         n.contains('bağlama') ||
         n.contains('ney') ||
         n.contains('anadolu') ||
         n.contains('etnik') ||
-        n.contains('doğu')) return "Mistik";
+        n.contains('doğu')) {
+      return 'Mistik';
+    }
     if (n.contains('cyber') ||
         n.contains('synthwave') ||
         n.contains('elektronik') ||
         n.contains('edm') ||
-        n.contains('techno')) return "Siber";
+        n.contains('techno')) {
+      return 'Siber';
+    }
 
-    return "Dengeli";
+    return 'Dengeli';
   }
 
   // 🎯 SİBER HAMLE: Ruh Haline Göre Neon Aura Rengi
   Color _getMoodColor(String mood) {
     switch (mood) {
-      case "Melankolik":
+      case 'Melankolik':
         return Colors.blue.shade800; // Deep Blue
-      case "Efkârlı":
+      case 'Efkârlı':
         return Colors.grey.shade600; // Smoke Grey
-      case "Sokak Ritmi":
+      case 'Sokak Ritmi':
         return Colors.redAccent.shade700; // Blood Red
-      case "Kopmalık":
+      case 'Kopmalık':
         return Colors.deepOrangeAccent; // Neon Orange
-      case "Enerjik":
+      case 'Enerjik':
         return Colors.pinkAccent; // Hot Pink
-      case "Odaklanma":
+      case 'Odaklanma':
         return Colors.greenAccent.shade700; // Emerald Green
-      case "Rahatlatıcı":
+      case 'Rahatlatıcı':
         return Colors.cyanAccent; // Cyan
-      case "Uyku Öncesi":
+      case 'Uyku Öncesi':
         return Colors.indigo.shade900; // Midnight Blue
-      case "İsyankâr":
+      case 'İsyankâr':
         return Colors.purple.shade900; // Deep Purple
-      case "Motivasyon":
+      case 'Motivasyon':
         return Colors.amber; // Gold
-      case "Nostaljik":
+      case 'Nostaljik':
         return Colors.brown.shade400; // Amber/Brown
-      case "Mistik":
+      case 'Mistik':
         return Colors.lime.shade800; // Olive
-      case "Siber":
+      case 'Siber':
         return Colors.lightBlueAccent; // Neon Blue
       default:
         return Colors.cyanAccent;
@@ -335,12 +360,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 🎯 Rütbeye Göre Çerçeve Rengi Seçici
   Color _getRankColor() {
-    if (_rank == "ÖZSES VETERANI") return Colors.redAccent;
-    if (_rank == "Kıdemli Komutan") return Colors.orangeAccent;
-    if (_rank == "Usta Analist") return Colors.purpleAccent;
-    if (_rank == "Siber İstihbaratçı") return Colors.tealAccent;
-    if (_rank == "Saha Operatörü") return Colors.greenAccent;
-    if (_rank == "Çırak Taktisyen") return Colors.lightBlueAccent;
+    if (_rank == 'ÖZSES VETERANI') return Colors.redAccent;
+    if (_rank == 'Kıdemli Komutan') return Colors.orangeAccent;
+    if (_rank == 'Usta Analist') return Colors.purpleAccent;
+    if (_rank == 'Siber İstihbaratçı') return Colors.tealAccent;
+    if (_rank == 'Saha Operatörü') return Colors.greenAccent;
+    if (_rank == 'Çırak Taktisyen') return Colors.lightBlueAccent;
     return Colors.white54;
   }
 
@@ -367,17 +392,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => setDialogState(() => isLoginMode = true),
-                    child: Text("GİRİŞ YAP",
+                    child: Text('GİRİŞ YAP',
                         style: TextStyle(
                             color: isLoginMode ? _auraColor : Colors.white54,
                             fontWeight: FontWeight.bold,
                             fontSize: 16)),
                   ),
-                  const Text("|",
+                  const Text('|',
                       style: TextStyle(color: Colors.white24, fontSize: 18)),
                   GestureDetector(
                     onTap: () => setDialogState(() => isLoginMode = false),
-                    child: Text("KAYIT OL",
+                    child: Text('KAYIT OL',
                         style: TextStyle(
                             color: !isLoginMode ? _auraColor : Colors.white54,
                             fontWeight: FontWeight.bold,
@@ -390,27 +415,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      "Siber buluta bağlanmak için kimliğini doğrula.",
+                      'Siber buluta bağlanmak için kimliğini doğrula.',
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
                     if (!isLoginMode) ...[
                       _buildTextField(
-                          usernameController, "Kullanıcı Adı", Icons.person),
+                          usernameController, 'Kullanıcı Adı', Icons.person),
                       const SizedBox(height: 10),
                     ],
-                    _buildTextField(emailController, "E-Posta", Icons.email),
+                    _buildTextField(emailController, 'E-Posta', Icons.email),
                     const SizedBox(height: 10),
                     _buildTextField(
-                        passwordController, "Siber Şifre", Icons.lock,
+                        passwordController, 'Siber Şifre', Icons.lock,
                         isPassword: true),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _auraColor.withOpacity(0.8),
+                          backgroundColor: _auraColor.withValues(alpha: 0.8),
                           foregroundColor: Colors.black,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -425,20 +450,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _showOTPDialog(
                                 emailController.text.trim(),
                                 isLoginMode
-                                    ? "Siber Ajan"
+                                    ? 'Siber Ajan'
                                     : usernameController.text.trim(),
                                 isLoginMode); // 🎯 Kod doğrulama paneline geç!
                           } else {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(const SnackBar(
                               content: Text(
-                                  "Lütfen siber mühür için tüm alanları doldur!"),
+                                  'Lütfen siber mühür için tüm alanları doldur!'),
                               backgroundColor: Colors.redAccent,
                             ));
                           }
                         },
                         child: Text(
-                            isLoginMode ? "GİRİŞ YAP" : "KAYIT OL & MÜHÜRLE",
+                            isLoginMode ? 'GİRİŞ YAP' : 'KAYIT OL & MÜHÜRLE',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 15)),
                       ),
@@ -462,9 +487,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -496,7 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         hintStyle: const TextStyle(color: Colors.white30),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: color.withOpacity(0.3)),
+          borderSide: BorderSide(color: color.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -517,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Hesap siber ağdan koparıldı."),
+        content: Text('Hesap siber ağdan koparıldı.'),
         backgroundColor: Colors.orangeAccent,
       ));
     }
@@ -540,7 +565,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Icon(Icons.link, color: platformColor),
               const SizedBox(width: 8),
-              Text("$platform Bağla",
+              Text('$platform Bağla',
                   style: TextStyle(
                       color: platformColor,
                       fontWeight: FontWeight.bold,
@@ -551,10 +576,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Siber profiline bu platformu mühürle.",
+                const Text('Siber profiline bu platformu mühürle.',
                     style: TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 15),
-                _buildTextField(handleController, "Kullanıcı Adı / Handle",
+                _buildTextField(handleController, 'Kullanıcı Adı / Handle',
                     Icons.alternate_email,
                     customColor: platformColor),
               ],
@@ -564,11 +589,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child:
-                  const Text("İptal", style: TextStyle(color: Colors.white54)),
+                  const Text('İptal', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: platformColor.withOpacity(0.8),
+                backgroundColor: platformColor.withValues(alpha: 0.8),
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
@@ -576,19 +601,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 await prefs.setString(prefKey, handleController.text.trim());
                 if (mounted) {
                   setState(() {
-                    if (prefKey == 'siber_instagram')
+                    if (prefKey == 'siber_instagram') {
                       _instagramHandle = handleController.text.trim();
-                    if (prefKey == 'siber_twitter')
+                    }
+                    if (prefKey == 'siber_twitter') {
                       _twitterHandle = handleController.text.trim();
+                    }
                   });
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text("$platform başarıyla mühürlendi!"),
+                    content: Text('$platform başarıyla mühürlendi!'),
                     backgroundColor: platformColor,
                   ));
                 }
               },
-              child: const Text("Mühürle",
+              child: const Text('Mühürle',
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
@@ -610,7 +637,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: color),
@@ -618,7 +645,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: Text(platform,
           style: const TextStyle(
               color: Colors.white, fontWeight: FontWeight.bold)),
-      subtitle: Text(isLinked ? "@$handle" : "Henüz bağlanmadı",
+      subtitle: Text(isLinked ? '@$handle' : 'Henüz bağlanmadı',
           style: TextStyle(
               color: isLinked ? color : Colors.white38, fontSize: 12)),
       trailing: isLinked
@@ -628,20 +655,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove(prefKey);
                 setState(() {
-                  if (prefKey == 'siber_instagram') _instagramHandle = "";
-                  if (prefKey == 'siber_twitter') _twitterHandle = "";
+                  if (prefKey == 'siber_instagram') _instagramHandle = '';
+                  if (prefKey == 'siber_twitter') _twitterHandle = '';
                 });
               },
             )
           : ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: color.withOpacity(0.2),
-                side: BorderSide(color: color.withOpacity(0.5)),
+                backgroundColor: color.withValues(alpha: 0.2),
+                side: BorderSide(color: color.withValues(alpha: 0.5)),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () => _showSocialLinkDialog(platform, prefKey, color),
-              child: Text("Bağla", style: TextStyle(color: color)),
+              child: Text('Bağla', style: TextStyle(color: color)),
             ),
     );
   }
@@ -660,7 +687,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: _auraColor)),
-            title: Text("SİBER KİMLİK KARTI",
+            title: Text('SİBER KİMLİK KARTI',
                 style:
                     TextStyle(color: _auraColor, fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
@@ -668,26 +695,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                      "Siber ajan adını ve avatarını güncelleyebilirsin.",
+                      'Siber ajan adını ve avatarını güncelleyebilirsin.',
                       style: TextStyle(color: Colors.white54, fontSize: 12)),
                   const SizedBox(height: 15),
                   _buildTextField(
-                      usernameController, "Kullanıcı Adı", Icons.person),
+                      usernameController, 'Kullanıcı Adı', Icons.person),
                   const SizedBox(height: 15),
                   _buildTextField(
-                      urlController, "Resim URL (http...)", Icons.image),
+                      urlController, 'Resim URL (http...)', Icons.image),
                   const SizedBox(height: 15),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                         backgroundColor: _auraColor,
                         foregroundColor: Colors.black),
                     icon: const Icon(Icons.smart_toy),
-                    label: const Text("Otonom Yüz Üret"),
+                    label: const Text('Otonom Yüz Üret'),
                     onPressed: () async {
                       String randId =
                           DateTime.now().millisecondsSinceEpoch.toString();
                       String newUrl =
-                          "https://robohash.org/siber_$randId.png?set=set3";
+                          'https://robohash.org/siber_$randId.png?set=set3';
                       if (mounted) {
                         setState(() => urlController.text = newUrl);
                       }
@@ -699,7 +726,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("İptal",
+                child: const Text('İptal',
                     style: TextStyle(color: Colors.white54)),
               ),
               TextButton(
@@ -715,15 +742,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                   if (mounted) {
                     setState(() {
-                      if (urlController.text.isNotEmpty)
+                      if (urlController.text.isNotEmpty) {
                         _avatarUrl = urlController.text;
-                      if (usernameController.text.trim().isNotEmpty)
+                      }
+                      if (usernameController.text.trim().isNotEmpty) {
                         _username = usernameController.text.trim();
+                      }
                     });
                     Navigator.pop(context);
                   }
                 },
-                child: Text("Mühürle",
+                child: Text('Mühürle',
                     style: TextStyle(
                         color: _auraColor, fontWeight: FontWeight.bold)),
               )
@@ -753,7 +782,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final prefs = await SharedPreferences.getInstance();
         final now = DateTime.now();
         String timeStr =
-            "${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}";
+            '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}';
         await prefs.setString('siber_last_sync', timeStr);
         setState(() {
           _isSyncing = false;
@@ -767,21 +796,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showPersonalSurveyDialog() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> availableGenres = [
-      "Türkçe Rap",
-      "Arabesk",
-      "Akustik",
-      "Deep House",
-      "Pop",
-      "Rock",
-      "Türkü",
-      "R&B",
-      "Özgün Müzik",
-      "Slow"
+      'Türkçe Rap',
+      'Arabesk',
+      'Akustik',
+      'Deep House',
+      'Pop',
+      'Rock',
+      'Türkü',
+      'R&B',
+      'Özgün Müzik',
+      'Slow'
     ];
     List<String> selectedGenres =
         prefs.getStringList('siber_personal_genres') ?? [];
     TextEditingController artistController = TextEditingController(
-        text: prefs.getString('siber_personal_artists') ?? "");
+        text: prefs.getString('siber_personal_artists') ?? '');
 
     if (!mounted) return;
 
@@ -795,7 +824,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(15),
                 side: BorderSide(color: _auraColor),
               ),
-              title: Text("KEŞFET PROFİLİNİ GÜNCELLE",
+              title: Text('KEŞFET PROFİLİNİ GÜNCELLE',
                   style: TextStyle(
                       color: _auraColor, fontWeight: FontWeight.bold)),
               content: SingleChildScrollView(
@@ -804,7 +833,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                        "Siber yapay zekanın seni tanıması için dinlediğin müzik türlerini seç (Maks 4):",
+                        'Siber yapay zekanın seni tanıması için dinlediğin müzik türlerini seç (Maks 4):',
                         style: TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 10),
                     Wrap(
@@ -824,8 +853,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onSelected: (selected) {
                             setDialogState(() {
                               if (selected) {
-                                if (selectedGenres.length < 4)
+                                if (selectedGenres.length < 4) {
                                   selectedGenres.add(genre);
+                                }
                               } else {
                                 selectedGenres.remove(genre);
                               }
@@ -835,14 +865,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 20),
-                    const Text("Favori Sanatçıların (Virgülle ayırarak yaz):",
+                    const Text('Favori Sanatçıların (Virgülle ayırarak yaz):',
                         style: TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 10),
                     TextField(
                       controller: artistController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: "Örn: Sagopa, Müslüm, Ceza...",
+                        hintText: 'Örn: Sagopa, Müslüm, Ceza...',
                         hintStyle: const TextStyle(color: Colors.white30),
                         enabledBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: _auraColor)),
@@ -856,7 +886,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("İptal",
+                  child: const Text('İptal',
                       style: TextStyle(color: Colors.white54)),
                 ),
                 ElevatedButton(
@@ -869,12 +899,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text("Keşfet Profilin Başarıyla Güncellendi!"),
+                        content: const Text('Keşfet Profilin Başarıyla Güncellendi!'),
                         backgroundColor: _auraColor,
                       ));
                     }
                   },
-                  child: const Text("Mühürle",
+                  child: const Text('Mühürle',
                       style: TextStyle(
                           color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
@@ -885,45 +915,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   String _getAvatarSetByRank(String rank) {
-    if (rank == "Yeni Dinleyici" || rank == "Çırak Taktisyen")
-      return "set1"; // Sevimli Robotlar
-    if (rank == "Müziksever" || rank == "Ritim Tutkunu")
-      return "set2"; // Yaratıklar
-    if (rank == "Melodi Ustası" || rank == "Ses Gurmesi")
-      return "set5"; // İnsansı Robotlar
-    return "set3"; // ÖZSES Efsanesi (Cyborg kafaları)
+    if (rank == 'Yeni Dinleyici' || rank == 'Çırak Taktisyen') {
+      return 'set1'; // Sevimli Robotlar
+    }
+    if (rank == 'Müziksever' || rank == 'Ritim Tutkunu') {
+      return 'set2'; // Yaratıklar
+    }
+    if (rank == 'Melodi Ustası' || rank == 'Ses Gurmesi') {
+      return 'set5'; // İnsansı Robotlar
+    }
+    return 'set3'; // ÖZSES Efsanesi (Cyborg kafaları)
   }
 
   // 🎯 YENİ SİBER HAMLE: Yapay Zeka Ruh Hali Yorumcusu
   String _generateCyberDiagnosis() {
-    if (_dominantMood == "Belirsiz") {
-      return "Siber veri akışı tespit edilemedi. Nöronlarını müzikle beslemeye devam et.";
+    if (_dominantMood == 'Belirsiz') {
+      return 'Siber veri akışı tespit edilemedi. Nöronlarını müzikle beslemeye devam et.';
     }
 
     String artist = _topArtists.isNotEmpty
         ? _topArtists.first.key
-        : "Bilinmeyen Frekanslar";
+        : 'Bilinmeyen Frekanslar';
 
     switch (_dominantMood) {
-      case "Melankolik":
-      case "Efkârlı":
-      case "Nostaljik":
-        return "SİSTEM TEŞHİSİ: Ruhunda derin bir arayış algılandı. $artist tınıları ve yavaş ritimler veri akışını tamamen ele geçirmiş. Gece dinlemeleri tavsiye edilir.";
-      case "Sokak Ritmi":
-      case "İsyankâr":
-        return "SİSTEM TEŞHİSİ: Sistemde yüksek distorsiyon ve isyan saptandı! $artist frekansları kanındaki adrenalini tetikliyor. Bu tempoyu asla bozma!";
-      case "Enerjik":
-      case "Kopmalık":
-      case "Motivasyon":
-      case "Siber":
-        return "SİSTEM TEŞHİSİ: Nöronların alev alev! Ağ bağlantıların maksimum hızda. $artist ritimleriyle sistemine enerji pompalıyorsun. Tam bir siber savaşçı!";
-      case "Odaklanma":
-      case "Rahatlatıcı":
-      case "Uyku Öncesi":
-      case "Mistik":
-        return "SİSTEM TEŞHİSİ: Meditasyon ve mutlak odak hali. $artist frekansları zihnindeki gürültüyü arındırıyor. Siber huzura ulaşıldı.";
+      case 'Melankolik':
+      case 'Efkârlı':
+      case 'Nostaljik':
+        return 'SİSTEM TEŞHİSİ: Ruhunda derin bir arayış algılandı. $artist tınıları ve yavaş ritimler veri akışını tamamen ele geçirmiş. Gece dinlemeleri tavsiye edilir.';
+      case 'Sokak Ritmi':
+      case 'İsyankâr':
+        return 'SİSTEM TEŞHİSİ: Sistemde yüksek distorsiyon ve isyan saptandı! $artist frekansları kanındaki adrenalini tetikliyor. Bu tempoyu asla bozma!';
+      case 'Enerjik':
+      case 'Kopmalık':
+      case 'Motivasyon':
+      case 'Siber':
+        return 'SİSTEM TEŞHİSİ: Nöronların alev alev! Ağ bağlantıların maksimum hızda. $artist ritimleriyle sistemine enerji pompalıyorsun. Tam bir siber savaşçı!';
+      case 'Odaklanma':
+      case 'Rahatlatıcı':
+      case 'Uyku Öncesi':
+      case 'Mistik':
+        return 'SİSTEM TEŞHİSİ: Meditasyon ve mutlak odak hali. $artist frekansları zihnindeki gürültüyü arındırıyor. Siber huzura ulaşıldı.';
       default:
-        return "SİSTEM TEŞHİSİ: Kompleks bir veri denizi. $artist ağırlıklı eşsiz bir frekans sentezi ruhunu sarmalıyor.";
+        return 'SİSTEM TEŞHİSİ: Kompleks bir veri denizi. $artist ağırlıklı eşsiz bir frekans sentezi ruhunu sarmalıyor.';
     }
   }
 
@@ -953,7 +986,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: _getMoodColor(_dominantMood), size: 18),
               const SizedBox(width: 8),
               Text(
-                "🧠 SİBER ZEKANIN TEŞHİSİ",
+                '🧠 SİBER ZEKANIN TEŞHİSİ',
                 style: TextStyle(
                   color: _getMoodColor(_dominantMood),
                   fontWeight: FontWeight.bold,
@@ -981,7 +1014,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 🎯 YENİ SİBER HAMLE: Otonom Sanatçı Podyumu (YouTube Entegrasyonlu)
   Widget _buildArtistPodium() {
     if (_topArtists.isEmpty) {
-      return const Text("Henüz yeterli veri yok.",
+      return const Text('Henüz yeterli veri yok.',
           style: TextStyle(color: Colors.white38));
     }
 
@@ -989,7 +1022,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         const Align(
           alignment: Alignment.centerLeft,
-          child: Text("🏆 SİBER SANATÇI PODYUMU",
+          child: Text('🏆 SİBER SANATÇI PODYUMU',
               style: TextStyle(
                   color: Colors.amber,
                   fontWeight: FontWeight.bold,
@@ -1084,7 +1117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             border: Border.all(color: glowColor.withValues(alpha: 0.5)),
           ),
           child: Text(
-            "#$rank",
+            '#$rank',
             style: TextStyle(
                 color: glowColor, fontWeight: FontWeight.bold, fontSize: 10),
           ),
@@ -1102,7 +1135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         Text(
-          "$playCount Kez",
+          '$playCount Kez',
           style: const TextStyle(color: Colors.white54, fontSize: 9),
         ),
       ],
@@ -1116,7 +1149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text("SİBER KARARGAH",
+        title: Text('SİBER KARARGAH',
             style: TextStyle(
                 color: _auraColor,
                 fontWeight: FontWeight.bold,
@@ -1160,7 +1193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [_auraColor.withOpacity(0.15), Colors.black],
+            colors: [_auraColor.withValues(alpha: 0.15), Colors.black],
           ),
         ),
         child: SafeArea(
@@ -1172,13 +1205,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: _getRankColor().withOpacity(0.5), width: 2),
+                        color: _getRankColor().withValues(alpha: 0.5), width: 2),
                     boxShadow: [
                       BoxShadow(
-                          color: _getRankColor().withOpacity(0.2),
+                          color: _getRankColor().withValues(alpha: 0.2),
                           blurRadius: 20,
                           spreadRadius: 5),
                     ],
@@ -1195,12 +1228,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: _auraColor.withOpacity(0.8),
+                                    color: _auraColor.withValues(alpha: 0.8),
                                     blurRadius: 25,
                                     spreadRadius: 5,
                                   ),
                                   BoxShadow(
-                                    color: _auraColor.withOpacity(0.4),
+                                    color: _auraColor.withValues(alpha: 0.4),
                                     blurRadius: 50,
                                     spreadRadius: 10,
                                   ),
@@ -1254,7 +1287,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           color: Colors.black45,
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
-                              color: _getRankColor().withOpacity(0.5)),
+                              color: _getRankColor().withValues(alpha: 0.5)),
                         ),
                         child: Column(
                           children: [
@@ -1273,8 +1306,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             fontSize: 16)),
                                   ],
                                 ),
-                                if (_nextRank != "MAX SEVİYE")
-                                  Text("Hedef: $_nextRank",
+                                if (_nextRank != 'MAX SEVİYE')
+                                  Text('Hedef: $_nextRank',
                                       style: const TextStyle(
                                           color: Colors.white54, fontSize: 12)),
                               ],
@@ -1300,7 +1333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       boxShadow: [
                                         BoxShadow(
                                             color: _getRankColor()
-                                                .withOpacity(0.5),
+                                                .withValues(alpha: 0.5),
                                             blurRadius: 8)
                                       ],
                                     ),
@@ -1309,9 +1342,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                             const SizedBox(height: 10),
-                            if (_nextRank != "MAX SEVİYE")
+                            if (_nextRank != 'MAX SEVİYE')
                               Text(
-                                  "Terfi için $_hoursForNextRank saat daha dinlemelisin.",
+                                  'Terfi için $_hoursForNextRank saat daha dinlemelisin.',
                                   style: const TextStyle(
                                       color: Colors.white70, fontSize: 11))
                             else
@@ -1336,13 +1369,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 20),
                     decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border:
-                            Border.all(color: _getRankColor().withOpacity(0.5)),
+                            Border.all(color: _getRankColor().withValues(alpha: 0.5)),
                         boxShadow: [
                           BoxShadow(
-                            color: _getRankColor().withOpacity(0.1),
+                            color: _getRankColor().withValues(alpha: 0.1),
                             blurRadius: 10,
                             spreadRadius: 1,
                           )
@@ -1353,7 +1386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Icon(Icons.stars, color: _getRankColor(), size: 20),
                         const SizedBox(width: 10),
                         const Text(
-                          "RÜTBE VE ÖDÜL DETAYLARI",
+                          'RÜTBE VE ÖDÜL DETAYLARI',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -1377,7 +1410,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 15),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(color: Colors.white10),
                     ),
@@ -1392,7 +1425,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Icon(Icons.cloud_done,
                                     color: _auraColor, size: 20),
                                 const SizedBox(width: 8),
-                                const Text("Siber Bulut Mührü",
+                                const Text('Siber Bulut Mührü',
                                     style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold)),
@@ -1402,8 +1435,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onPressed: _isSyncing ? null : _startCloudSync,
                               child: Text(
                                   _isSyncing
-                                      ? "Eşitleniyor..."
-                                      : "Şimdi Eşitle",
+                                      ? 'Eşitleniyor...'
+                                      : 'Şimdi Eşitle',
                                   style: TextStyle(
                                       color: _auraColor, fontSize: 12)),
                             )
@@ -1418,7 +1451,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: _auraColor),
                           )
                         else
-                          Text("Son Eşitleme: $_lastSync",
+                          Text('Son Eşitleme: $_lastSync',
                               style: const TextStyle(
                                   color: Colors.white54, fontSize: 11)),
                       ],
@@ -1428,16 +1461,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // 🎯 İŞLEM BUTONLARI (KONTROL PANELİ)
                 if (!_isAccountLinked)
                   _buildProfileButton(
-                    title: "SİBER HESABI BAĞLA",
-                    subtitle: "Sisteme giriş yap ve profilini mühürle",
+                    title: 'SİBER HESABI BAĞLA',
+                    subtitle: 'Sisteme giriş yap ve profilini mühürle',
                     icon: Icons.link,
                     color: _auraColor,
                     onTap: _showLinkAccountDialog,
                   )
                 else
                   _buildProfileButton(
-                    title: "HESABIN BAĞINI KOPAR",
-                    subtitle: "Sistemden güvenli şekilde çıkış yap",
+                    title: 'HESABIN BAĞINI KOPAR',
+                    subtitle: 'Sistemden güvenli şekilde çıkış yap',
                     icon: Icons.link_off,
                     color: Colors.redAccent,
                     onTap: _unlinkAccount,
@@ -1446,8 +1479,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 15),
 
                 _buildProfileButton(
-                  title: "KEŞFET PROFİLİNİ GÜNCELLE",
-                  subtitle: "Yapay zeka için müzik zevkini yenile",
+                  title: 'KEŞFET PROFİLİNİ GÜNCELLE',
+                  subtitle: 'Yapay zeka için müzik zevkini yenile',
                   icon: Icons.person_search,
                   color: _auraColor,
                   onTap: _showPersonalSurveyDialog,
@@ -1457,15 +1490,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // İstihbarat Özet Kartı
                 // 🎯 VİZYON 1: SİBER İSTİHBARAT KARNESİ (WRAPPED MODU)
-                _buildSectionTitle("İSTİHBARAT KARNESİ", Icons.insights),
+                _buildSectionTitle('İSTİHBARAT KARNESİ', Icons.insights),
                 Screenshot(
                   controller: _screenshotController,
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _auraColor.withOpacity(0.3)),
+                      border: Border.all(color: _auraColor.withValues(alpha: 0.3)),
                     ),
                     child: Column(
                       children: [
@@ -1477,10 +1510,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text("Toplam Mesai",
+                                const Text('Toplam Mesai',
                                     style: TextStyle(
                                         color: Colors.white54, fontSize: 12)),
-                                Text("$_totalListenHours Saat",
+                                Text('$_totalListenHours Saat',
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 20,
@@ -1508,7 +1541,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Icon(Icons.psychology,
                                     color: _auraColor, size: 20),
                                 const SizedBox(width: 8),
-                                const Text("Haftalık Siber Ruh Hali Raporu",
+                                const Text('Haftalık Siber Ruh Hali Raporu',
                                     style: TextStyle(
                                         color: Colors.white70,
                                         fontWeight: FontWeight.bold)),
@@ -1516,7 +1549,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )),
                         const SizedBox(height: 15),
                         if (_moodStats.isEmpty)
-                          const Text("Son 7 günde yeterli veri toplanmadı.",
+                          const Text('Son 7 günde yeterli veri toplanmadı.',
                               style: TextStyle(color: Colors.white38))
                         else
                           Container(
@@ -1527,16 +1560,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 borderRadius: BorderRadius.circular(15),
                                 border: Border.all(
                                     color: _getMoodColor(_dominantMood)
-                                        .withOpacity(0.5)),
+                                        .withValues(alpha: 0.5)),
                                 boxShadow: [
                                   BoxShadow(
                                       color: _getMoodColor(_dominantMood)
-                                          .withOpacity(0.1),
+                                          .withValues(alpha: 0.1),
                                       blurRadius: 10)
                                 ]),
                             child: Column(
                               children: [
-                                const Text("BU HAFTAKİ VİZYONUN",
+                                const Text('BU HAFTAKİ VİZYONUN',
                                     style: TextStyle(
                                         color: Colors.white54,
                                         fontSize: 10,
@@ -1622,8 +1655,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 15),
                 // 📸 SİBER PAYLAŞIM BUTONU (ÖZSES WRAPPED)
                 _buildProfileButton(
-                  title: "ÖZETİMİ PAYLAŞ",
-                  subtitle: "Dinleme istatistiklerini arkadaşlarınla paylaş",
+                  title: 'ÖZETİMİ PAYLAŞ',
+                  subtitle: 'Dinleme istatistiklerini arkadaşlarınla paylaş',
                   icon: Icons.share,
                   color: Colors.purpleAccent,
                   onTap: _shareCyberIdentity,
@@ -1650,11 +1683,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         await Share.shareXFiles(
           [XFile(imagePath)],
-          text: "ÖZSES Müzik Karnem! 🎵 Sen de keşfetmek için indir.",
+          text: 'ÖZSES Müzik Karnem! 🎵 Sen de keşfetmek için indir.',
         );
       }
     } catch (e) {
-      debugPrint("Siber Kimlik Paylaşım Hatası: $e");
+      debugPrint('Siber Kimlik Paylaşım Hatası: $e');
     }
   }
 
@@ -1670,11 +1703,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: color.withOpacity(0.5)),
+            border: Border.all(color: color.withValues(alpha: 0.5)),
             boxShadow: [
-              BoxShadow(color: color.withOpacity(0.1), blurRadius: 10),
+              BoxShadow(color: color.withValues(alpha: 0.1), blurRadius: 10),
             ]),
         child: Row(
           children: [
@@ -1696,7 +1729,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: color.withOpacity(0.5)),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5)),
           ],
         ),
       ),
@@ -1724,61 +1757,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showRankDetailsBottomSheet(BuildContext context) {
     final List<Map<String, dynamic>> rankDetails = [
       {
-        "name": "Yeni Dinleyici",
-        "hours": 0,
-        "icon": Icons.headphones,
-        "color": Colors.white54,
-        "perk": "Temel Dinleme ve Keşfet Erişimi",
-        "bonus": "",
+        'name': 'Yeni Dinleyici',
+        'hours': 0,
+        'icon': Icons.headphones,
+        'color': Colors.white54,
+        'perk': 'Temel Dinleme ve Keşfet Erişimi',
+        'bonus': '',
       },
       {
-        "name": "Çırak Taktisyen",
-        "hours": 5,
-        "icon": Icons.music_note,
-        "color": Colors.greenAccent,
-        "perk": "30 Dk Reklamsız Dinleme",
-        "bonus": "",
+        'name': 'Çırak Taktisyen',
+        'hours': 5,
+        'icon': Icons.music_note,
+        'color': Colors.greenAccent,
+        'perk': '30 Dk Reklamsız Dinleme',
+        'bonus': '',
       },
       {
-        "name": "Müziksever",
-        "hours": 25,
-        "icon": Icons.radar,
-        "color": Colors.blueAccent,
-        "perk": "Ruh Hali Analizi (Günde 1 Kez)",
-        "bonus": "+ 30 Dk Reklamsız Dinleme Hediye",
+        'name': 'Müziksever',
+        'hours': 25,
+        'icon': Icons.radar,
+        'color': Colors.blueAccent,
+        'perk': 'Ruh Hali Analizi (Günde 1 Kez)',
+        'bonus': '+ 30 Dk Reklamsız Dinleme Hediye',
       },
       {
-        "name": "Ritim Tutkunu",
-        "hours": 75,
-        "icon": Icons.mic_external_on,
-        "color": Colors.purpleAccent,
-        "perk": "Özel Karaoke Modu (Günde 2 Şarkı)",
-        "bonus": "+ Ruh Hali Analizi + 30 Dk Reklamsız",
+        'name': 'Ritim Tutkunu',
+        'hours': 75,
+        'icon': Icons.mic_external_on,
+        'color': Colors.purpleAccent,
+        'perk': 'Özel Karaoke Modu (Günde 2 Şarkı)',
+        'bonus': '+ Ruh Hali Analizi + 30 Dk Reklamsız',
       },
       {
-        "name": "Melodi Ustası",
-        "hours": 150,
-        "icon": Icons.auto_awesome,
-        "color": Colors.orangeAccent,
-        "perk": "Şahsi Keşfet: AI Albüm (Haftalık 1)",
-        "bonus": "+ Karaoke + Ruh Hali + 1 Saat Reklamsız",
+        'name': 'Melodi Ustası',
+        'hours': 150,
+        'icon': Icons.auto_awesome,
+        'color': Colors.orangeAccent,
+        'perk': 'Şahsi Keşfet: AI Albüm (Haftalık 1)',
+        'bonus': '+ Karaoke + Ruh Hali + 1 Saat Reklamsız',
       },
       {
-        "name": "Ses Gurmesi",
-        "hours": 300,
-        "icon": Icons.card_giftcard,
-        "color": Colors.redAccent,
-        "perk": "ÖZSES Özel Gün Özetleri (Wrapped)",
-        "bonus": "+ AI Albüm + Karaoke + Ruh Hali + 2 Saat Reklamsız",
+        'name': 'Ses Gurmesi',
+        'hours': 300,
+        'icon': Icons.card_giftcard,
+        'color': Colors.redAccent,
+        'perk': 'ÖZSES Özel Gün Özetleri (Wrapped)',
+        'bonus': '+ AI Albüm + Karaoke + Ruh Hali + 2 Saat Reklamsız',
       },
       {
-        "name": "ÖZSES Efsanesi",
-        "hours": 500,
-        "icon": Icons.diamond,
-        "color": Colors.amber,
-        "perk": "Tam Yetkili Siber Ajan Sürümü",
-        "bonus":
-            "+ Haftalık 8 Saat Reklamsız + Sınırsız AI Liste + Limitsiz Karaoke",
+        'name': 'ÖZSES Efsanesi',
+        'hours': 500,
+        'icon': Icons.diamond,
+        'color': Colors.amber,
+        'perk': 'Tam Yetkili Siber Ajan Sürümü',
+        'bonus':
+            '+ Haftalık 8 Saat Reklamsız + Sınırsız AI Liste + Limitsiz Karaoke',
       },
     ];
 
@@ -1796,7 +1829,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: Border.all(color: Colors.white10),
               boxShadow: [
                 BoxShadow(
-                  color: _getRankColor().withOpacity(0.2),
+                  color: _getRankColor().withValues(alpha: 0.2),
                   blurRadius: 20,
                   spreadRadius: 2,
                 )
@@ -1816,7 +1849,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 10),
                 child: Text(
-                  "SİBER KARİYER ÖDÜLLERİ",
+                  'SİBER KARİYER ÖDÜLLERİ',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -1826,7 +1859,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const Text(
-                "Dinledikçe rütbe atla, geçmişteki yeteneklerini de katlayarak taşı.",
+                'Dinledikçe rütbe atla, geçmişteki yeteneklerini de katlayarak taşı.',
                 style: TextStyle(color: Colors.white54, fontSize: 11),
                 textAlign: TextAlign.center,
               ),
@@ -1849,19 +1882,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: const EdgeInsets.all(15),
                         decoration: BoxDecoration(
                           color: isCurrent
-                              ? activeColor.withOpacity(0.1)
-                              : Colors.white.withOpacity(0.02),
+                              ? activeColor.withValues(alpha: 0.1)
+                              : Colors.white.withValues(alpha: 0.02),
                           borderRadius: BorderRadius.circular(15),
                           border: Border.all(
                             color: isCurrent
-                                ? activeColor.withOpacity(0.5)
+                                ? activeColor.withValues(alpha: 0.5)
                                 : Colors.white10,
                             width: isCurrent ? 2.0 : 1.0,
                           ),
                           boxShadow: isCurrent
                               ? [
                                   BoxShadow(
-                                      color: activeColor.withOpacity(0.2),
+                                      color: activeColor.withValues(alpha: 0.2),
                                       blurRadius: 10)
                                 ]
                               : [],
@@ -1874,7 +1907,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: isAchieved
-                                    ? activeColor.withOpacity(0.2)
+                                    ? activeColor.withValues(alpha: 0.2)
                                     : Colors.black26,
                                 shape: BoxShape.circle,
                               ),
@@ -1932,14 +1965,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             ? Icons.military_tech
                                             : Icons.lock_outline,
                                         size: 14,
-                                        color: activeColor.withOpacity(0.8),
+                                        color: activeColor.withValues(alpha: 0.8),
                                       ),
                                       const SizedBox(width: 5),
                                       Expanded(
                                         child: Text(
                                           rank['perk'],
                                           style: TextStyle(
-                                            color: activeColor.withOpacity(0.9),
+                                            color: activeColor.withValues(alpha: 0.9),
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -1947,7 +1980,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                     ],
                                   ),
-                                  if (rank['bonus'] != "") ...[
+                                  if (rank['bonus'] != '') ...[
                                     const SizedBox(height: 4),
                                     Row(
                                       crossAxisAlignment:
@@ -1957,7 +1990,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           Icons.add,
                                           size: 12,
                                           color: Colors.greenAccent
-                                              .withOpacity(0.7),
+                                              .withValues(alpha: 0.7),
                                         ),
                                         const SizedBox(width: 5),
                                         Expanded(
@@ -1965,7 +1998,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             rank['bonus'],
                                             style: TextStyle(
                                               color: Colors.greenAccent
-                                                  .withOpacity(0.7),
+                                                  .withValues(alpha: 0.7),
                                               fontSize: 10,
                                               fontStyle: FontStyle.italic,
                                             ),
@@ -1984,16 +2017,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   horizontal: 6, vertical: 4),
                               decoration: BoxDecoration(
                                   color: isAchieved
-                                      ? Colors.green.withOpacity(0.2)
-                                      : Colors.grey.withOpacity(0.1),
+                                      ? Colors.green.withValues(alpha: 0.2)
+                                      : Colors.grey.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: isAchieved
-                                        ? Colors.green.withOpacity(0.5)
-                                        : Colors.grey.withOpacity(0.3),
+                                        ? Colors.green.withValues(alpha: 0.5)
+                                        : Colors.grey.withValues(alpha: 0.3),
                                   )),
                               child: Text(
-                                isAchieved ? "AKTİF" : "KİLİTLİ",
+                                isAchieved ? 'AKTİF' : 'KİLİTLİ',
                                 style: TextStyle(
                                   color:
                                       isAchieved ? Colors.green : Colors.grey,
@@ -2028,7 +2061,9 @@ class MoodPieChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     double total = 0;
-    data.values.forEach((v) => total += v);
+    for (var v in data.values) {
+      total += v;
+    }
     if (total == 0) return;
 
     double startAngle = -math.pi / 2;
@@ -2044,7 +2079,7 @@ class MoodPieChartPainter extends CustomPainter {
 
       // Neon Glow Etkisi
       final glowPaint = Paint()
-        ..color = _getColor(mood).withOpacity(0.3)
+        ..color = _getColor(mood).withValues(alpha: 0.3)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 25
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
@@ -2057,10 +2092,10 @@ class MoodPieChartPainter extends CustomPainter {
   }
 
   Color _getColor(String mood) {
-    if (mood == "Melankolik") return Colors.blueAccent;
-    if (mood == "Enerjik") return Colors.orangeAccent;
-    if (mood == "Sokak Ritmi") return Colors.redAccent;
-    if (mood == "Akustik") return Colors.greenAccent;
+    if (mood == 'Melankolik') return Colors.blueAccent;
+    if (mood == 'Enerjik') return Colors.orangeAccent;
+    if (mood == 'Sokak Ritmi') return Colors.redAccent;
+    if (mood == 'Akustik') return Colors.greenAccent;
     return Colors.grey;
   }
 
@@ -2085,33 +2120,33 @@ class MusicDnaRadarPainter extends CustomPainter {
 
     // Eksenleri belirle (5 Ana Parametre)
     Map<String, double> categories = {
-      "Enerji": 0.0,
-      "Melankoli": 0.0,
-      "Odak": 0.0,
-      "İsyan": 0.0,
-      "Gizem": 0.0,
+      'Enerji': 0.0,
+      'Melankoli': 0.0,
+      'Odak': 0.0,
+      'İsyan': 0.0,
+      'Gizem': 0.0,
     };
 
     int totalScore = 0;
     moodStats.forEach((mood, score) {
       totalScore += score;
-      if (mood == "Enerjik" ||
-          mood == "Kopmalık" ||
-          mood == "Motivasyon" ||
-          mood == "Siber") {
-        categories["Enerji"] = categories["Enerji"]! + score;
-      } else if (mood == "Melankolik" ||
-          mood == "Efkârlı" ||
-          mood == "Nostaljik") {
-        categories["Melankoli"] = categories["Melankoli"]! + score;
-      } else if (mood == "Odaklanma" ||
-          mood == "Rahatlatıcı" ||
-          mood == "Uyku Öncesi") {
-        categories["Odak"] = categories["Odak"]! + score;
-      } else if (mood == "Sokak Ritmi" || mood == "İsyankâr") {
-        categories["İsyan"] = categories["İsyan"]! + score;
+      if (mood == 'Enerjik' ||
+          mood == 'Kopmalık' ||
+          mood == 'Motivasyon' ||
+          mood == 'Siber') {
+        categories['Enerji'] = categories['Enerji']! + score;
+      } else if (mood == 'Melankolik' ||
+          mood == 'Efkârlı' ||
+          mood == 'Nostaljik') {
+        categories['Melankoli'] = categories['Melankoli']! + score;
+      } else if (mood == 'Odaklanma' ||
+          mood == 'Rahatlatıcı' ||
+          mood == 'Uyku Öncesi') {
+        categories['Odak'] = categories['Odak']! + score;
+      } else if (mood == 'Sokak Ritmi' || mood == 'İsyankâr') {
+        categories['İsyan'] = categories['İsyan']! + score;
       } else {
-        categories["Gizem"] = categories["Gizem"]! + score;
+        categories['Gizem'] = categories['Gizem']! + score;
       }
     });
 
@@ -2126,8 +2161,8 @@ class MusicDnaRadarPainter extends CustomPainter {
           (value / maxVal).clamp(0.1, 1.0); // Minimum %10 görünsün
     });
 
-    final int sides = 5;
-    final double angle = (math.pi * 2) / sides;
+    const int sides = 5;
+    const double angle = (math.pi * 2) / sides;
 
     Paint gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.1)

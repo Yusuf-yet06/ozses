@@ -32,12 +32,12 @@ class VibeHeader extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: themeColor.withOpacity(0.3)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-              color: themeColor.withOpacity(0.15),
+              color: themeColor.withValues(alpha: 0.15),
               blurRadius: 20,
               spreadRadius: -5)
         ],
@@ -50,7 +50,7 @@ class VibeHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis),
           Slider(
             activeColor: themeColor,
-            inactiveColor: themeColor.withOpacity(0.1),
+            inactiveColor: themeColor.withValues(alpha: 0.1),
             value: position.inSeconds.toDouble().clamp(
                 0.0,
                 duration.inSeconds.toDouble() > 0

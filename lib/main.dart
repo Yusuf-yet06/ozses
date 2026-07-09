@@ -31,10 +31,10 @@ Future<void> main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      print("🚀 Siber Durum: Firebase Güvenlik Kalkanı devrede!");
+      print('🚀 Siber Durum: Firebase Güvenlik Kalkanı devrede!');
     }
   } catch (e) {
-    print("❌ Siber Hata: Firebase kurulamadı (native ayarlar yapılmamış olabilir): $e");
+    print('❌ Siber Hata: Firebase kurulamadı (native ayarlar yapılmamış olabilir): $e');
   }
 
   // 🛡 Windows Sinerjisi: Ses motoru uyanmadan önce kısa bir nefes aldırıyoruz
@@ -51,9 +51,9 @@ Future<void> main() async {
         androidNotificationIcon: 'mipmap/ic_launcher',
       ),
     );
-    print("🚀 Siber Durum: AudioHandler mühürlendi!");
+    print('🚀 Siber Durum: AudioHandler mühürlendi!');
   } catch (e) {
-    print("❌ Siber Hata: Başlatma çöktü: $e");
+    print('❌ Siber Hata: Başlatma çöktü: $e');
   }
 
   // 🔮 Siber Tema Motorunu Başlat

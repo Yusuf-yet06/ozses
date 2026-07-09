@@ -11,34 +11,34 @@ class WindowsPlatform implements SiberPlatform {
 
   @override
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken}) async {
-    print("--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (Masaüstü) ---");
+    print('--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (Masaüstü) ---');
     var yt = YoutubeExplode();
-    var searchResults = await yt.search.search("en çok dinlenen popüler şarkılar official audio");
+    var searchResults = await yt.search.search('en çok dinlenen popüler şarkılar official audio');
     var items = [];
     for (var video in searchResults) {
       items.add({
-        "id": video.id.value,
-        "title": video.title,
-        "channel": video.author,
-        "thumbnail": video.thumbnails.highResUrl,
+        'id': video.id.value,
+        'title': video.title,
+        'channel': video.author,
+        'thumbnail': video.thumbnails.highResUrl,
       });
     }
     yt.close();
-    return {"status": "basarili", "oneriler": items, "nextPageToken": ""};
+    return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
   }
 
   @override
   Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1}) async {
-    print("--- SİBER ARAMA BAŞLATILIYOR (Masaüstü) ---");
+    print('--- SİBER ARAMA BAŞLATILIYOR (Masaüstü) ---');
     var yt = YoutubeExplode();
-    var searchResults = await yt.search.search(query + " official audio");
+    var searchResults = await yt.search.search('$query official audio');
     var items = [];
     for (var video in searchResults.take(limit)) {
       items.add({
-        "id": video.id.value,
-        "title": video.title,
-        "channel": video.author,
-        "thumbnail": video.thumbnails.highResUrl,
+        'id': video.id.value,
+        'title': video.title,
+        'channel': video.author,
+        'thumbnail': video.thumbnails.highResUrl,
       });
     }
     yt.close();
@@ -56,7 +56,7 @@ class WindowsPlatform implements SiberPlatform {
         }
       }
     } catch (e) {
-      print("Windows Proxy Suggestion Hatası: $e");
+      print('Windows Proxy Suggestion Hatası: $e');
     }
     return [];
   }
@@ -73,9 +73,9 @@ class WindowsPlatform implements SiberPlatform {
       ]);
       
       if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
-        return {"status": "basarili", "stream_url": process.stdout.toString().trim()};
+        return {'status': 'basarili', 'stream_url': process.stdout.toString().trim()};
       } else {
-        print("yt-dlp akış alma hatası: ${process.stderr}");
+        print('yt-dlp akış alma hatası: ${process.stderr}');
         
         // Fallback: YoutubeExplode
         var yt = YoutubeExplode();
@@ -84,11 +84,11 @@ class WindowsPlatform implements SiberPlatform {
         if (audioStreams.isEmpty) audioStreams = manifest.audioOnly;
         var streamInfo = audioStreams.withHighestBitrate();
         yt.close();
-        return {"status": "basarili", "stream_url": streamInfo.url.toString()};
+        return {'status': 'basarili', 'stream_url': streamInfo.url.toString()};
       }
     } catch (e) {
-      print("Windows Desktop Stream URL Hatası: $e");
-      return {"status": "hata", "mesaj": e.toString()};
+      print('Windows Desktop Stream URL Hatası: $e');
+      return {'status': 'hata', 'mesaj': e.toString()};
     }
   }
 
@@ -117,7 +117,7 @@ class WindowsPlatform implements SiberPlatform {
             }
           }
         } catch (e) {
-          print("Dizin tarama yetki hatası (atlandı): $dir");
+          print('Dizin tarama yetki hatası (atlandı): $dir');
         }
       }
     }

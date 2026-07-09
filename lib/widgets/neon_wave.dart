@@ -37,7 +37,7 @@ class _NeonWaveBackgroundState extends State<NeonWaveBackground>
           painter: WavePainter(
             progress: _controller.value,
             isPlaying: widget.isPlaying,
-            color: Colors.deepPurpleAccent.withOpacity(0.3),
+            color: Colors.deepPurpleAccent.withValues(alpha: 0.3),
           ),
           child: Container(),
         );
@@ -79,7 +79,7 @@ class WavePainter extends CustomPainter {
 
     // İkinci bir ters dalga (Daha derin siber görünüm için)
     final paint2 = Paint()
-      ..color = Colors.cyanAccent.withOpacity(0.2)
+      ..color = Colors.cyanAccent.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);

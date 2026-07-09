@@ -28,7 +28,7 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
     final PlaylistService service = PlaylistService();
 
     return Container(
-      color: Colors.black.withOpacity(0.95),
+      color: Colors.black.withValues(alpha: 0.95),
       child: Column(
         children: [
           _buildProfileHeader(),
@@ -55,12 +55,12 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: isDeleting
-                            ? Colors.red.withOpacity(0.1)
+                            ? Colors.red.withValues(alpha: 0.1)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
                         border: isDeleting
                             ? Border.all(
-                                color: Colors.redAccent.withOpacity(0.5))
+                                color: Colors.redAccent.withValues(alpha: 0.5))
                             : null,
                       ),
                       child: ListTile(
@@ -69,7 +69,7 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
                                 ? Colors.redAccent
                                 : (isDeleting
                                     ? Colors.redAccent
-                                    : widget.themeColor.withOpacity(0.7))),
+                                    : widget.themeColor.withValues(alpha: 0.7))),
                         title: Text(pName,
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 14)),
@@ -90,7 +90,7 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
                                       shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(15)),
-                                      title: const Text("LİSTEYİ YOK ET",
+                                      title: const Text('LİSTEYİ YOK ET',
                                           style: TextStyle(
                                               color: Colors.redAccent,
                                               fontWeight: FontWeight.bold)),
@@ -102,17 +102,17 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
                                         TextButton(
                                           onPressed: () =>
                                               Navigator.pop(context, false),
-                                          child: const Text("İptal",
+                                          child: const Text('İptal',
                                               style: TextStyle(
                                                   color: Colors.white54)),
                                         ),
                                         ElevatedButton(
                                           style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.redAccent
-                                                  .withOpacity(0.8)),
+                                                  .withValues(alpha: 0.8)),
                                           onPressed: () =>
                                               Navigator.pop(context, true),
-                                          child: const Text("Sök At",
+                                          child: const Text('Sök At',
                                               style: TextStyle(
                                                   color: Colors.white)),
                                         ),
@@ -145,12 +145,12 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
           // --- SİBER KOMUTAN (MİKROFON) ---
           ListTile(
             leading: Icon(Icons.mic, color: widget.themeColor),
-            title: const Text("SİBER KOMUTAN",
+            title: const Text('SİBER KOMUTAN',
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2)),
-            subtitle: const Text("Sesli komutları aktif et",
+            subtitle: const Text('Sesli komutları aktif et',
                 style: TextStyle(color: Colors.white54, fontSize: 10)),
             onTap: () {
               Navigator.pop(context);
@@ -171,7 +171,7 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
     return DrawerHeader(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.black, widget.themeColor.withOpacity(0.1)],
+          colors: [Colors.black, widget.themeColor.withValues(alpha: 0.1)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -181,16 +181,16 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
         children: [
           CircleAvatar(
             radius: 35,
-            backgroundColor: widget.themeColor.withOpacity(0.2),
+            backgroundColor: widget.themeColor.withValues(alpha: 0.2),
             child: Icon(Icons.person, color: widget.themeColor, size: 40),
           ),
           const SizedBox(height: 10),
-          const Text("ÖZSES V7 IMPERIUM",
+          const Text('ÖZSES V7 IMPERIUM',
               style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5)),
-          Text("Premium Üye",
+          Text('Premium Üye',
               style: TextStyle(color: widget.themeColor, fontSize: 10)),
         ],
       ),
@@ -198,14 +198,14 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
   }
 
   Widget _buildSettingsFooter() {
-    return Column(
+    return const Column(
       children: [
         ListTile(
-          leading: const Icon(Icons.info_outline, color: Colors.white54),
-          title: const Text("Versiyon v7.0.1",
+          leading: Icon(Icons.info_outline, color: Colors.white54),
+          title: Text('Versiyon v7.0.1',
               style: TextStyle(color: Colors.white24, fontSize: 11)),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
       ],
     );
   }

@@ -4,7 +4,7 @@ import 'lib/services/audio_engine.dart';
 
 class VibeModule extends SiberModule {
   @override
-  String get name => "Ruh_Hali_Gorsel_Lobu";
+  String get name => 'Ruh_Hali_Gorsel_Lobu';
 
   @override
   List<String> get supportedActions => ['toggle_visuals'];

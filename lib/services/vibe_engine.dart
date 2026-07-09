@@ -24,16 +24,21 @@ class VibeEngine {
     final safeMode = mode ?? 'DEFAULT';
 
     // 🎯 SİBER HAMLE: Frekans Motorundan gelen metne göre Otonom Renk Değişimi
-    if (safeMode.contains("Deprem"))
+    if (safeMode.contains('Deprem')) {
       return VibePackage(themeColor: Colors.deepPurpleAccent);
-    if (safeMode.contains("Sıcak"))
+    }
+    if (safeMode.contains('Sıcak')) {
       return VibePackage(themeColor: Colors.orangeAccent);
-    if (safeMode.contains("Vokal"))
+    }
+    if (safeMode.contains('Vokal')) {
       return VibePackage(themeColor: Colors.cyanAccent);
-    if (safeMode.contains("Parlak"))
+    }
+    if (safeMode.contains('Parlak')) {
       return VibePackage(themeColor: Colors.greenAccent);
-    if (safeMode.contains("Kristal"))
+    }
+    if (safeMode.contains('Kristal')) {
       return VibePackage(themeColor: Colors.pinkAccent);
+    }
 
     // Siber Kalkan: Null değer gelirse bodoslama patlamasın diye güvenli dönüşüm
     final upperMode = safeMode.toUpperCase();
@@ -43,7 +48,7 @@ class VibeEngine {
           themeColor: Colors.greenAccent,
           gradientColors: [
             Colors.black,
-            Colors.green.withOpacity(0.2),
+            Colors.green.withValues(alpha: 0.2),
             Colors.black
           ],
           animationSpeed: const Duration(milliseconds: 2000),
@@ -54,7 +59,7 @@ class VibeEngine {
           themeColor: Colors.redAccent,
           gradientColors: [
             Colors.black,
-            Colors.red.withOpacity(0.4),
+            Colors.red.withValues(alpha: 0.4),
             Colors.black
           ],
           animationSpeed: const Duration(milliseconds: 400),
@@ -65,7 +70,7 @@ class VibeEngine {
           themeColor: Colors.deepPurpleAccent,
           gradientColors: [
             Colors.black,
-            Colors.purple.withOpacity(0.15),
+            Colors.purple.withValues(alpha: 0.15),
             Colors.black
           ],
           animationSpeed: const Duration(milliseconds: 1300),

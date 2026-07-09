@@ -53,7 +53,7 @@ class HistoryService {
   static Future<List<HistoryRecord>> getWeeklyHistory() async {
     final allHistory = await getHistory();
     final int now = DateTime.now().millisecondsSinceEpoch;
-    final int sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    const int sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
     
     return allHistory.where((record) {
       return (now - record.lastPlayedTimestamp) <= sevenDaysMs;
@@ -83,8 +83,9 @@ class HistoryService {
 
     history
         .sort((a, b) => b.lastPlayedTimestamp.compareTo(a.lastPlayedTimestamp));
-    if (history.length > 200)
+    if (history.length > 200) {
       history.removeRange(200, history.length); // 🛡️ Şişmeyi önle
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -121,19 +122,20 @@ class HistoryService {
   // 🎯 SİBER HAMLE: Sonic Aura (Kullanıcının Müzik Kimliği) Hesaplayıcısı
   static Future<Map<String, dynamic>> getSonicAura() async {
     final historyList = await getHistory();
-    if (historyList.isEmpty) return {"aura": "Renksiz", "color": 0xFF9E9E9E, "desc": "Henüz yeterli veri yok."};
+    if (historyList.isEmpty) return {'aura': 'Renksiz', 'color': 0xFF9E9E9E, 'desc': 'Henüz yeterli veri yok.'};
 
-    Map<String, int> moodTags = {"Enerji": 0, "Sokak": 0, "Melankoli": 0, "Odak": 0, "Gizem": 0};
+    Map<String, int> moodTags = {'Enerji': 0, 'Sokak': 0, 'Melankoli': 0, 'Odak': 0, 'Gizem': 0};
     for (var h in historyList) {
       final t = h.name.toLowerCase();
-      if (t.contains("rap") || t.contains("drill") || t.contains("hip") || t.contains("ezhel") || t.contains("sokak")) moodTags["Sokak"] = moodTags["Sokak"]! + h.playCount;
-      else if (t.contains("slow") || t.contains("akustik") || t.contains("aşk") || t.contains("sezen") || t.contains("müslüm") || t.contains("arabesk")) moodTags["Melankoli"] = moodTags["Melankoli"]! + h.playCount;
-      else if (t.contains("mix") || t.contains("club") || t.contains("remix") || t.contains("pop") || t.contains("hareketli")) moodTags["Enerji"] = moodTags["Enerji"]! + h.playCount;
-      else if (t.contains("lofi") || t.contains("chill") || t.contains("study") || t.contains("odak")) moodTags["Odak"] = moodTags["Odak"]! + h.playCount;
-      else moodTags["Gizem"] = moodTags["Gizem"]! + h.playCount;
+      if (t.contains('rap') || t.contains('drill') || t.contains('hip') || t.contains('ezhel') || t.contains('sokak')) {
+        moodTags['Sokak'] = moodTags['Sokak']! + h.playCount;
+      } else if (t.contains('slow') || t.contains('akustik') || t.contains('aşk') || t.contains('sezen') || t.contains('müslüm') || t.contains('arabesk')) moodTags['Melankoli'] = moodTags['Melankoli']! + h.playCount;
+      else if (t.contains('mix') || t.contains('club') || t.contains('remix') || t.contains('pop') || t.contains('hareketli')) moodTags['Enerji'] = moodTags['Enerji']! + h.playCount;
+      else if (t.contains('lofi') || t.contains('chill') || t.contains('study') || t.contains('odak')) moodTags['Odak'] = moodTags['Odak']! + h.playCount;
+      else moodTags['Gizem'] = moodTags['Gizem']! + h.playCount;
     }
 
-    String dominant = "Gizem";
+    String dominant = 'Gizem';
     int maxCount = -1;
     moodTags.forEach((k, v) {
       if (v > maxCount) {
@@ -143,11 +145,11 @@ class HistoryService {
     });
 
     switch (dominant) {
-      case "Enerji": return {"aura": "Enerji Patlaması", "color": 0xFFFF5722, "desc": "Yüksek frekanslı ve hareketli bir auran var!"};
-      case "Sokak": return {"aura": "Asi Sokaklar", "color": 0xFFE91E63, "desc": "Agresif ve tavizsiz bir müzik zevkin var."};
-      case "Melankoli": return {"aura": "Derin Hisler", "color": 0xFF3F51B5, "desc": "Duygusal ve nostaljik frekanslarda geziyorsun."};
-      case "Odak": return {"aura": "Sakin Zihin", "color": 0xFF009688, "desc": "Müzik senin için bir odaklanma ve huzur aracı."};
-      default: return {"aura": "Gizemli Frekans", "color": 0xFF9C27B0, "desc": "Sınırları çizmeyen, keşfe açık bir auran var."};
+      case 'Enerji': return {'aura': 'Enerji Patlaması', 'color': 0xFFFF5722, 'desc': 'Yüksek frekanslı ve hareketli bir auran var!'};
+      case 'Sokak': return {'aura': 'Asi Sokaklar', 'color': 0xFFE91E63, 'desc': 'Agresif ve tavizsiz bir müzik zevkin var.'};
+      case 'Melankoli': return {'aura': 'Derin Hisler', 'color': 0xFF3F51B5, 'desc': 'Duygusal ve nostaljik frekanslarda geziyorsun.'};
+      case 'Odak': return {'aura': 'Sakin Zihin', 'color': 0xFF009688, 'desc': 'Müzik senin için bir odaklanma ve huzur aracı.'};
+      default: return {'aura': 'Gizemli Frekans', 'color': 0xFF9C27B0, 'desc': 'Sınırları çizmeyen, keşfe açık bir auran var.'};
     }
   }
 }

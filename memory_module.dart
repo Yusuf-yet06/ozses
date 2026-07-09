@@ -4,7 +4,7 @@ import 'lib/services/history_service.dart';
 
 class MemoryModule extends SiberModule {
   @override
-  String get name => "Siber_Hafiza_Lobu";
+  String get name => 'Siber_Hafiza_Lobu';
 
   @override
   List<String> get supportedActions => ['clear_history'];

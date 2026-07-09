@@ -63,7 +63,7 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("SİSTEM ZAMANLAYICI", style: TextStyle(fontSize: 14)),
+        title: const Text('SİSTEM ZAMANLAYICI', style: TextStyle(fontSize: 14)),
         backgroundColor: Colors.black,
       ),
       body: Padding(
@@ -84,7 +84,7 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
                     child: CircularProgressIndicator(
                       value: 1.0,
                       strokeWidth: 2,
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                   ),
                   // Öndeki eriyen kalın halka
@@ -104,7 +104,7 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
                       Text(
                         _isTimerActive
                             ? _formatTime(_remainingSeconds)
-                            : "${_selectedMinutes.toInt()}:00",
+                            : '${_selectedMinutes.toInt()}:00',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 40,
@@ -113,7 +113,7 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
                         ),
                       ),
                       Text(
-                        _isTimerActive ? "SİSTEM UYKUDA" : "BEKLEMEDE",
+                        _isTimerActive ? 'SİSTEM UYKUDA' : 'BEKLEMEDE',
                         style: TextStyle(
                             color: _isTimerActive
                                 ? Colors.cyanAccent
@@ -138,7 +138,7 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
                 onChanged: (v) => setState(() => _selectedMinutes = v),
               )
             else
-              const Text("OPERASYON DEVAM EDİYOR",
+              const Text('OPERASYON DEVAM EDİYOR',
                   style: TextStyle(color: Colors.cyanAccent, letterSpacing: 2)),
 
             const SizedBox(height: 40),
@@ -149,8 +149,8 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isTimerActive
-                          ? Colors.redAccent.withOpacity(0.2)
-                          : Colors.cyanAccent.withOpacity(0.2),
+                          ? Colors.redAccent.withValues(alpha: 0.2)
+                          : Colors.cyanAccent.withValues(alpha: 0.2),
                       side: BorderSide(
                           color: _isTimerActive
                               ? Colors.redAccent
@@ -162,8 +162,8 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
                         color: Colors.white),
                     label: Text(
                         _isTimerActive
-                            ? "ZAMANLAYICIYI İPTAL ET"
-                            : "GERİ SAYIMI BAŞLAT",
+                            ? 'ZAMANLAYICIYI İPTAL ET'
+                            : 'GERİ SAYIMI BAŞLAT',
                         style:
                             const TextStyle(color: Colors.white, fontSize: 12)),
                   ),

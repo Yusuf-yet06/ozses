@@ -18,10 +18,10 @@ class PlaylistSelectorDialog extends StatelessWidget {
       backgroundColor: const Color(0xFF121212),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: themeColor.withOpacity(0.3)),
+        side: BorderSide(color: themeColor.withValues(alpha: 0.3)),
       ),
       title: Text(
-        "İmparatorluk Listesine Ekle",
+        'İmparatorluk Listesine Ekle',
         style: TextStyle(
             color: themeColor, fontSize: 16, fontWeight: FontWeight.bold),
       ),
@@ -42,7 +42,7 @@ class PlaylistSelectorDialog extends StatelessWidget {
             if (names.isEmpty) {
               return const Center(
                 child: Text(
-                  "Henüz bir liste oluşturmadın gardaşım.",
+                  'Henüz bir liste oluşturmadın gardaşım.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white30, fontSize: 12),
                 ),
@@ -62,7 +62,7 @@ class PlaylistSelectorDialog extends StatelessWidget {
                           const TextStyle(color: Colors.white70, fontSize: 14)),
                   onTap: () async {
                     print(
-                        "Siber Aktarım Başladı: ${song.name} -> $playlistName");
+                        'Siber Aktarım Başladı: ${song.name} -> $playlistName');
 
                     // Şarkıyı listeye mühürle
                     await service.addSongToPlaylist(

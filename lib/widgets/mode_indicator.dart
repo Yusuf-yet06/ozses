@@ -21,15 +21,15 @@ class ModeIndicator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       decoration: BoxDecoration(
-        color: themeColor.withOpacity(0.05),
+        color: themeColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: themeColor.withOpacity(0.2)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            isGlobalLibrary ? "ANA ARŞİV" : "LİSTE: $playlistTitle",
+            isGlobalLibrary ? 'ANA ARŞİV' : 'LİSTE: $playlistTitle',
             style: TextStyle(
                 color: themeColor, fontSize: 11, fontWeight: FontWeight.bold),
           ),

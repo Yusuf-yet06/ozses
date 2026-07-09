@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'dart:async';
 import 'package:audio_service/audio_service.dart';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:http/http.dart' as http;
@@ -82,7 +81,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
             setState(() {
               _songPath = item.id;
               _songName = item.title;
-              _artistName = item.artist ?? "Victus V7";
+              _artistName = item.artist ?? 'Victus V7';
               _coverBytes =
                   null; // 🛡️ Yalnızca şarkı DEĞİŞTİĞİNDE resmi sıfırla!
               _lyricsText = '';
@@ -151,7 +150,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         });
       }
     } catch (e) {
-      print("Palette Error: $e");
+      print('Palette Error: $e');
     }
   }
   
@@ -161,7 +160,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
     try {
       final file = File(songPath.replaceAll(RegExp(r'\.[^.]+$'), '.lrc'));
       if (await file.exists()) {
-        print("✅ Siber Mühür: Sözler yerel kayıttan (cache) otonom yüklendi!");
+        print('✅ Siber Mühür: Sözler yerel kayıttan (cache) otonom yüklendi!');
         return await file.readAsString();
       }
     } catch (e) {}
@@ -195,7 +194,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
     try {
       if (cleanArtist.isNotEmpty) {
         final uri = Uri.parse(
-            "https://lrclib.net/api/get?artist_name=${Uri.encodeComponent(cleanArtist)}&track_name=${Uri.encodeComponent(cleanTitle)}");
+            'https://lrclib.net/api/get?artist_name=${Uri.encodeComponent(cleanArtist)}&track_name=${Uri.encodeComponent(cleanTitle)}');
         final res = await http.get(uri, headers: {'User-Agent': 'Ozses/7.0.0'}).timeout(const Duration(seconds: 5));
         if (res.statusCode == 200) {
           final data = json.decode(res.body);
@@ -204,12 +203,12 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         }
       }
     } catch (e) {
-      print("LRCLIB /get Hatası: $e");
+      print('LRCLIB /get Hatası: $e');
     }
 
     try {
       final searchUri = Uri.parse(
-          "https://lrclib.net/api/search?q=${Uri.encodeComponent(searchQuery)}");
+          'https://lrclib.net/api/search?q=${Uri.encodeComponent(searchQuery)}');
       final searchRes = await http.get(searchUri, headers: {'User-Agent': 'Ozses/7.0.0'}).timeout(const Duration(seconds: 5));
       if (searchRes.statusCode == 200) {
         final List dataList = json.decode(searchRes.body);
@@ -223,14 +222,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         }
       }
     } catch (e) {
-      print("LRCLIB /search Hatası, Siber Yapay Zeka Söz Motoruna (YouTube) Geçiliyor... $e");
+      print('LRCLIB /search Hatası, Siber Yapay Zeka Söz Motoruna (YouTube) Geçiliyor... $e');
     }
 
     // 🎯 SİBER HAMLE: Lyrics.ovh Yedek Söz Radarı
     try {
       if (cleanArtist.isNotEmpty) {
         final ovhUri = Uri.parse(
-            "https://api.lyrics.ovh/v1/${Uri.encodeComponent(cleanArtist)}/${Uri.encodeComponent(cleanTitle)}");
+            'https://api.lyrics.ovh/v1/${Uri.encodeComponent(cleanArtist)}/${Uri.encodeComponent(cleanTitle)}');
         final ovhRes = await http.get(ovhUri, headers: {'User-Agent': 'Ozses/7.0.0'}).timeout(const Duration(seconds: 5));
         if (ovhRes.statusCode == 200) {
           final ovhData = json.decode(ovhRes.body);
@@ -249,7 +248,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         if (ytLyrics != null && ytLyrics.isNotEmpty) return ytLyrics;
       }
     } catch (e) {
-      print("Siber YouTube Lirik Sökücü Çöktü: $e");
+      print('Siber YouTube Lirik Sökücü Çöktü: $e');
     }
     return null;
   }
@@ -280,7 +279,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       if (mounted) {
         setState(() {
           _lyricsText = finalText ??
-              "Usta, siber ağda bu müzik için mühürlenmiş söz bulunamadı!";
+              'Usta, siber ağda bu müzik için mühürlenmiş söz bulunamadı!';
           // 🎯 SİBER HAMLE: Şarkının anlık süresini parse motoruna gönder!
           final currentDuration =
               audioHandler.mediaItem.value?.duration ?? Duration.zero;
@@ -353,26 +352,34 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         t.contains('kalp') ||
         t.contains('yürek') ||
         t.contains('özle') ||
-        t.contains('göz')) return "Romantik / Duygusal";
+        t.contains('göz')) {
+      return 'Romantik / Duygusal';
+    }
     if (t.contains('git') ||
         t.contains('ayrı') ||
         t.contains('yalnız') ||
         t.contains('acı') ||
         t.contains('ağla') ||
-        t.contains('bırak')) return "Hüzünlü / Melankolik";
+        t.contains('bırak')) {
+      return 'Hüzünlü / Melankolik';
+    }
     if (t.contains('para') ||
         t.contains('silah') ||
         t.contains('sokak') ||
         t.contains('kan') ||
         t.contains('vur') ||
-        t.contains('kır')) return "Agresif / Sokak";
+        t.contains('kır')) {
+      return 'Agresif / Sokak';
+    }
     if (t.contains('dans') ||
         t.contains('hadi') ||
         t.contains('zıpla') ||
         t.contains('uç') ||
         t.contains('gece') ||
-        t.contains('oyna')) return "Enerjik / Parti";
-    return "Siber Denge";
+        t.contains('oyna')) {
+      return 'Enerjik / Parti';
+    }
+    return 'Siber Denge';
   }
 
   @override
@@ -401,8 +408,8 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      (_dynamicColor ?? widget.themeColor).withOpacity(0.9),
-                      (_dynamicColor ?? widget.themeColor).withOpacity(0.4),
+                      (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.9),
+                      (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.4),
                       Colors.black,
                     ],
                   ),
@@ -418,7 +425,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      (widget.themeColor).withOpacity(0.6),
+                      (widget.themeColor).withValues(alpha: 0.6),
                       Colors.black87,
                       Colors.black,
                     ],
@@ -457,7 +464,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                 color: Colors.white, size: 32),
                             onPressed: () => Navigator.pop(context),
                           ),
-                          Text("ŞU AN ÇALAN",
+                          Text('ŞU AN ÇALAN',
                               style: TextStyle(
                                   color: (_dynamicColor ?? widget.themeColor),
                                   fontSize: 12,
@@ -503,34 +510,34 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                 return [
                                   const PopupMenuItem(
                                       value: 'play_next',
-                                      child: Text("Sıradakini Çal",
+                                      child: Text('Sıradakini Çal',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'add_queue',
-                                      child: Text("Kuyruğa Ekle",
+                                      child: Text('Kuyruğa Ekle',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'download_song',
-                                      child: Text("Şarkıyı İndir",
+                                      child: Text('Şarkıyı İndir',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'analyze_mood',
-                                      child: Text("Yapay Zeka Ruh Hali Analizi",
+                                      child: Text('Yapay Zeka Ruh Hali Analizi',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'share_song',
-                                      child: Text("Paylaş",
+                                      child: Text('Paylaş',
                                           style: TextStyle(color: Colors.white))),
                                 ];
                               } else {
                                 return [
                                   const PopupMenuItem(
                                       value: 'play_next',
-                                      child: Text("Sıradakini Çal",
+                                      child: Text('Sıradakini Çal',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'add_queue',
-                                      child: Text("Kuyruğa Ekle",
+                                      child: Text('Kuyruğa Ekle',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'add_playlist',
@@ -538,11 +545,11 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'share_song',
-                                      child: Text("Paylaş",
+                                      child: Text('Paylaş',
                                           style: TextStyle(color: Colors.white))),
                                   const PopupMenuItem(
                                       value: 'delete',
-                                      child: Text("Sök At (Sil)",
+                                      child: Text('Sök At (Sil)',
                                           style: TextStyle(color: Colors.redAccent))),
                                 ];
                               }
@@ -601,7 +608,9 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                       i < _parsedLyrics.length;
                                                       i++) {
                                                     if (_parsedLyrics[i].time >
-                                                        pos) break;
+                                                        pos) {
+                                                      break;
+                                                    }
                                                     activeIndex = i;
                                                   }
 
@@ -678,7 +687,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                         decoration: BoxDecoration(
                                                             color: widget
                                                                 .themeColor
-                                                                .withOpacity(
+                                                                .withValues(alpha: 
                                                                     0.15),
                                                             borderRadius:
                                                                 BorderRadius
@@ -687,14 +696,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                             border: Border.all(
                                                                 color: widget
                                                                     .themeColor
-                                                                    .withOpacity(
+                                                                    .withValues(alpha: 
                                                                         0.8),
                                                                 width: 1.5),
                                                             boxShadow: [
                                                               BoxShadow(
                                                                   color: widget
                                                                       .themeColor
-                                                                      .withOpacity(
+                                                                      .withValues(alpha: 
                                                                           0.4),
                                                                   blurRadius:
                                                                       12,
@@ -714,7 +723,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                             const SizedBox(
                                                                 width: 8),
                                                             Text(
-                                                                "SİBER ANALİZ: ${_analyzeLineMood(_parsedLyrics[activeIndex].text)}",
+                                                                'SİBER ANALİZ: ${_analyzeLineMood(_parsedLyrics[activeIndex].text)}',
                                                                 style: TextStyle(
                                                                     color: widget
                                                                         .themeColor,
@@ -772,7 +781,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                 ? BoxDecoration(
                                                                     color: widget
                                                                         .themeColor
-                                                                        .withOpacity(
+                                                                        .withValues(alpha: 
                                                                             0.2),
                                                                     borderRadius:
                                                                         BorderRadius.circular(
@@ -780,7 +789,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                     border: Border.all(
                                                                         color: widget
                                                                             .themeColor
-                                                                            .withOpacity(
+                                                                            .withValues(alpha: 
                                                                                 0.8),
                                                                         width:
                                                                             1),
@@ -805,7 +814,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                 ],
                                                               ),
                                                             ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                                                             .shimmer(duration: 1500.ms, color: (_dynamicColor ?? widget.themeColor).withOpacity(0.5))
+                                                             .shimmer(duration: 1500.ms, color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5))
                                                              .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.05, 1.05), duration: 800.ms)
                                                             : Text(
                                                               line.text,
@@ -839,10 +848,12 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                         // 🛠️ SİBER REHİS: Masaüstü dikey alanına göre CD boyutunu koruma altına aldık
                                         double calculatedSize =
                                             constraints.maxHeight * 0.45;
-                                        if (calculatedSize > 320)
+                                        if (calculatedSize > 320) {
                                           calculatedSize = 320;
-                                        if (calculatedSize < 180)
+                                        }
+                                        if (calculatedSize < 180) {
                                           calculatedSize = 180;
+                                        }
 
                                         return RotatingCDCover(
                                           isPlaying: isPlaying,
@@ -880,7 +891,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                 Text(
                                   _artistName,
                                   style: TextStyle(
-                                      color: (_dynamicColor ?? widget.themeColor).withOpacity(0.8),
+                                      color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.8),
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500),
                                   overflow: TextOverflow.ellipsis,
@@ -927,11 +938,11 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: (_dynamicColor ?? widget.themeColor).withOpacity(0.8),
+                                color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.8),
                                 width: 1.5),
                             boxShadow: [
                               BoxShadow(
-                                  color: (_dynamicColor ?? widget.themeColor).withOpacity(0.3),
+                                  color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.3),
                                   blurRadius: 10),
                             ],
                           ),
@@ -947,13 +958,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                 child: ElevatedButton.icon(
                                   key: ValueKey<bool>(_showLyrics),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: _showLyrics ? Colors.redAccent.withOpacity(0.2) : (_dynamicColor ?? widget.themeColor).withOpacity(0.1),
+                                    backgroundColor: _showLyrics ? Colors.redAccent.withValues(alpha: 0.2) : (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.1),
                                     shadowColor: Colors.transparent,
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                   ),
                                   icon: Icon(_showLyrics ? Icons.close : Icons.mic_external_on, color: Colors.white),
-                                  label: Text(_showLyrics ? "KARAOKE'DEN ÇIK" : "SİBER KARAOKE",
+                                  label: Text(_showLyrics ? "KARAOKE'DEN ÇIK" : 'SİBER KARAOKE',
                                       style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                                   onPressed: _handleKaraokeToggle,
                                 ),
@@ -1009,7 +1020,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                           icon: Icon(Icons.share_rounded, color: (_dynamicColor ?? widget.themeColor), size: 28),
                           tooltip: 'Paylaş',
                           onPressed: () {
-                            Share.share("🎧 Şu an dinliyorum: $_songName - $_artistName\nÖZSES Müzik ile keşfettim!");
+                            Share.share('🎧 Şu an dinliyorum: $_songName - $_artistName\nÖZSES Müzik ile keşfettim!');
                           },
                         ),
                       ],
@@ -1108,7 +1119,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                 boxShadow: [
                                                   BoxShadow(
                                                       color: (_dynamicColor ?? widget.themeColor)
-                                                          .withOpacity(0.5),
+                                                          .withValues(alpha: 0.5),
                                                       blurRadius: 15)
                                                 ]),
                                             child: isBuffering

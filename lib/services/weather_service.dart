@@ -39,7 +39,7 @@ class WeatherService {
           desiredAccuracy: LocationAccuracy.low); // Pili korumak için düşük hassasiyet
 
       // Open-Meteo API (Ücretsiz, limitsiz, anahtarsız)
-      final url = "https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true";
+      final url = 'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current_weather=true';
       final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
@@ -49,14 +49,15 @@ class WeatherService {
           double temp = (current['temperature'] as num).toDouble();
           int code = current['weathercode'] as int;
           
-          String mainCond = "Clear";
-          if (code >= 1 && code <= 3) mainCond = "Clouds";
-          else if (code >= 45 && code <= 48) mainCond = "Fog";
-          else if (code >= 51 && code <= 55) mainCond = "Drizzle";
-          else if (code >= 61 && code <= 67) mainCond = "Rain";
-          else if (code >= 71 && code <= 77) mainCond = "Snow";
-          else if (code >= 80 && code <= 82) mainCond = "Rain";
-          else if (code >= 95 && code <= 99) mainCond = "Thunderstorm";
+          String mainCond = 'Clear';
+          if (code >= 1 && code <= 3) {
+            mainCond = 'Clouds';
+          } else if (code >= 45 && code <= 48) mainCond = 'Fog';
+          else if (code >= 51 && code <= 55) mainCond = 'Drizzle';
+          else if (code >= 61 && code <= 67) mainCond = 'Rain';
+          else if (code >= 71 && code <= 77) mainCond = 'Snow';
+          else if (code >= 80 && code <= 82) mainCond = 'Rain';
+          else if (code >= 95 && code <= 99) mainCond = 'Thunderstorm';
 
           return Weather(
             weatherMain: mainCond,
@@ -66,27 +67,27 @@ class WeatherService {
       }
       return null;
     } catch (e) {
-      print("🛑 Siber Hava Durumu Hatası: $e");
+      print('🛑 Siber Hava Durumu Hatası: $e');
       return null;
     }
   }
 
   // Ruh hali önerilerini havaya göre şekillendiren otonom analiz
   static String getAtmosphereMood(Weather? w) {
-    if (w == null) return "Genel"; // Varsayılan
+    if (w == null) return 'Genel'; // Varsayılan
     
-    final condition = w.weatherMain?.toLowerCase() ?? "";
+    final condition = w.weatherMain?.toLowerCase() ?? '';
     
-    if (condition.contains("rain") || condition.contains("drizzle") || condition.contains("thunderstorm")) {
-      return "Melankolik"; // Yağmurlu
-    } else if (condition.contains("snow")) {
-      return "Akustik"; // Karlı
-    } else if (condition.contains("clear")) {
-      return "Enerjik"; // Güneşli
-    } else if (condition.contains("clouds")) {
-      return "Odaklanma"; // Bulutlu/Kapalı
+    if (condition.contains('rain') || condition.contains('drizzle') || condition.contains('thunderstorm')) {
+      return 'Melankolik'; // Yağmurlu
+    } else if (condition.contains('snow')) {
+      return 'Akustik'; // Karlı
+    } else if (condition.contains('clear')) {
+      return 'Enerjik'; // Güneşli
+    } else if (condition.contains('clouds')) {
+      return 'Odaklanma'; // Bulutlu/Kapalı
     }
     
-    return "Genel";
+    return 'Genel';
   }
 }

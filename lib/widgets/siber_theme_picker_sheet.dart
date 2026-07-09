@@ -48,7 +48,7 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
       decoration: BoxDecoration(
         color: const Color(0xFF0A0A0A),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: _selectedColor.withOpacity(0.4), width: 1),
+        border: Border.all(color: _selectedColor.withValues(alpha: 0.4), width: 1),
       ),
       child: SafeArea(
         top: false,
@@ -61,7 +61,7 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
                 width: 40, height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                    color: _selectedColor.withOpacity(0.5),
+                    color: _selectedColor.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2)),
               ),
 
@@ -83,7 +83,7 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
                     decoration: BoxDecoration(
                       color: _selectedColor,
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: _selectedColor.withOpacity(0.5), blurRadius: 12, spreadRadius: 2)],
+                      boxShadow: [BoxShadow(color: _selectedColor.withValues(alpha: 0.5), blurRadius: 12, spreadRadius: 2)],
                     ),
                   ),
                 ],
@@ -112,13 +112,13 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       decoration: BoxDecoration(
-                        color: preset.color.withOpacity(isSelected ? 0.2 : 0.07),
+                        color: preset.color.withValues(alpha: isSelected ? 0.2 : 0.07),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected ? preset.color : preset.color.withOpacity(0.2),
+                          color: isSelected ? preset.color : preset.color.withValues(alpha: 0.2),
                           width: isSelected ? 2 : 1,
                         ),
-                        boxShadow: isSelected ? [BoxShadow(color: preset.color.withOpacity(0.3), blurRadius: 8, spreadRadius: 1)] : [],
+                        boxShadow: isSelected ? [BoxShadow(color: preset.color.withValues(alpha: 0.3), blurRadius: 8, spreadRadius: 1)] : [],
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,

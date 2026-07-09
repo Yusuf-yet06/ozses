@@ -7,14 +7,14 @@ class SystemModule extends SiberModule {
   Timer? _clockTimer;
 
   @override
-  String get name => "Sistem_Kontrol_Lobu";
+  String get name => 'Sistem_Kontrol_Lobu';
 
   @override
   List<String> get supportedActions => ['check_time', 'check_battery'];
 
   @override
   Future<void> initModule() async {
-    print("⚙️ Sistem Lobu: Saat ve cihaz durumu sensörleri devrede.");
+    print('⚙️ Sistem Lobu: Saat ve cihaz durumu sensörleri devrede.');
 
     // 🎯 SİBER HAMLE: Gerçek Saati Dinleyip Otonom Görsel Değiştiren Lob!
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
@@ -30,14 +30,14 @@ class SystemModule extends SiberModule {
       if (AudioEngine.darkMode != 1) {
         AudioEngine.darkMode = 1;
         print(
-            "🌙 SİBER BEYİN OTONOM: Gece vakti algılandı, Zifiri Karanlık (Dark Mod) devrede.");
+            '🌙 SİBER BEYİN OTONOM: Gece vakti algılandı, Zifiri Karanlık (Dark Mod) devrede.');
       }
     } else {
       // 🎯 Gündüz vakti Neon Çizgiler (Night Mod)
       if (AudioEngine.darkMode != 0) {
         AudioEngine.darkMode = 0;
         print(
-            "☀️ SİBER BEYİN OTONOM: Gündüz vakti algılandı, Neon Çizgiler (Night Mod) devrede.");
+            '☀️ SİBER BEYİN OTONOM: Gündüz vakti algılandı, Neon Çizgiler (Night Mod) devrede.');
       }
     }
   }
@@ -48,11 +48,11 @@ class SystemModule extends SiberModule {
       final now = DateTime.now();
       final timeStr =
           "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
-      print("🕒 SİBER BEYİN: Gardaşım saat şu an $timeStr");
+      print('🕒 SİBER BEYİN: Gardaşım saat şu an $timeStr');
       return true;
     } else if (command.action == 'check_battery') {
       print(
-          "🔋 SİBER BEYİN: Batarya okuma donanımı henüz takılmadı ama enerji stabil!");
+          '🔋 SİBER BEYİN: Batarya okuma donanımı henüz takılmadı ama enerji stabil!');
       return true;
     }
     return false;

@@ -88,7 +88,7 @@ class _MiniEqVisualizerState extends State<MiniEqVisualizer> {
               begin: Alignment.bottomCenter,
               end: Alignment.topCenter,
               colors: [
-                widget.themeColor.withOpacity(0.5),
+                widget.themeColor.withValues(alpha: 0.5),
                 widget.themeColor,
                 Colors.white,
               ],
@@ -96,9 +96,9 @@ class _MiniEqVisualizerState extends State<MiniEqVisualizer> {
             borderRadius: BorderRadius.circular(6),
             boxShadow: [
               BoxShadow(
-                  color: widget.themeColor.withOpacity(0.9), blurRadius: 8, spreadRadius: 1),
+                  color: widget.themeColor.withValues(alpha: 0.9), blurRadius: 8, spreadRadius: 1),
               BoxShadow(
-                  color: Colors.white.withOpacity(0.5), blurRadius: 4),
+                  color: Colors.white.withValues(alpha: 0.5), blurRadius: 4),
             ],
           ),
         );

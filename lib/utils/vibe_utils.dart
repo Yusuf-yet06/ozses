@@ -5,13 +5,16 @@ class VibeController {
     String name = songName.toLowerCase();
 
     // Siber Savunma ve Focus Modu Renkleri
-    if (name.contains("focus") || name.contains("çalışma"))
+    if (name.contains('focus') || name.contains('çalışma')) {
       return Colors.cyanAccent;
-    if (name.contains("relax") || name.contains("şifa"))
+    }
+    if (name.contains('relax') || name.contains('şifa')) {
       return Colors.tealAccent;
-    if (name.contains("bass") || name.contains("high")) return Colors.redAccent;
-    if (name.contains("night") || name.contains("gece"))
+    }
+    if (name.contains('bass') || name.contains('high')) return Colors.redAccent;
+    if (name.contains('night') || name.contains('gece')) {
       return Colors.indigoAccent;
+    }
 
     return Colors.deepPurpleAccent; // Standart Imperium Rengi
   }
@@ -20,7 +23,7 @@ class VibeController {
   static List<Color> getFocusGradient(Color themeColor) {
     return [
       Colors.black,
-      themeColor.withOpacity(0.05),
+      themeColor.withValues(alpha: 0.05),
       Colors.black,
     ];
   }

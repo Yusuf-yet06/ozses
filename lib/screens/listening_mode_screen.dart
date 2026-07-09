@@ -57,7 +57,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          "DİNLEME MODU",
+          'DİNLEME MODU',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w300,
@@ -78,7 +78,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                 center: const Alignment(0, -0.2),
                 radius: 1.5,
                 colors: [
-                  _currentThemeColor.withOpacity(0.15),
+                  _currentThemeColor.withValues(alpha: 0.15),
                   Colors.black,
                 ],
               ),
@@ -94,7 +94,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                 children: [
                   const SizedBox(height: 20),
                   const Text(
-                    "Zihninin Frekansını Seç",
+                    'Zihninin Frekansını Seç',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 28,
@@ -104,9 +104,9 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "Müziğin arka planında çalışan görünmez frekanslarla ruh halini yönlendir.",
+                    'Müziğin arka planında çalışan görünmez frekanslarla ruh halini yönlendir.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 14,
                       height: 1.5,
                     ),
@@ -119,41 +119,41 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                       physics: const BouncingScrollPhysics(),
                       children: [
                         _buildModeCard(
-                          title: "Kapalı",
-                          subtitle: "Sadece saf müzik deneyimi",
-                          modeName: "Kapalı",
+                          title: 'Kapalı',
+                          subtitle: 'Sadece saf müzik deneyimi',
+                          modeName: 'Kapalı',
                           icon: Icons.music_note,
                           color: Colors.grey,
                         ),
                         const SizedBox(height: 16),
                         _buildModeCard(
-                          title: "Rahatlama",
-                          subtitle: "Stresi azaltır, evrensel uyum sağlar",
-                          modeName: "Rahatlama (Relax)",
+                          title: 'Rahatlama',
+                          subtitle: 'Stresi azaltır, evrensel uyum sağlar',
+                          modeName: 'Rahatlama (Relax)',
                           icon: Icons.spa,
                           color: Colors.tealAccent,
                         ),
                         const SizedBox(height: 16),
                         _buildModeCard(
-                          title: "Derin Odak",
-                          subtitle: "Dikkati artırır, zihni keskinleştirir",
-                          modeName: "Derin Odak (Focus)",
+                          title: 'Derin Odak',
+                          subtitle: 'Dikkati artırır, zihni keskinleştirir',
+                          modeName: 'Derin Odak (Focus)',
                           icon: Icons.center_focus_strong,
                           color: Colors.orangeAccent,
                         ),
                         const SizedBox(height: 16),
                         _buildModeCard(
-                          title: "Yenilenme",
-                          subtitle: "Hücreleri onarır, enerjiyi tazeler",
-                          modeName: "Yenilenme (Recovery)",
+                          title: 'Yenilenme',
+                          subtitle: 'Hücreleri onarır, enerjiyi tazeler',
+                          modeName: 'Yenilenme (Recovery)',
                           icon: Icons.healing,
                           color: Colors.greenAccent,
                         ),
                         const SizedBox(height: 16),
                         _buildModeCard(
-                          title: "Derin Uyku",
-                          subtitle: "Kaliteli ve kesintisiz dinlenme",
-                          modeName: "Derin Uyku (Sleep)",
+                          title: 'Derin Uyku',
+                          subtitle: 'Kaliteli ve kesintisiz dinlenme',
+                          modeName: 'Derin Uyku (Sleep)',
                           icon: Icons.nights_stay,
                           color: Colors.deepPurpleAccent,
                         ),
@@ -170,7 +170,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                       children: [
                         const SizedBox(height: 20),
                         const Text(
-                          "Etki Yoğunluğu (Bilinçaltı Seviyesi)",
+                          'Etki Yoğunluğu (Bilinçaltı Seviyesi)',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -180,14 +180,14 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            Icon(Icons.waves, color: _currentThemeColor.withOpacity(0.5), size: 18),
+                            Icon(Icons.waves, color: _currentThemeColor.withValues(alpha: 0.5), size: 18),
                             Expanded(
                               child: SliderTheme(
                                 data: SliderThemeData(
                                   activeTrackColor: _currentThemeColor,
                                   inactiveTrackColor: Colors.white12,
                                   thumbColor: _currentThemeColor,
-                                  overlayColor: _currentThemeColor.withOpacity(0.2),
+                                  overlayColor: _currentThemeColor.withValues(alpha: 0.2),
                                   trackHeight: 4,
                                 ),
                                 child: Slider(
@@ -235,16 +235,16 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : Colors.white.withOpacity(0.03),
+          color: isSelected ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.5) : Colors.transparent,
+            color: isSelected ? color.withValues(alpha: 0.5) : Colors.transparent,
             width: 1.5,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: -5,
                   )
@@ -256,7 +256,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                color: isSelected ? color.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -283,7 +283,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.4),
                       fontSize: 12,
                     ),
                   ),

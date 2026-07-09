@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../services/storage_service.dart';
 import 'siber_platform.dart';
 
 class MobilePlatform implements SiberPlatform {
@@ -17,141 +18,54 @@ class MobilePlatform implements SiberPlatform {
 
   @override
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken}) async {
-    print("--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (MOBİL) ---");
-    return await _ytMutex.run(() async {
-      final List<String> discoveryTerms = [
-        "türkçe pop en çok dinlenenler official audio",
-        "haftanın trend şarkıları",
-        "yeni çıkan şarkılar 2026",
-        "hit şarkılar karışık Türkçe",
-        "viral türkçe şarkılar",
-        "arabesk rap en çok dinlenenler",
-        "akustik performans Türkçe",
-      ];
-      discoveryTerms.shuffle();
-      String query = discoveryTerms.first;
+    print('--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (RENDER BACKEND) ---');
+    final List<String> discoveryTerms = [
+      'türkçe pop en çok dinlenenler official audio',
+      'haftanın trend şarkıları',
+      'yeni çıkan şarkılar 2026',
+      'hit şarkılar karışık Türkçe',
+      'viral türkçe şarkılar',
+      'arabesk rap en çok dinlenenler',
+      'akustik performans Türkçe',
+    ];
+    discoveryTerms.shuffle();
+    String query = discoveryTerms.first;
+    
+    try {
+      final response = await http.get(
+        Uri.parse('https://ozses.onrender.com/search?q=${Uri.encodeComponent(query)}')
+      ).timeout(const Duration(seconds: 15));
       
-      try {
-        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 8));
-        var items = [];
-        for (var video in searchResults.take(15)) {
-          items.add({
-            "id": video.id.value,
-            "title": video.title,
-            "channel": video.author,
-            "thumbnail": video.thumbnails.highResUrl,
-            "duration": video.duration?.inSeconds ?? 0,
-          });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['status'] == 'basarili' && data['oneriler'] != null) {
+          return {'status': 'basarili', 'oneriler': data['oneriler'], 'nextPageToken': ''};
         }
-        return {"status": "basarili", "oneriler": items, "nextPageToken": ""};
-      } catch (e) {
-        print("❌ YoutubeExplode Arama Hatası: $e");
-        final List<String> pipedInstances = [
-          'https://pipedapi.kavin.rocks',
-          'https://api.piped.privacydev.net',
-          'https://piped-api.lunar.icu',
-          'https://piped-api.garudalinux.org',
-          'https://pipedapi.adminforge.de',
-        ];
-        
-        try {
-          final futures = pipedInstances.map((instance) async {
-            final response = await http.get(Uri.parse('$instance/search?q=${Uri.encodeComponent(query)}&filter=music_songs')).timeout(const Duration(seconds: 3));
-            if (response.statusCode == 200) {
-              final data = jsonDecode(response.body);
-              if (data['items'] != null) {
-                var pipedItems = [];
-                for (var item in (data['items'] as List).take(15)) {
-                  if (item['type'] == 'stream') {
-                    pipedItems.add({
-                      "id": item['url'].toString().replaceAll('/watch?v=', ''),
-                      "title": item['title'],
-                      "channel": item['uploaderName'],
-                      "thumbnail": item['thumbnail'],
-                      "duration": item['duration'] ?? 0,
-                    });
-                  }
-                }
-                return pipedItems;
-              }
-            }
-            throw Exception("Piped Hata");
-          });
-
-          final bestItems = await Future.any(futures);
-          return {"status": "basarili", "oneriler": bestItems, "nextPageToken": ""};
-        } catch (e) {
-          print("❌ Tüm Piped sunucuları çöktü: $e");
-        }
-        return {"status": "hata", "oneriler": [], "nextPageToken": ""};
       }
-    });
+    } catch (e) {
+      print('❌ Siber Backend Keşfet Hatası: $e');
+    }
+    return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
   }
 
   @override
   Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1}) async {
-    print("--- SİBER ARAMA BAŞLATILIYOR (MOBİL) ---");
-    return await _ytMutex.run(() async {
-      try {
-        var searchResults = await _yt.search.search(query + " official audio").timeout(const Duration(seconds: 8));
-        var items = [];
-        for (var video in searchResults.take(limit)) {
-          items.add({
-            "id": video.id.value,
-            "title": video.title,
-            "channel": video.author,
-            "thumbnail": video.thumbnails.highResUrl,
-            "duration": video.duration?.inSeconds ?? 0,
-          });
+    print('--- SİBER ARAMA BAŞLATILIYOR (RENDER BACKEND) ---');
+    try {
+      final response = await http.get(
+        Uri.parse('https://ozses.onrender.com/search?q=${Uri.encodeComponent(query)}')
+      ).timeout(const Duration(seconds: 15));
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        if (data['status'] == 'basarili' && data['oneriler'] != null) {
+          return data['oneriler'];
         }
-        return items;
-      } catch (e) {
-        print("❌ YoutubeExplode Arama Hatası: $e");
-        final List<String> pipedInstances = [
-          'https://api.piped.private.coffee',
-          'https://pipedapi.kavin.rocks',
-          'https://api.piped.privacydev.net',
-          'https://piped-api.lunar.icu',
-          'https://piped-api.garudalinux.org',
-          'https://pipedapi.adminforge.de',
-          'https://pipedapi.smnz.de',
-          'https://piped-api.moomoo.me',
-          'https://api.piped.projectsegfau.lt',
-          'https://pipedapi.tokhmi.xyz',
-          'https://pipedapi.r4fo.com'
-        ];
-        
-        try {
-          final futures = pipedInstances.map((instance) async {
-            final response = await http.get(Uri.parse('$instance/search?q=${Uri.encodeComponent(query + " official audio")}&filter=music_songs')).timeout(const Duration(seconds: 3));
-            if (response.statusCode == 200) {
-              final data = jsonDecode(response.body);
-              if (data['items'] != null) {
-                var pipedItems = [];
-                for (var item in (data['items'] as List).take(limit)) {
-                  if (item['type'] == 'stream') {
-                    pipedItems.add({
-                      "id": item['url'].toString().replaceAll('/watch?v=', ''),
-                      "title": item['title'],
-                      "channel": item['uploaderName'],
-                      "thumbnail": item['thumbnail'],
-                      "duration": item['duration'] ?? 0,
-                    });
-                  }
-                }
-                return pipedItems;
-              }
-            }
-            throw Exception("Piped Hata");
-          });
-
-          return await Future.any(futures);
-        } catch (e) {
-          print("❌ Tüm Piped sunucuları çöktü: $e");
-        }
-        return [];
       }
-    });
+    } catch (e) {
+      print('❌ Siber Backend Arama Hatası: $e');
+    }
+    return [];
   }
 
   @override
@@ -165,155 +79,31 @@ class MobilePlatform implements SiberPlatform {
         }
       }
     } catch (e) {
-      print("Siber Proxy Suggestion Hatası: $e");
+      print('Siber Proxy Suggestion Hatası: $e');
     }
     return [];
   }
 
   @override
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
-    print("🎯 SİBER HAMLE: Alternatif API'ler (Piped/Cobalt) Öncelikli Aranıyor...");
-
-    // 🎯 1. KADEME: Piped API (En hızlı ve limitsiz)
-    print("🎯 Piped API deneniyor...");
-    final List<String> pipedInstances = [
-      'https://api.piped.private.coffee',
-      'https://pipedapi.kavin.rocks',
-      'https://api.piped.privacydev.net',
-      'https://piped-api.lunar.icu',
-      'https://piped-api.garudalinux.org',
-      'https://pipedapi.adminforge.de',
-      'https://pipedapi.smnz.de',
-      'https://piped-api.moomoo.me',
-      'https://api.piped.projectsegfau.lt',
-      'https://pipedapi.tokhmi.xyz',
-      'https://pipedapi.r4fo.com'
-    ];
-
+    // 🚀 ÇİFT ÇEKİRDEK KONTROLÜ: Kalıcı depoda dosya var mı?
     try {
-      final futures = pipedInstances.map((instance) async {
-        final String apiUrl = "$instance/streams/$videoId";
-        final response = await http.get(Uri.parse(apiUrl)).timeout(const Duration(seconds: 3));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['audioStreams'] != null && (data['audioStreams'] as List).isNotEmpty) {
-            var audioStreams = data['audioStreams'] as List;
-            var bestStream = audioStreams.firstWhere(
-              (s) => s['format'] == 'M4A',
-              orElse: () => audioStreams.first,
-            );
-            return bestStream['url'].toString();
-          } else if (data['videoStreams'] != null && (data['videoStreams'] as List).isNotEmpty) {
-            var videoStreams = data['videoStreams'] as List;
-            try {
-              var bestStream = videoStreams.firstWhere(
-                (s) => s['videoOnly'] == false && s['format'] == 'MPEG_4'
-              );
-              return bestStream['url'].toString();
-            } catch (e) {
-              try {
-                var backupStream = videoStreams.firstWhere((s) => s['videoOnly'] == false);
-                return backupStream['url'].toString();
-              } catch (e) {
-                // Ignore if all are videoOnly
-              }
-            }
-          }
-        }
-        throw Exception("Stream bulunamadı");
-      });
-
-      final bestUrl = await firstSuccessful(futures);
-      return {"status": "basarili", "stream_url": bestUrl, "is_file": false};
+      String storagePath = await StorageService.getOzsesDownloadPath();
+      String permanentPath = '$storagePath/ozses_offline_$videoId.mp4';
+      var file = File(permanentPath);
+      if (await file.exists() && await file.length() > 500000) { // En az 500KB ise (boş dosya değilse)
+        print('🎯 SİBER ÇİFT ÇEKİRDEK: Şarkı kalıcı depodan saniyesinde açılıyor! İNTERNET YOK, BEKLEME YOK!');
+        return {'status': 'basarili', 'stream_url': permanentPath, 'is_file': true};
+      }
     } catch (e) {
-      print("❌ Tüm Piped sunucuları çöktü veya zaman aşımı: $e");
+      print('Çift Çekirdek Okuma Hatası: $e');
     }
 
-    // 🎯 2. KADEME: Cobalt API
-    print("🎯 Cobalt API deneniyor...");
-    final List<String> cobaltInstances = [
-      'https://api.cobalt.tools/api/json',
-      'https://co.wuk.sh/api/json',
-      'https://cobalt.qoid.us/api/json'
-    ];
-
-    try {
-      final futures = cobaltInstances.map((instance) async {
-        final response = await http.post(
-          Uri.parse(instance),
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            "url": "https://www.youtube.com/watch?v=$videoId",
-            "isAudioOnly": true,
-            "aFormat": "mp3", // m4a veya mp3
-            "isNoTTWatermark": true,
-          }),
-        ).timeout(const Duration(seconds: 4));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['status'] == 'redirect' || data['status'] == 'stream') {
-            return data['url'].toString();
-          }
-        }
-        throw Exception("Cobalt stream bulunamadı");
-      });
-
-      final bestUrl = await firstSuccessful(futures);
-      return {"status": "basarili", "stream_url": bestUrl, "is_file": false};
-    } catch (e) {
-      print("❌ Cobalt API de çöktü: $e");
-    }
-
-    // 🎯 3. KADEME: YoutubeExplode Native Byte Akışı
-    print("🎯 YoutubeExplode API deneniyor...");
-    try {
-      final manifest = await _ytMutex.run(() =>
-        _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 8))
-      );
-      
-      var audioStreamList = manifest.audioOnly.where(
-        (s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')
-      ).toList();
-      var streamInfo = audioStreamList.isNotEmpty 
-          ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
-          : manifest.audioOnly.withHighestBitrate();
-      
-      return {"status": "basarili", "stream_url": streamInfo.url.toString(), "is_file": false};
-      
-    } catch (e) {
-      print("❌ YoutubeExplode Native Hatası: $e");
-    }
+    // SİBER HIZLANDIRICI: Eğer kalıcı dosya yoksa, vakit kaybetmeden direkt proxy'e devret!
+    // Piped ve Cobalt sunucularını beklemek 3-8 saniye gecikme yaratıyordu.
+    // Artık Proxy (services.dart) içerisinde YoutubeExplode ile saniyesinde çekip çalıyoruz.
+    return {'status': 'basarili', 'stream_url': 'proxy_will_handle_it', 'is_file': false};
     
-    // 🎯 4. KADEME: Siber PC Proxy (Kuzen'in Özel Ağı)
-    print("🎯 Siber Proxy deneniyor...");
-    final List<String> localIps = [
-      '192.168.1.121',
-      '192.168.1.15',
-      '10.0.2.2' // Emulator
-    ];
-
-    try {
-      final futures = localIps.map((ip) async {
-        final response = await http.get(Uri.parse('http://$ip:8081/api/proxy/stream?id=$videoId')).timeout(const Duration(seconds: 2));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['status'] == 'basarili' && data['stream_url'] != null) {
-            return data['stream_url'].toString();
-          }
-        }
-        throw Exception("Proxy'den stream alınamadı");
-      });
-      final bestUrl = await firstSuccessful(futures);
-      return {"status": "basarili", "stream_url": bestUrl, "is_file": false};
-    } catch (e) {
-      print("❌ Siber Proxy de çöktü: $e");
-    }
-
-    return {"status": "hata", "stream_url": null};
   }
 
   @override

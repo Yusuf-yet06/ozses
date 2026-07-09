@@ -135,8 +135,9 @@ class MyAudioHandler extends BaseAudioHandler {
           await _bioPlayer.stop();
         } else {
           String assetPath = '';
-          if (_lastBioFrequency == 'Rahatlama (Relax)') assetPath = 'assets/audio/frequencies/432hz.mp3';
-          else if (_lastBioFrequency == 'Yenilenme (Recovery)') assetPath = 'assets/audio/frequencies/528hz.mp3';
+          if (_lastBioFrequency == 'Rahatlama (Relax)') {
+            assetPath = 'assets/audio/frequencies/432hz.mp3';
+          } else if (_lastBioFrequency == 'Yenilenme (Recovery)') assetPath = 'assets/audio/frequencies/528hz.mp3';
           else if (_lastBioFrequency == 'Derin Odak (Focus)') assetPath = 'assets/audio/frequencies/focus_40hz.mp3';
           else if (_lastBioFrequency == 'Derin Uyku (Sleep)') assetPath = 'assets/audio/frequencies/sleep_4hz.mp3';
 
@@ -169,8 +170,9 @@ class MyAudioHandler extends BaseAudioHandler {
         if (_lastBass != AudioEngine.manualBass) {
           _lastBass = AudioEngine.manualBass;
           if (AudioEngine.manualBass > 1.0) {
-            if (!siberBassBooster.enabled)
+            if (!siberBassBooster.enabled) {
               await siberBassBooster.setEnabled(true);
+            }
               
             // 🎯 SİBER MOBİL KALKAN: Telefon hoparlörlerinin çatlamasını (clipping) önlemek için Bass limiti
             double safeBass = AudioEngine.manualBass;
@@ -179,8 +181,9 @@ class MyAudioHandler extends BaseAudioHandler {
             await siberBassBooster
                 .setTargetGain((safeBass - 1.0) * 1000.0);
           } else {
-            if (siberBassBooster.enabled)
+            if (siberBassBooster.enabled) {
               await siberBassBooster.setEnabled(false);
+            }
           }
         }
 
@@ -197,8 +200,9 @@ class MyAudioHandler extends BaseAudioHandler {
             double highestGainReq =
                 max(_lastTreble, _lastVocal); // En çok kim istiyor
             double targetGain = (highestGainReq - 1.0) * params.maxDecibels;
-            if (targetGain > params.maxDecibels)
+            if (targetGain > params.maxDecibels) {
               targetGain = params.maxDecibels;
+            }
 
             for (var band in params.bands) {
               if (band.centerFrequency > 3000) {
@@ -224,7 +228,7 @@ class MyAudioHandler extends BaseAudioHandler {
         }
       }
     } catch (e) {
-      print("DSP Hata: $e");
+      print('DSP Hata: $e');
     }
   }
 
@@ -334,7 +338,7 @@ class MyAudioHandler extends BaseAudioHandler {
     if (!item.id.startsWith('http') &&
         !item.id.startsWith('yt:') &&
         !File(item.id).existsSync()) {
-      print("❌ Yerel dosya bulunamadı, sıradakine atlanmıyor: ${item.id}");
+      print('❌ Yerel dosya bulunamadı, sıradakine atlanmıyor: ${item.id}');
       return;
     }
 
@@ -356,7 +360,7 @@ class MyAudioHandler extends BaseAudioHandler {
         final res = await bridge.getStreamUrl(videoId);
 
         if (_currentIndex != index) {
-          print("⏭️ Hız: Kullanıcı başka şarkıya atladı, eski akış çözme işlemi iptal edildi.");
+          print('⏭️ Hız: Kullanıcı başka şarkıya atladı, eski akış çözme işlemi iptal edildi.');
           return;
         }
 
@@ -375,11 +379,12 @@ class MyAudioHandler extends BaseAudioHandler {
           // 🚀 SİBER HAMLE: Tüm yerel mobil cihazlarda ve Windows'ta player'lar (MediaFoundation/AVPlayer/ExoPlayer) 
           // YouTube 403 Forbidden hatası atabiliyor. Bunu aşmak için yerel proxy üzerinden geçiriyoruz!
           if (!kIsWeb) {
-             resolvedUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
-             print("🎯 Siber Proxy Yönlendirmesi: $resolvedUrl");
+             // 🎯 SİBER KALKAN: URL'nin sonuna &ext=.m4a ekliyoruz ki ExoPlayer dosyayı anında M4A olarak tanısın.
+             resolvedUrl = 'https://ozses.onrender.com/stream?id=$videoId&ext=.m4a';
+             print('🎯 Siber Proxy Yönlendirmesi: $resolvedUrl');
           }
         } else {
-          print("❌ Hata: Akış çözülemedi, siber kalkan ile oynatma durduruldu!");
+          print('❌ Hata: Akış çözülemedi, siber kalkan ile oynatma durduruldu!');
           playbackState.add(playbackState.value.copyWith(
             playing: false,
             processingState: AudioProcessingState.idle,
@@ -391,16 +396,18 @@ class MyAudioHandler extends BaseAudioHandler {
       if (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://')) {
         await _player.setAudioSource(AudioSource.uri(
           Uri.parse(resolvedUrl),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://www.youtube.com/'
-          },
+          // SİBER HIZLANDIRICI: Render sunucumuz (Cloudflare arkasında) YouTube Referer'ını
+          // şüpheli bulup 403 Forbidden fırlatıyordu. Kendi sunucumuza gittiğimiz için
+          // sahte YouTube başlıklarına artık ihtiyacımız yok!
         )).timeout(
           const Duration(seconds: 120),
           onTimeout: () {
-            throw TimeoutException("Akış yüklenemedi veya dosya bağlantısı koptu.");
+            throw TimeoutException('Akış yüklenemedi veya dosya bağlantısı koptu.');
           },
-        );
+        ).catchError((error) {
+          print('🔥 DETAYLI SİBER HATA (LÜTFEN BANA BUNU AT): $error');
+          throw error;
+        });
       } else {
         await _player.setAudioSource(AudioSource.file(resolvedUrl)).timeout(
           const Duration(seconds: 15),
@@ -421,7 +428,7 @@ class MyAudioHandler extends BaseAudioHandler {
 
       await _player.play();
     } catch (e) {
-      print("HATA: Platform oynatma hatası -> $e");
+      print('HATA: Platform oynatma hatası -> $e');
 
       // 🛡️ SİBER KALKAN: Akış hatasında sessizce dur, otomatik sıradakine ATLAMIYOR!
       // (Eski skipToNext() çağrısı Şakı sonraya atlama hatasına yol açıyordu)
@@ -525,6 +532,6 @@ class MyAudioHandler extends BaseAudioHandler {
   // 🎯 SİBER HAMLE: Depolama Yönetimi (Cache Temizliği)
   Future<void> clearStreamCache() async {
     await AudioPlayer.clearAssetCache();
-    print("🧹 Önbellek (Cache) tamamen temizlendi!");
+    print('🧹 Önbellek (Cache) tamamen temizlendi!');
   }
 }

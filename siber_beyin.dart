@@ -27,13 +27,13 @@ class SiberBeyin {
   void plugModule(SiberModule module) {
     if (_modules.containsKey(module.name)) return;
     _modules[module.name] = module;
-    print("🔌 SİBER BAĞLANTI: ${module.name} beyne mühürlendi.");
+    print('🔌 SİBER BAĞLANTI: ${module.name} beyne mühürlendi.');
   }
 
   // Sistemi Ateşle
   Future<void> wakeUp() async {
     if (_isAwake) return;
-    print("\n🧠 Siber Beyin Uyanıyor... Japon temeli atılıyor.");
+    print('\n🧠 Siber Beyin Uyanıyor... Japon temeli atılıyor.');
 
     // Saydığın 5 Temel Özelliği Otonom Fişliyoruz
     plugModule(PlaybackModule());
@@ -49,16 +49,16 @@ class SiberBeyin {
         await module.initModule();
       } catch (e) {
         print(
-            "❌ SİBER İZOLATÖR DEVREDE: ${module.name} başlatılamadı ama sistem çökmedi -> $e");
+            '❌ SİBER İZOLATÖR DEVREDE: ${module.name} başlatılamadı ama sistem çökmedi -> $e');
       }
     }
     _isAwake = true;
-    print("✅ SİBER BEYİN AKTİF: Tüm loblar devrede, emre amadeyiz!\n");
+    print('✅ SİBER BEYİN AKTİF: Tüm loblar devrede, emre amadeyiz!\n');
   }
 
   // ⚡ Gelen Emri Loblara Dağıt (Merkezi Karar)
   Future<bool> processCommand(SiberCommand command) async {
-    print("⚡ BEYİN İŞLİYOR: ${command.action}");
+    print('⚡ BEYİN İŞLİYOR: ${command.action}');
     _commandStream.add(command); // UI dinlemek isterse diye akışa at
 
     bool isHandled = false;

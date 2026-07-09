@@ -39,9 +39,9 @@ class PlaylistService {
       songs.add(songPath);
       bool success = await prefs.setStringList(key, songs);
       print(
-          "Siber Aktarım Başarılı: $success | Liste: $playlistName | Şarkı: $songPath");
+          'Siber Aktarım Başarılı: $success | Liste: $playlistName | Şarkı: $songPath');
     } else {
-      print("Bu şarkı zaten mühimmat deposunda (listede) mevcut!");
+      print('Bu şarkı zaten mühimmat deposunda (listede) mevcut!');
     }
   }
 
@@ -54,6 +54,6 @@ class PlaylistService {
     List<String> songs = prefs.getStringList(key) ?? [];
     songs.remove(songPath);
     await prefs.setStringList(key, songs);
-    print("Şarkı listeden imha edildi: $playlistName");
+    print('Şarkı listeden imha edildi: $playlistName');
   }
 }

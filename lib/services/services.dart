@@ -23,20 +23,20 @@ final List<String> invidiousInstances = [
     'https://invidious.privacydev.net'
   ];
   // Üniversite interneti gelince bu adres üzerinden Victus'un beynine bağlanacağız
-  static const String serverUrl = "http://127.0.0.1:5000/control";
+  static const String serverUrl = 'http://127.0.0.1:5000/control';
 
   Future<void> syncWithBrain(bool isAuto, double sensitivity) async {
     // 1. Veriyi paketle (JSON Formatı)
     Map<String, dynamic> data = {
-      "is_autonomous": isAuto,
-      "value": sensitivity.toInt(),
+      'is_autonomous': isAuto,
+      'value': sensitivity.toInt(),
     };
 
     String jsonPacket = jsonEncode(data);
 
     // 2. Çevrimdışı Log (Şimdilik terminale yazar)
-    print("--- ÖZSES KÖPRÜSÜ ÇALIŞIYOR ---");
-    print("Paket Hazırlandı: $jsonPacket");
+    print('--- ÖZSES KÖPRÜSÜ ÇALIŞIYOR ---');
+    print('Paket Hazırlandı: $jsonPacket');
 
     /* ÜNİ İNTERNETİ GELİNCE AKTİF EDİLECEK KISIM:
        var response = await http.post(Uri.parse(serverUrl), body: jsonPacket);
@@ -45,7 +45,7 @@ final List<String> invidiousInstances = [
 
   // 🛡️ SİBER KALKAN: Güvenlik Jetonu (Token) Üretici
   Future<Map<String, String>> _getAuthHeaders() async {
-    Map<String, String> headers = {"Content-Type": "application/json"};
+    Map<String, String> headers = {'Content-Type': 'application/json'};
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -54,7 +54,7 @@ final List<String> invidiousInstances = [
           headers['Authorization'] = 'Bearer $idToken';
         }
       } catch (e) {
-        print("🛡️ Siber Mühür Alınamadı: $e");
+        print('🛡️ Siber Mühür Alınamadı: $e');
       }
     }
     return headers;
@@ -67,11 +67,11 @@ final List<String> invidiousInstances = [
         return await action();
       } catch (e) {
         if (i == retries - 1) rethrow;
-        print("🚀 Siber Ağ Tekrar Deneniyor (${i + 1}/$retries): $e");
+        print('🚀 Siber Ağ Tekrar Deneniyor (${i + 1}/$retries): $e');
         await Future.delayed(Duration(seconds: 2 * (i + 1))); // Exponential backoff
       }
     }
-    throw Exception("Max retries reached");
+    throw Exception('Max retries reached');
   }
 
   // 🎯 SİBER HAMLE: Keşfet Frekanslarını Yakalama Modülü
@@ -82,7 +82,7 @@ final List<String> invidiousInstances = [
         return await SiberPlatform.instance.fetchKesfet(pageToken: pageToken);
       });
     } catch (e) {
-      print("Siber Keşfet Hatası: $e");
+      print('Siber Keşfet Hatası: $e');
     }
     return {};
   }
@@ -95,7 +95,7 @@ final List<String> invidiousInstances = [
         return await SiberPlatform.instance.searchMusic(query, limit: limit, page: page);
       });
     } catch (e) {
-      print("Siber Arama Hatası: $e");
+      print('Siber Arama Hatası: $e');
     }
     return [];
   }
@@ -115,7 +115,7 @@ final List<String> invidiousInstances = [
     if (_proxyServer != null) return;
     _proxyServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     _proxyPort = _proxyServer!.port;
-    print("🎯 Siber Yerel Proxy Başlatıldı: Port $_proxyPort");
+    print('🎯 Siber Yerel Proxy Başlatıldı: Port $_proxyPort');
     
     _proxyServer!.listen((HttpRequest request) async {
       try {
@@ -129,7 +129,7 @@ final List<String> invidiousInstances = [
         // 🔥 KADEME 2: Şu an başka bir istek aynı video için çözüm yapıyor mu?
         // Eğer öyleyse, o tamamlanana kadar bekle (rate limit önleme kilidi)
         } else if (_pendingResolutions.containsKey(videoId)) {
-          print("⏳ Proxy: $videoId için çözüm bekleniyor...");
+          print('⏳ Proxy: $videoId için çözüm bekleniyor...');
           targetUrl = await _pendingResolutions[videoId]!.future;
         
         // 🔥 KADEME 3: İlk istek - YoutubeExplode çağrısı yap ve kilitle
@@ -138,7 +138,7 @@ final List<String> invidiousInstances = [
           _pendingResolutions[videoId] = completer;
           
           try {
-            print("🎯 Proxy: SiberPlatform ile akış çözülüyor -> $videoId");
+            print('🎯 Proxy: SiberPlatform ile akış çözülüyor -> $videoId');
             String resolved;
             var res = await SiberPlatform.instance.getStreamUrl(videoId);
             if (res['status'] == 'basarili' && res['stream_url'] != null) {
@@ -153,7 +153,7 @@ final List<String> invidiousInstances = [
             }
             completer.complete(resolved);
             targetUrl = resolved;
-            print("✅ Proxy çözüm tamamlandı: $videoId");
+            print('✅ Proxy çözüm tamamlandı: $videoId');
           } catch (e) {
             completer.completeError(e);
             _pendingResolutions.remove(videoId);
@@ -166,25 +166,111 @@ final List<String> invidiousInstances = [
         // kendi stream motorunu direkt olarak proxy'e bağlıyoruz! (Sınırsız akış)
         try {
           var yt = YoutubeExplode();
-          var manifest = await yt.videos.streamsClient.getManifest(videoId);
-          var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
-          var streamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
+          Uri? finalStreamUrl;
+          bool usedYoutubeExplode = false;
+          dynamic ytStreamInfo;
           
-          request.response.headers.contentType = ContentType('audio', 'mp4');
-          request.response.headers.add('Accept-Ranges', 'bytes');
-          request.response.statusCode = HttpStatus.ok;
+          try {
+            var manifest = await yt.videos.streamsClient.getManifest(videoId);
+            var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+            ytStreamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
+            finalStreamUrl = ytStreamInfo.url;
+            usedYoutubeExplode = true;
+          } catch (ytEx) {
+            print('⚠️ YoutubeExplode Rate Limit: $ytEx');
+            print('🔄 SİBER KALKAN: Piped Yedek (Fallback) Devrede...');
+            
+            final List<String> pipedInstances = [
+              'https://api.piped.private.coffee',
+              'https://pipedapi.kavin.rocks',
+              'https://api.piped.privacydev.net',
+              'https://piped-api.lunar.icu',
+              'https://pipedapi.smnz.de'
+            ];
+            
+            for (var instance in pipedInstances) {
+              try {
+                final response = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 4));
+                if (response.statusCode == 200) {
+                  final data = jsonDecode(response.body);
+                  if (data['audioStreams'] != null && (data['audioStreams'] as List).isNotEmpty) {
+                    var audioStreams = data['audioStreams'] as List;
+                    var bestStream = audioStreams.firstWhere(
+                      (s) => s['format'] == 'M4A',
+                      orElse: () => audioStreams.first,
+                    );
+                    finalStreamUrl = Uri.parse(bestStream['url'].toString());
+                    print('✅ Piped Fallback Başarılı: $instance');
+                    break;
+                  }
+                }
+              } catch (_) {}
+            }
+          }
           
-          var ytStream = yt.videos.streamsClient.get(streamInfo);
-          await ytStream.pipe(request.response);
-          yt.close();
-          print("✅ Proxy Akışı Tamamlandı: $videoId");
+          if (finalStreamUrl == null) {
+            throw Exception('Tüm akış motorları (YoutubeExplode + Piped) çöktü!');
+          }
+          
+          Stream<List<int>> dataStream;
+          
+          if (usedYoutubeExplode) {
+             dataStream = yt.videos.streamsClient.get(ytStreamInfo);
+             request.response.headers.contentType = ContentType('audio', 'mp4');
+             request.response.headers.add('Accept-Ranges', 'bytes');
+             if (ytStreamInfo.size.totalBytes > 0) {
+               request.response.contentLength = ytStreamInfo.size.totalBytes;
+             }
+             var rangeHeader = request.headers.value('range');
+             if (rangeHeader != null && rangeHeader.startsWith('bytes=0-')) {
+               request.response.statusCode = HttpStatus.partialContent;
+               request.response.headers.add('Content-Range', 'bytes 0-${ytStreamInfo.size.totalBytes - 1}/${ytStreamInfo.size.totalBytes}');
+             } else {
+               request.response.statusCode = HttpStatus.ok;
+             }
+          } else {
+             var client = http.Client();
+             var streamRequest = http.Request('GET', finalStreamUrl);
+             var streamResponse = await client.send(streamRequest);
+             dataStream = streamResponse.stream;
+             
+             request.response.statusCode = streamResponse.statusCode;
+             streamResponse.headers.forEach((key, value) {
+               if (key.toLowerCase() != 'transfer-encoding') {
+                 request.response.headers.set(key, value);
+               }
+             });
+          }
+          
+          // 🚀 ÇİFT ÇEKİRDEK (Dual-Core): Depoya kaydet
+          IOSink? fileSink;
+          try {
+             String storagePath = await StorageService.getOzsesDownloadPath();
+             String permanentPath = '$storagePath/ozses_offline_$videoId.mp4';
+             var file = File(permanentPath);
+             fileSink = file.openWrite();
+          } catch (_) {}
+          
+          dataStream.listen((data) {
+             try { request.response.add(data); } catch (_) {}
+             try { fileSink?.add(data); } catch (_) {}
+          }, onDone: () async {
+             try { await request.response.close(); } catch (_) {}
+             try { await fileSink?.close(); } catch (_) {}
+             yt.close();
+             print('✅ Proxy Akışı (ve Kaydı) Tamamlandı: $videoId');
+          }, onError: (e) { print('❌ Akış Hatası (dataStream.listen): ');
+             try { request.response.close(); } catch (_) {}
+             try { fileSink?.close(); } catch (_) {}
+             yt.close();
+          });
         } catch (ytError) {
-          print("❌ Proxy YoutubeExplode Akış Hatası: $ytError");
-          throw ytError;
+          print('❌ Proxy YoutubeExplode Akış Hatası: $ytError');
+          rethrow;
         }
 
       } catch (e) {
-        print("❌ Proxy Hatası: $e");
+        print('❌ Proxy Hatası: $e');
         try {
           request.response.statusCode = HttpStatus.internalServerError;
           await request.response.close();
@@ -198,8 +284,8 @@ final List<String> invidiousInstances = [
     try {
       return await SiberPlatform.instance.getStreamUrl(videoId);
     } catch (e) {
-      print("Siber Akış Çözme Hatası: $e");
-      return {"status": "hata", "mesaj": e.toString()};
+      print('Siber Akış Çözme Hatası: $e');
+      return {'status': 'hata', 'mesaj': e.toString()};
     }
   }
 
@@ -208,7 +294,7 @@ final List<String> invidiousInstances = [
     try {
       return await SiberPlatform.instance.getSearchSuggestions(query);
     } catch (e) {
-      print("Siber Arama Önerisi Hatası: $e");
+      print('Siber Arama Önerisi Hatası: $e');
       return [];
     }
   }
@@ -278,10 +364,10 @@ final List<String> invidiousInstances = [
             _downloadPaths[videoId] = downloadedFile.path;
             _downloadStatuses[videoId] = 'basarili';
             _downloadMbInfos.remove(videoId);
-            print("🚀 İndirme Tamamlandı: ${downloadedFile.path}");
+            print('🚀 İndirme Tamamlandı: ${downloadedFile.path}');
           } else {
             _downloadStatuses[videoId] = 'hata';
-            print("❌ yt-dlp indirme hatası, exit code: $exitCode");
+            print('❌ yt-dlp indirme hatası, exit code: $exitCode');
           }
           return;
         }
@@ -326,7 +412,7 @@ final List<String> invidiousInstances = [
         
         if (response.statusCode != 200 && response.statusCode != 206) {
            _downloadStatuses[videoId] = 'hata';
-           print("❌ İndirme Sunucu Hatası: ${response.statusCode}");
+           print('❌ İndirme Sunucu Hatası: ${response.statusCode}');
            _downloadMbInfos[videoId] = {'percent': 'Hata: ${response.statusCode}'};
            return;
         }
@@ -359,15 +445,15 @@ final List<String> invidiousInstances = [
         _downloadPaths[videoId] = filePath;
         _downloadStatuses[videoId] = 'basarili';
         _downloadMbInfos.remove(videoId);
-        print("✅ İndirme Tamamlandı: $filePath");
+        print('✅ İndirme Tamamlandı: $filePath');
       } catch (e) {
-        print("❌ Siber İndirme Hatası: $e");
+        print('❌ Siber İndirme Hatası: $e');
         _downloadStatuses[videoId] = 'hata';
         _downloadMbInfos[videoId] = {'percent': 'Hata: ${e.toString().split('\n')[0]}'};
       }
     });
 
-    return {"status": "basladi"};
+    return {'status': 'basladi'};
   }
 
   // 🎯 SİBER HAMLE: İndirme Durumu Sorgulayıcı (NATIVE)
@@ -377,11 +463,11 @@ final List<String> invidiousInstances = [
     Map<String, dynamic> mbInfo = _downloadMbInfos[videoId] ?? {};
     
     return {
-      "status": status, 
-      "file_path": filePath,
-      "percent": mbInfo['percent'],
-      "downloaded_mb": mbInfo['downloaded_mb'],
-      "total_mb": mbInfo['total_mb']
+      'status': status, 
+      'file_path': filePath,
+      'percent': mbInfo['percent'],
+      'downloaded_mb': mbInfo['downloaded_mb'],
+      'total_mb': mbInfo['total_mb']
     };
   }
 
@@ -417,49 +503,49 @@ final List<String> invidiousInstances = [
         return null;
       });
     } catch (e) {
-      print("🛑 Siber YouTube Lirik Hatası: $e");
+      print('🛑 Siber YouTube Lirik Hatası: $e');
     }
     return null;
   }
 
   // 🎯 SİBER HAMLE: Profil Doğrulama Kodu Gönder
   Future<Map<String, dynamic>> sendSiberCode(String email) async {
-    String url = "http://127.0.0.1:8000/siber-kod-gonder";
+    String url = 'http://127.0.0.1:8000/siber-kod-gonder';
     if (!kIsWeb && Platform.isAndroid) {
-      url = "http://10.0.2.2:8000/siber-kod-gonder";
+      url = 'http://10.0.2.2:8000/siber-kod-gonder';
     }
     try {
       var response = await http
           .post(
             Uri.parse(url),
-            headers: {"Content-Type": "application/json"},
-            body: jsonEncode({"email": email}),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email}),
           )
           .timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         return jsonDecode(utf8.decode(response.bodyBytes));
       }
     } catch (e) {}
-    return {"status": "hata", "mesaj": "Bağlantı koptu"};
+    return {'status': 'hata', 'mesaj': 'Bağlantı koptu'};
   }
 
   // 🎯 SİBER HAMLE: Kodu Doğrula ve Kayıt Ol
   Future<Map<String, dynamic>> verifyAndRegister(
       String email, String username, String password, String code) async {
-    String url = "http://127.0.0.1:8000/siber-dogrula-kayit";
+    String url = 'http://127.0.0.1:8000/siber-dogrula-kayit';
     if (!kIsWeb && Platform.isAndroid) {
-      url = "http://10.0.2.2:8000/siber-dogrula-kayit";
+      url = 'http://10.0.2.2:8000/siber-dogrula-kayit';
     }
     try {
       var response = await http
           .post(
             Uri.parse(url),
-            headers: {"Content-Type": "application/json"},
+            headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
-              "email": email,
-              "username": username,
-              "password": password,
-              "code": code
+              'email': email,
+              'username': username,
+              'password': password,
+              'code': code
             }),
           )
           .timeout(const Duration(seconds: 8));
@@ -467,7 +553,7 @@ final List<String> invidiousInstances = [
         return jsonDecode(utf8.decode(response.bodyBytes));
       }
     } catch (e) {}
-    return {"status": "hata", "mesaj": "Bağlantı koptu"};
+    return {'status': 'hata', 'mesaj': 'Bağlantı koptu'};
   }
 }
 

@@ -16,7 +16,7 @@ void main() async {
 
   for (var instance in instances) {
     try {
-      final res = await http.get(Uri.parse('$instance/streams/dQw4w9WgXcQ')).timeout(Duration(seconds: 3));
+      final res = await http.get(Uri.parse('$instance/streams/dQw4w9WgXcQ')).timeout(const Duration(seconds: 3));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['audioStreams'] != null && data['audioStreams'].isNotEmpty) {

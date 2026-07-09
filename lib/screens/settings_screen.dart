@@ -16,7 +16,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Color _neonColor = Colors.cyanAccent;
   bool _isAutonomous = true;
   double _threshold = 50.0;
-  String _activeSubMode = "OFF"; // FOCUS, SLEEP, OFF
+  String _activeSubMode = 'OFF'; // FOCUS, SLEEP, OFF
   
   final OzsesService _ozsesService = OzsesService();
   Timer? _liveTimer;
@@ -39,7 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Victus'tan gelen anlık verileri ekrana yansıtır
   void _syncLiveData() async {
     final data = await _ozsesService.fetchLiveData();
-    if (data != null && data['status'] == "ACTIVE" && mounted) {
+    if (data != null && data['status'] == 'ACTIVE' && mounted) {
       setState(() {
         _energyScale = data['neon_scale'] ?? 1.0;
         _threshold = (data['dominant_hz'] as num).toDouble();
@@ -70,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("VİCTUS KONTROL MERKEZİ", 
+        title: const Text('VİCTUS KONTROL MERKEZİ', 
           style: TextStyle(letterSpacing: 1.5, fontSize: 16, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.black,
         elevation: 0,
@@ -94,10 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const Icon(Icons.waves, color: Colors.white, size: 45),
                       const SizedBox(height: 10),
                       Text(
-                        "${_threshold.toInt()} Hz",
+                        '${_threshold.toInt()} Hz',
                         style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold),
                       ),
-                      const Text("CANLI ANALİZ", 
+                      const Text('CANLI ANALİZ', 
                         style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 2)),
                     ],
                   ),
@@ -107,14 +107,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
 
           const SizedBox(height: 40),
-          _buildSectionTitle("SİSTEM KONFİGÜRASYONU"),
+          _buildSectionTitle('SİSTEM KONFİGÜRASYONU'),
           
           // 2. OTONOM MOD ŞALTERİ
           SwitchListTile(
-            title: const Text("Otonom Analiz Modu", style: TextStyle(color: Colors.white, fontSize: 14)),
-            subtitle: const Text("Ritim ve saate göre otomatik renk yönetimi", 
+            title: const Text('Otonom Analiz Modu', style: TextStyle(color: Colors.white, fontSize: 14)),
+            subtitle: const Text('Ritim ve saate göre otomatik renk yönetimi', 
               style: TextStyle(color: Colors.white30, fontSize: 11)),
-            activeColor: Colors.cyanAccent,
+            activeThumbColor: Colors.cyanAccent,
             value: _isAutonomous,
             onChanged: (val) {
               setState(() => _isAutonomous = val);
@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Manuel Eşik: ${_threshold.toInt()}", 
+                Text('Manuel Eşik: ${_threshold.toInt()}', 
                   style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 Slider(
                   value: _threshold,
@@ -144,15 +144,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
 
           const SizedBox(height: 30),
-          _buildSectionTitle("SİBER FREKANS KATMANI (GİZLİ)"),
+          _buildSectionTitle('SİBER FREKANS KATMANI (GİZLİ)'),
           const SizedBox(height: 15),
 
           // 4. ODAK VE UYKU BUTONLARI
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildSubliminalButton("ODAK", "FOCUS", Icons.bolt, Colors.blueAccent),
-              _buildSubliminalButton("UYKU", "SLEEP", Icons.nightlight_round, Colors.deepPurpleAccent),
+              _buildSubliminalButton('ODAK', 'FOCUS', Icons.bolt, Colors.blueAccent),
+              _buildSubliminalButton('UYKU', 'SLEEP', Icons.nightlight_round, Colors.deepPurpleAccent),
             ],
           ),
         ],
@@ -173,17 +173,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool isActive = _activeSubMode == mode;
     return InkWell(
       onTap: () {
-        setState(() => _activeSubMode = isActive ? "OFF" : mode);
+        setState(() => _activeSubMode = isActive ? 'OFF' : mode);
         _saveSettings();
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
         decoration: BoxDecoration(
-          color: isActive ? color.withOpacity(0.15) : Colors.white.withOpacity(0.05),
+          color: isActive ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: isActive ? color : Colors.white10, width: 1.5),
-          boxShadow: isActive ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 10)] : [],
+          boxShadow: isActive ? [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 10)] : [],
         ),
         child: Row(
           children: [
@@ -199,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildNeonGlassCard({required Widget child, required Color neonColor}) {
     return Container(
       decoration: BoxDecoration(
-        boxShadow: [BoxShadow(color: neonColor.withOpacity(0.2), blurRadius: 40, spreadRadius: 5)],
+        boxShadow: [BoxShadow(color: neonColor.withValues(alpha: 0.2), blurRadius: 40, spreadRadius: 5)],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(25),
@@ -207,9 +207,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: neonColor.withOpacity(0.4), width: 1.5),
+              border: Border.all(color: neonColor.withValues(alpha: 0.4), width: 1.5),
             ),
             child: child,
           ),

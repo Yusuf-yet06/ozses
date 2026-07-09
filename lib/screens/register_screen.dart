@@ -4,7 +4,7 @@ import '../services/auth_service.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -25,7 +25,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Tüm alanları doldurun!"), backgroundColor: Colors.redAccent),
+        const SnackBar(content: Text('Tüm alanları doldurun!'), backgroundColor: Colors.redAccent),
       );
       return;
     }
@@ -39,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Kayıt Hatası: ${e.toString()}"), backgroundColor: Colors.redAccent),
+        SnackBar(content: Text('Kayıt Hatası: ${e.toString()}'), backgroundColor: Colors.redAccent),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -52,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text(
-          "SİBER AĞA KATIL",
+          'SİBER AĞA KATIL',
           style: TextStyle(
             color: Colors.purpleAccent,
             fontWeight: FontWeight.bold,
@@ -69,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: RadialGradient(
             center: Alignment.topCenter,
             radius: 1.5,
-            colors: [Colors.purpleAccent.withOpacity(0.15), Colors.black],
+            colors: [Colors.purpleAccent.withValues(alpha: 0.15), Colors.black],
           ),
         ),
         child: Center(
@@ -89,13 +89,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.purpleAccent.withOpacity(0.5),
+                              color: Colors.purpleAccent.withValues(alpha: 0.5),
                               blurRadius: 25,
                               spreadRadius: 2,
                             )
                           ],
                           border: Border.all(
-                              color: Colors.purpleAccent.withOpacity(0.8),
+                              color: Colors.purpleAccent.withValues(alpha: 0.8),
                               width: 2),
                         ),
                         child: const CircleAvatar(
@@ -123,20 +123,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       children: [
                         _buildSiberTextField(
-                          hint: "Kullanıcı Adı",
+                          hint: 'Kullanıcı Adı',
                           icon: Icons.person_outline,
                           controller: _userController,
                         ),
                         const Divider(color: Colors.white10, height: 1),
                         _buildSiberTextField(
-                          hint: "E-Posta Adresi",
+                          hint: 'E-Posta Adresi',
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           controller: _emailController,
                         ),
                         const Divider(color: Colors.white10, height: 1),
                         _buildSiberTextField(
-                          hint: "Siber Şifre",
+                          hint: 'Siber Şifre',
                           icon: Icons.lock_outline,
                           isPassword: true,
                           controller: _passController,
@@ -156,14 +156,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
-                        color: Colors.purpleAccent.withOpacity(0.15),
+                        color: Colors.purpleAccent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: Colors.purpleAccent.withOpacity(0.8),
+                            color: Colors.purpleAccent.withValues(alpha: 0.8),
                             width: 2),
                         boxShadow: [
                           BoxShadow(
-                              color: Colors.purpleAccent.withOpacity(0.3),
+                              color: Colors.purpleAccent.withValues(alpha: 0.3),
                               blurRadius: 15),
                         ],
                       ),
@@ -174,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
                         : const Text(
-                          "SİSTEME MÜHÜRLE",
+                          'SİSTEME MÜHÜRLE',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -229,13 +229,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildGlassCard({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
         border:
-            Border.all(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+            Border.all(color: Colors.purpleAccent.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-              color: Colors.purpleAccent.withOpacity(0.05),
+              color: Colors.purpleAccent.withValues(alpha: 0.05),
               blurRadius: 20,
               spreadRadius: 5)
         ],

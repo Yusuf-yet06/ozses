@@ -56,9 +56,9 @@ class SongListView extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: isChecked
-                ? themeColor.withOpacity(0.3)
+                ? themeColor.withValues(alpha: 0.3)
                 : (isSelected
-                    ? themeColor.withOpacity(0.1)
+                    ? themeColor.withValues(alpha: 0.1)
                     : Colors.transparent),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -81,9 +81,9 @@ class SongListView extends StatelessWidget {
             trailing: isSelectionMode
                 ? null
                 : IconButton(
-                    icon: Icon(Icons.share, color: Colors.white54),
+                    icon: const Icon(Icons.share, color: Colors.white54),
                     onPressed: () {
-                      Share.share("🎧 Şu an dinliyorum: $safeName\nÖZSES Müzik ile keşfettim!");
+                      Share.share('🎧 Şu an dinliyorum: $safeName\nÖZSES Müzik ile keşfettim!');
                     },
                   ),
             onTap: () => onSongTap(song),
@@ -104,16 +104,16 @@ class SongListView extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                    color: themeColor.withOpacity(0.2),
+                    color: themeColor.withValues(alpha: 0.2),
                     blurRadius: 50,
                     spreadRadius: 5)
               ],
             ),
             child: Icon(Icons.music_off_outlined,
-                size: 80, color: themeColor.withOpacity(0.5)),
+                size: 80, color: themeColor.withValues(alpha: 0.5)),
           ),
           const SizedBox(height: 20),
-          Text("ÖZSES V7 HENÜZ SESSİZ",
+          Text('ÖZSES V7 HENÜZ SESSİZ',
               style: TextStyle(
                   color: themeColor,
                   fontSize: 18,
@@ -123,9 +123,9 @@ class SongListView extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onPickFiles,
             icon: const Icon(Icons.add),
-            label: const Text("ŞİMDİ MÜZİK YÜKLE"),
+            label: const Text('ŞİMDİ MÜZİK YÜKLE'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: themeColor.withOpacity(0.1),
+              backgroundColor: themeColor.withValues(alpha: 0.1),
               foregroundColor: themeColor,
               side: BorderSide(color: themeColor),
               shape: RoundedRectangleBorder(

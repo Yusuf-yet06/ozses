@@ -4,7 +4,7 @@ import 'lib/main.dart'; // audioHandler ana motoru için
 
 class PlaybackModule extends SiberModule {
   @override
-  String get name => "Oynatma_Motoru_Lobu";
+  String get name => 'Oynatma_Motoru_Lobu';
 
   @override
   List<String> get supportedActions =>

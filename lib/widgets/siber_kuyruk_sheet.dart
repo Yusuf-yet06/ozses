@@ -50,7 +50,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
       decoration: BoxDecoration(
         color: const Color(0xFF080810),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
@@ -58,7 +58,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
           Container(
             width: 40, height: 4,
             margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(color: color.withOpacity(0.5), borderRadius: BorderRadius.circular(2)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(2)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -70,25 +70,25 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.3))),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withValues(alpha: 0.3))),
                   child: Text('${_queue.length} şarkı', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
           ),
 
-          Divider(color: color.withOpacity(0.1), height: 16),
+          Divider(color: color.withValues(alpha: 0.1), height: 16),
 
           if (_queue.isEmpty)
-            Expanded(
+            const Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.queue_music_rounded, color: Colors.white12, size: 60),
-                    const SizedBox(height: 12),
-                    const Text('Kuyruk boş', style: TextStyle(color: Colors.white38, fontSize: 14)),
-                    const Text('Bir şarkı çal ve buraya gelir', style: TextStyle(color: Colors.white24, fontSize: 11)),
+                    SizedBox(height: 12),
+                    Text('Kuyruk boş', style: TextStyle(color: Colors.white38, fontSize: 14)),
+                    Text('Bir şarkı çal ve buraya gelir', style: TextStyle(color: Colors.white24, fontSize: 11)),
                   ],
                 ),
               ),
@@ -124,7 +124,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 20),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
+                        color: Colors.red.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(Icons.delete_outline, color: Colors.redAccent),
@@ -143,10 +143,10 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
                         margin: const EdgeInsets.symmetric(vertical: 3),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isCurrent ? color.withOpacity(0.12) : Colors.white.withOpacity(0.03),
+                          color: isCurrent ? color.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.03),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: isCurrent ? color.withOpacity(0.4) : Colors.white.withOpacity(0.05),
+                            color: isCurrent ? color.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.05),
                             width: isCurrent ? 1 : 0.5,
                           ),
                         ),
@@ -179,7 +179,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
                                   ),
                                   Text(
                                     item.artist ?? 'Bilinmeyen',
-                                    style: TextStyle(color: isCurrent ? color.withOpacity(0.8) : Colors.white38, fontSize: 11),
+                                    style: TextStyle(color: isCurrent ? color.withValues(alpha: 0.8) : Colors.white38, fontSize: 11),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -190,7 +190,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
                             ReorderableDragStartListener(
                               index: idx,
                               child: Icon(Icons.drag_handle_rounded,
-                                  color: isCurrent ? color.withOpacity(0.6) : Colors.white12, size: 20),
+                                  color: isCurrent ? color.withValues(alpha: 0.6) : Colors.white12, size: 20),
                             ),
                           ],
                         ),

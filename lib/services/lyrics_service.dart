@@ -7,8 +7,8 @@ class LyricsService {
     try {
       // Arama hatalarını önlemek için .mp3 uzantılarını temizle
       String safeArtist =
-          (artist.toLowerCase().contains("victus") || artist.isEmpty)
-              ? ""
+          (artist.toLowerCase().contains('victus') || artist.isEmpty)
+              ? ''
               : artist;
       String safeTitle = title
           .replaceAll(RegExp(r'\.mp3|\.wav|\.m4a', caseSensitive: false), '')
@@ -40,7 +40,7 @@ class LyricsService {
         }
       }
     } catch (e) {
-      print("Siber Hata: Şarkı sözü okunamadı -> $e");
+      print('Siber Hata: Şarkı sözü okunamadı -> $e');
     }
     return null;
   }

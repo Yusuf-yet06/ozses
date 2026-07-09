@@ -114,7 +114,7 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
       decoration: BoxDecoration(
         color: const Color(0xFF07090F),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: SafeArea(
         top: false,
@@ -127,7 +127,7 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
               Container(
                 width: 40, height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(color: color.withOpacity(0.5), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(2)),
               ),
 
               // Başlık
@@ -155,9 +155,9 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                         child: CircularProgressIndicator(
                           value: _isActive ? progress : 1.0,
                           strokeWidth: 6,
-                          backgroundColor: color.withOpacity(0.1),
+                          backgroundColor: color.withValues(alpha: 0.1),
                           valueColor: AlwaysStoppedAnimation<Color>(
-                              _isActive ? color : color.withOpacity(0.3)),
+                              _isActive ? color : color.withValues(alpha: 0.3)),
                         ),
                       ),
                       // Pulse daire (aktifken)
@@ -168,8 +168,8 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                             width: 130, height: 130,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: color.withOpacity(0.05),
-                              border: Border.all(color: color.withOpacity(0.15), width: 1),
+                              color: color.withValues(alpha: 0.05),
+                              border: Border.all(color: color.withValues(alpha: 0.15), width: 1),
                             ),
                           ),
                         ),
@@ -184,11 +184,11 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                             _isActive
                                 ? _formatTime(_remainingSeconds)
                                 : '${_selectedMinutes.toInt()}:00',
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                fontFeatures: [const FontFeature.tabularFigures()]),
+                                fontFeatures: [FontFeature.tabularFigures()]),
                           ),
                           Text(_isActive ? 'Kalan süre' : 'Süre seç',
                               style: const TextStyle(color: Colors.white38, fontSize: 11)),
@@ -216,9 +216,9 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                 SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     activeTrackColor: color,
-                    inactiveTrackColor: color.withOpacity(0.15),
+                    inactiveTrackColor: color.withValues(alpha: 0.15),
                     thumbColor: color,
-                    overlayColor: color.withOpacity(0.2),
+                    overlayColor: color.withValues(alpha: 0.2),
                     trackHeight: 3,
                   ),
                   child: Slider(
@@ -238,7 +238,7 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: isSelected ? color.withOpacity(0.2) : Colors.white.withOpacity(0.04),
+                          color: isSelected ? color.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: isSelected ? color : Colors.white12),
                         ),
@@ -279,7 +279,7 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isActive ? Colors.red.withOpacity(0.8) : color,
+                    backgroundColor: _isActive ? Colors.red.withValues(alpha: 0.8) : color,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -310,9 +310,9 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: value ? color.withOpacity(0.07) : Colors.white.withOpacity(0.03),
+        color: value ? color.withValues(alpha: 0.07) : Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: value ? color.withOpacity(0.3) : Colors.white12),
+        border: Border.all(color: value ? color.withValues(alpha: 0.3) : Colors.white12),
       ),
       child: Row(
         children: [
@@ -330,8 +330,8 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: color,
-            activeTrackColor: color.withOpacity(0.3),
+            activeThumbColor: color,
+            activeTrackColor: color.withValues(alpha: 0.3),
           ),
         ],
       ),

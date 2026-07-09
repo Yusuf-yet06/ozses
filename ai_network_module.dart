@@ -4,7 +4,7 @@ import 'siber_beyin.dart';
 
 class AiNetworkModule extends SiberModule {
   @override
-  String get name => "Yapay_Zeka_Siber_Ag_Lobu";
+  String get name => 'Yapay_Zeka_Siber_Ag_Lobu';
 
   @override
   List<String> get supportedActions => ['analyze_text_command'];
@@ -12,7 +12,7 @@ class AiNetworkModule extends SiberModule {
   @override
   Future<void> initModule() async {
     print(
-        "🌐 AI Ağı: Python devreden çıkarıldı, %100 Dart (İç) Yapay Zeka devrede!");
+        '🌐 AI Ağı: Python devreden çıkarıldı, %100 Dart (İç) Yapay Zeka devrede!');
   }
 
   @override
@@ -65,7 +65,7 @@ class AiNetworkModule extends SiberModule {
       }
 
       if (karar != 'beklemede') {
-        print("🧠 İÇSEL SİBER BEYİN KARARI: $karar");
+        print('🧠 İÇSEL SİBER BEYİN KARARI: $karar');
         SiberBeyin()
             .processCommand(SiberCommand(action: karar, source: 'ai_network'));
         return true;

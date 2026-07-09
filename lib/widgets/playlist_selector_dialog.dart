@@ -15,7 +15,7 @@ class PlaylistSelectorDialog extends StatelessWidget {
 
     return AlertDialog(
       backgroundColor: Colors.grey[900],
-      title: Text("Listeye Ekle",
+      title: Text('Listeye Ekle',
           style: TextStyle(color: themeColor, fontSize: 16)),
       content: SizedBox(
         width: double.maxFinite,
@@ -36,8 +36,9 @@ class PlaylistSelectorDialog extends StatelessWidget {
                   await service.addSongToPlaylist(
                       names[index], song.path ?? 'bilinmeyen_yol');
 
-                  if (!context.mounted)
+                  if (!context.mounted) {
                     return; // 🛡️ SİBER KALKAN: Ekran hala açık mı kontrolü
+                  }
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

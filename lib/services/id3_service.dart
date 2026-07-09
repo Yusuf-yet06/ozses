@@ -18,7 +18,7 @@ class ID3Service {
         return mp3.getMetaTags() ?? {};
       }
     } catch (e) {
-      print("Siber Hata: ID3 Künyesi Okunamadı -> $e");
+      print('Siber Hata: ID3 Künyesi Okunamadı -> $e');
     }
     return {};
   }

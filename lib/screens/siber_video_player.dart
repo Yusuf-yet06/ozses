@@ -56,7 +56,7 @@ class _SiberVideoPlayerState extends State<SiberVideoPlayer> {
         setState(() => _isWindowsReady = true);
       }
     } catch (e) {
-      print("Siber Windows Video Hatası: $e");
+      print('Siber Windows Video Hatası: $e');
     }
   }
 
@@ -79,7 +79,7 @@ class _SiberVideoPlayerState extends State<SiberVideoPlayer> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text("SİBER KLİP: ${widget.title}",
+        title: Text('SİBER KLİP: ${widget.title}',
             style: TextStyle(color: widget.themeColor, fontSize: 14),
             maxLines: 1,
             overflow: TextOverflow.ellipsis),
@@ -89,7 +89,7 @@ class _SiberVideoPlayerState extends State<SiberVideoPlayer> {
         child: Container(
           decoration: BoxDecoration(boxShadow: [
             BoxShadow(
-                color: widget.themeColor.withOpacity(0.3),
+                color: widget.themeColor.withValues(alpha: 0.3),
                 blurRadius: 30,
                 spreadRadius: 5)
           ]),

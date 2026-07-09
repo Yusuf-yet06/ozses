@@ -19,7 +19,7 @@ class PlaylistSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-        border: Border.all(color: themeColor.withOpacity(0.3)),
+        border: Border.all(color: themeColor.withValues(alpha: 0.3)),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -29,11 +29,11 @@ class PlaylistSheet extends StatelessWidget {
             width: 50,
             height: 5,
             decoration: BoxDecoration(
-                color: themeColor.withOpacity(0.5),
+                color: themeColor.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10)),
           ),
           const SizedBox(height: 20),
-          Text("PLAYLISTLERİN",
+          Text('PLAYLISTLERİN',
               style: TextStyle(
                   color: themeColor,
                   fontWeight: FontWeight.bold,
@@ -45,7 +45,7 @@ class PlaylistSheet extends StatelessWidget {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return const Padding(
                     padding: EdgeInsets.all(20),
-                    child: Text("Henüz liste yok gardaşım.",
+                    child: Text('Henüz liste yok gardaşım.',
                         style: TextStyle(color: Colors.white54)));
               }
               return Flexible(

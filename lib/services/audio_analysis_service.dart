@@ -126,9 +126,9 @@ class AudioAnalysisService {
                 maxMag = magnitudes[i];
                 dominantHz = hz;
               }
-              if (hz < 250)
+              if (hz < 250) {
                 bass += magnitudes[i];
-              else if (hz < 2000)
+              } else if (hz < 2000)
                 mid += magnitudes[i];
               else
                 treble += magnitudes[i];
@@ -136,9 +136,9 @@ class AudioAnalysisService {
 
             // 🎯 Ruh Hali Karar Mekanizması (Şahsi Keşfet'in Beyni)
             String waveType = "Dengeli / Chill";
-            if (bass > mid * 1.5 && bass > treble)
+            if (bass > mid * 1.5 && bass > treble) {
               waveType = "Agresif / Sub-Bass";
-            else if (mid > bass && mid > treble)
+            } else if (mid > bass && mid > treble)
               waveType = "Vokal / Akustik";
             else if (treble > bass * 1.5 && treble > mid)
               waveType = "Enerjik / Tiz";

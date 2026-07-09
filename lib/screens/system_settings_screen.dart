@@ -66,7 +66,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Uyku zamanlayıcısı sona erdi, müzik durduruldu."),
+              content: Text('Uyku zamanlayıcısı sona erdi, müzik durduruldu.'),
               backgroundColor: Colors.green,
             ),
           );
@@ -77,7 +77,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
     Navigator.pop(context); // Dialog'u kapat
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("$minutes dakika sonra müzik durdurulacak."),
+        content: Text('$minutes dakika sonra müzik durdurulacak.'),
         backgroundColor: Colors.deepPurpleAccent,
       ),
     );
@@ -89,13 +89,13 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Uyku Zamanlayıcısı",
+          title: const Text('Uyku Zamanlayıcısı',
               style: TextStyle(color: Colors.cyanAccent)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [15, 30, 45, 60]
                 .map((minutes) => ListTile(
-                      title: Text("$minutes Dakika",
+                      title: Text('$minutes Dakika',
                           style: const TextStyle(color: Colors.white)),
                       onTap: () => _startSleepTimer(minutes),
                     ))
@@ -110,12 +110,12 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("Zamanlayıcı iptal edildi."),
+                      content: Text('Zamanlayıcı iptal edildi.'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );
                 },
-                child: const Text("Zamanlayıcıyı İptal Et",
+                child: const Text('Zamanlayıcıyı İptal Et',
                     style: TextStyle(color: Colors.redAccent)),
               ),
           ],
@@ -131,13 +131,13 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: const Text("Yeni Playlist Oluştur",
+          title: const Text('Yeni Playlist Oluştur',
               style: TextStyle(color: Colors.cyanAccent)),
           content: TextField(
             controller: tc,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
-              hintText: "Playlist Adı",
+              hintText: 'Playlist Adı',
               hintStyle: TextStyle(color: Colors.white38),
             ),
             autofocus: true,
@@ -146,7 +146,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child:
-                  const Text("İptal", style: TextStyle(color: Colors.white54)),
+                  const Text('İptal', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -160,7 +160,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
                   _loadPlaylists();
                 }
               },
-              child: const Text("Oluştur"),
+              child: const Text('Oluştur'),
             ),
           ],
         );
@@ -173,7 +173,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("SİSTEM AYARLARI",
+        title: const Text('SİSTEM AYARLARI',
             style: TextStyle(color: Colors.white, fontSize: 16)),
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.cyanAccent),
@@ -182,25 +182,25 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          _buildSectionTitle("Zamanlayıcı Oluşturucu"),
+          _buildSectionTitle('Zamanlayıcı Oluşturucu'),
           Card(
             color: Colors.grey[900],
             child: ListTile(
               leading:
                   const Icon(Icons.timer_outlined, color: Colors.cyanAccent),
-              title: const Text("Uyku Zamanlayıcısı",
+              title: const Text('Uyku Zamanlayıcısı',
                   style: TextStyle(color: Colors.white)),
               subtitle: Text(
                 _remainingSeconds > 0
                     ? "Kalan Süre: ${(_remainingSeconds / 60).floor()}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}"
-                    : "Pasif",
+                    : 'Pasif',
                 style: const TextStyle(color: Colors.white70),
               ),
               onTap: _showTimerDialog,
             ),
           ),
           const SizedBox(height: 24),
-          _buildSectionTitle("Oluşturucu"),
+          _buildSectionTitle('Oluşturucu'),
           Card(
             color: Colors.grey[900],
             child: Column(
@@ -208,9 +208,9 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.queue_music_outlined,
                       color: Colors.cyanAccent),
-                  title: const Text("Aktif Olan Listeler",
+                  title: const Text('Aktif Olan Listeler',
                       style: TextStyle(color: Colors.white)),
-                  subtitle: Text("${_playlists.length} adet playlist bulundu.",
+                  subtitle: Text('${_playlists.length} adet playlist bulundu.',
                       style: const TextStyle(color: Colors.white70)),
                 ),
                 if (_playlists.isNotEmpty)
@@ -235,7 +235,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
                 ListTile(
                   leading:
                       const Icon(Icons.playlist_add, color: Colors.cyanAccent),
-                  title: const Text("Yeni Liste Oluştur",
+                  title: const Text('Yeni Liste Oluştur',
                       style: TextStyle(color: Colors.white)),
                   onTap: _showCreatePlaylistDialog,
                 ),
@@ -243,20 +243,20 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildSectionTitle("Siber Kalkan (Önbellek & Sorun Giderme)"),
+          _buildSectionTitle('Siber Kalkan (Önbellek & Sorun Giderme)'),
           Card(
             color: Colors.grey[900],
             child: ListTile(
               leading: const Icon(Icons.cleaning_services, color: Colors.cyanAccent),
-              title: const Text("Tüm Siber Önbelleği Temizle", style: TextStyle(color: Colors.white)),
-              subtitle: const Text("Eski trendleri, arama geçmişini ve bozuk akış linklerini siler. İndirme veya oynatma takılıyorsa bunu kullanın.", style: TextStyle(color: Colors.white70, fontSize: 12)),
+              title: const Text('Tüm Siber Önbelleği Temizle', style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Eski trendleri, arama geçmişini ve bozuk akış linklerini siler. İndirme veya oynatma takılıyorsa bunu kullanın.', style: TextStyle(color: Colors.white70, fontSize: 12)),
               onTap: () async {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove('siber_trend_cache');
                 await prefs.remove('siber_personal_artists');
                 await prefs.remove('siber_personal_genres');
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("🧹 Siber Önbellek tamamen temizlendi! Lütfen uygulamayı yeniden başlatın."), backgroundColor: Colors.green),
+                  const SnackBar(content: Text('🧹 Siber Önbellek tamamen temizlendi! Lütfen uygulamayı yeniden başlatın.'), backgroundColor: Colors.green),
                 );
               },
             ),

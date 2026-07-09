@@ -8,7 +8,7 @@ class SiberKopru {
 
   // 🛡️ SİBER KALKAN: Güvenlik Jetonu (Token) Üretici
   static Future<Map<String, String>> _getAuthHeaders() async {
-    Map<String, String> headers = {"Content-Type": "application/json"};
+    Map<String, String> headers = {'Content-Type': 'application/json'};
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -33,13 +33,13 @@ class SiberKopru {
           .timeout(const Duration(seconds: 2));
 
       if (response.statusCode == 200) {
-        print("✅ Siber Beyin Yanıt Verdi: ${response.body}");
+        print('✅ Siber Beyin Yanıt Verdi: ${response.body}');
         _siberKalkanAktif = false;
         return true;
       }
     } catch (e) {
       print(
-          "🛡️ SİBER KALKAN DEVREDE: Otonom Motor beyni kapalı. Uygulama lokal moda alındı. $e");
+          '🛡️ SİBER KALKAN DEVREDE: Otonom Motor beyni kapalı. Uygulama lokal moda alındı. $e');
       _siberKalkanAktif = true;
     }
     return false;
@@ -48,7 +48,7 @@ class SiberKopru {
   // 🎯 SİBER HAMLE: Sesli veya yazılı komutları metin olarak Ağa atar, AI kararını geri alır
   static Future<String> komutGonder(String komutMetni) async {
     if (_siberKalkanAktif) {
-      return "offline_mod"; // Bağlantı zaten yoksa boşuna istek atıp sistemi yorma
+      return 'offline_mod'; // Bağlantı zaten yoksa boşuna istek atıp sistemi yorma
     }
 
     try {
@@ -56,19 +56,19 @@ class SiberKopru {
           .post(
             Uri.parse('$_baseUrl/siber-komut'),
             headers: await _getAuthHeaders(),
-            body: jsonEncode({"text": komutMetni}),
+            body: jsonEncode({'text': komutMetni}),
           )
           .timeout(const Duration(seconds: 2)); // 🛡️ SİBER İZOLATÖR
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-        return decoded['karar'] ?? "Bilinmiyor";
+        return decoded['karar'] ?? 'Bilinmiyor';
       }
     } catch (e) {
-      print("🛡️ Siber İletişim Koptu (İzolatör Devrede): $e");
+      print('🛡️ Siber İletişim Koptu (İzolatör Devrede): $e');
       _siberKalkanAktif = true;
-      return "offline_mod";
+      return 'offline_mod';
     }
-    return "hata";
+    return 'hata';
   }
 }

@@ -7,7 +7,6 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'dart:math' as math;
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:shared_preferences/shared_preferences.dart'; // 🎯 Hızlı favori okuması için
 import 'package:http/http.dart'
@@ -78,18 +77,18 @@ class _HomeScreenState extends State<HomeScreen> {
   String _currentProcessedId =
       ''; // 🎯 Titremeyi (Flicker) engelleyen kimlik mührü
   double _neonScale = 1.0; // 🎯 SİBER RİTİM ÇARPAN
-  String _waveType = "Analiz Bekleniyor..."; // 🎯 SİBER RUH HALİ
+  String _waveType = 'Analiz Bekleniyor...'; // 🎯 SİBER RUH HALİ
   String _topHistorySongName =
-      "Zirve Bekleniyor..."; // 🎯 SİBER HAMLE: Zirve Müzik
-  String _topHistorySongPath = "";
+      'Zirve Bekleniyor...'; // 🎯 SİBER HAMLE: Zirve Müzik
+  String _topHistorySongPath = '';
 
   StreamSubscription? _mediaItemSub;
   StreamSubscription? _playbackStateSub;
   StreamSubscription? _positionSub;
   StreamSubscription?
       _analysisSub; // 🎯 SİBER HAMLE: Analiz motoru için abonelik mührü
-  Map<String, Map<String, dynamic>> _downloadingTasks = {};
-  Map<String, Timer> _downloadTimers = {};
+  final Map<String, Map<String, dynamic>> _downloadingTasks = {};
+  final Map<String, Timer> _downloadTimers = {};
 
   @override
   void initState() {
@@ -131,15 +130,16 @@ class _HomeScreenState extends State<HomeScreen> {
           _topHistorySongName = historyList.first.name
               .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
               .trim();
-          if (_topHistorySongName.isEmpty)
-            _topHistorySongName = "Bilinmeyen Müzik";
+          if (_topHistorySongName.isEmpty) {
+            _topHistorySongName = 'Bilinmeyen Müzik';
+          }
           _topHistorySongPath = historyList.first.path;
         });
       } else if (mounted) {
-        setState(() => _topHistorySongName = "Henüz Veri Yok");
+        setState(() => _topHistorySongName = 'Henüz Veri Yok');
       }
     } catch (e) {
-      print("Siber İstatistik Hatası: $e");
+      print('Siber İstatistik Hatası: $e');
     }
   }
 
@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           setState(() {
             _currentSongName = item.title;
-            _currentArtist = item.artist ?? "Victus V7";
+            _currentArtist = item.artist ?? 'Victus V7';
             _dur = item.duration ?? Duration.zero;
           });
         }
@@ -362,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
           });
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text("❌ $title indirildi ama dosya bulunamadı!"),
+              content: Text('❌ $title indirildi ama dosya bulunamadı!'),
               backgroundColor: Colors.redAccent,
             ));
           }
@@ -379,8 +379,8 @@ class _HomeScreenState extends State<HomeScreen> {
           // SİBER HAMLE: Artık gerçek cihazlara/sistemlere geçiyoruz!
           // Bilgisayarının (sunucunun) yerel IP adresini (örn: "192.168.1.55") buraya gir.
           String siberIP =
-              "10.0.2.2"; // 🎯 BURAYI GERÇEK IP İLE DEĞİŞTİR (Örn: "192.168.1.55")
-          playPath = "http://$siberIP:8000/arsiv/$encodedFileName";
+              '10.0.2.2'; // 🎯 BURAYI GERÇEK IP İLE DEĞİŞTİR (Örn: "192.168.1.55")
+          playPath = 'http://$siberIP:8000/arsiv/$encodedFileName';
         }
 
         if (_playlistController.currentPlaylistName != null) {
@@ -417,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("✅ $title başarıyla arşive mühürlendi!"),
+          content: Text('✅ $title başarıyla arşive mühürlendi!'),
           backgroundColor: Colors.greenAccent,
         ));
       } else if (status['status'] == 'hata') {
@@ -428,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _playlist.removeWhere((s) => s.path == dummyPath);
         });
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("❌ $title indirilemedi!"),
+          content: Text('❌ $title indirilemedi!'),
           backgroundColor: Colors.redAccent,
         ));
       } else if (status['status'] == 'indiriliyor') {
@@ -455,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Siber Tarayıcı cihazınızı müzikler için tarıyor (MYT Mantığı)..."),
+            content: Text('Siber Tarayıcı cihazınızı müzikler için tarıyor (MYT Mantığı)...'),
             backgroundColor: Colors.deepPurpleAccent,
           ),
         );
@@ -466,7 +466,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Siber Yükleme: ${foundPaths.length} müzik dosyası mühürleniyor..."),
+              content: Text('Siber Yükleme: ${foundPaths.length} müzik dosyası mühürleniyor...'),
               backgroundColor: Colors.deepPurpleAccent,
             ),
           );
@@ -512,9 +512,9 @@ class _HomeScreenState extends State<HomeScreen> {
           final mediaItems = _playlist
               .map((s) => MediaItem(
                     id: s.path ?? 'bilinmeyen_yol',
-                    album: "ÖZSES Arşivi",
+                    album: 'ÖZSES Arşivi',
                     title: _getSafeSongName(s),
-                    artist: "Victus V7",
+                    artist: 'Victus V7',
                     duration: Duration(milliseconds: s.duration ?? 0),
                   ))
               .toList();
@@ -528,14 +528,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  "${foundPaths.length} Adet Müzik Yüklendi ve Mühürlendi!"),
+                  '${foundPaths.length} Adet Müzik Yüklendi ve Mühürlendi!'),
               backgroundColor: Colors.greenAccent,
             ),
           );
         }
       }
     } catch (e) {
-      print("Siber Hata: Tarama Çıktı -> $e");
+      print('Siber Hata: Tarama Çıktı -> $e');
     }
   }
 
@@ -544,14 +544,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: const [
+          content: const Row(
+            children: [
               Icon(Icons.auto_awesome, color: Colors.amber),
               SizedBox(width: 10),
-              Text("Siber Zeka arşivi analiz ediyor..."),
+              Text('Siber Zeka arşivi analiz ediyor...'),
             ],
           ),
-          backgroundColor: themeColor.withOpacity(0.9),
+          backgroundColor: themeColor.withValues(alpha: 0.9),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -561,22 +561,22 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     List<String> allSongPaths = prefs.getStringList('all_songs') ?? [];
     if (allSongPaths.isEmpty) {
-       allSongPaths = _playlist.map((e) => e.path ?? "").where((e) => e.isNotEmpty).toList();
+       allSongPaths = _playlist.map((e) => e.path ?? '').where((e) => e.isNotEmpty).toList();
     }
 
     // Kategoriler ve onlara ait listeler
     Map<String, List<String>> generatedLists = {
-      "Siber Mix: Rap & Hiphop": [],
-      "Siber Mix: Deep Bass & EDM": [],
-      "Siber Mix: Melankolik": [],
-      "Siber Mix: Türkçe Pop": [],
+      'Siber Mix: Rap & Hiphop': [],
+      'Siber Mix: Deep Bass & EDM': [],
+      'Siber Mix: Melankolik': [],
+      'Siber Mix: Türkçe Pop': [],
     };
 
     // Anahtar kelime sözlüğü
-    final rapKeywords = ["rap", "hiphop", "ceza", "sagopa", "ezhel", "khontkar", "defkhan", "ben fero", "şehinşah", "beat", "drill", "uzi", "cakal", "reckol", "sansar", "hidra"];
-    final bassKeywords = ["bass", "remix", "edm", "trap", "dj", "club", "mix", "k-391", "alan walker", "slowed", "reverb", "phonk", "electronic"];
-    final melankolikKeywords = ["slow", "akustik", "cover", "duygusal", "aşk", "hüzün", "melankolik", "yavaş", "sad", "lofi"];
-    final popKeywords = ["pop", "tarkan", "murat boz", "hadise", "edis", "zeynep", "hit", "türkçe pop", "gülşen"];
+    final rapKeywords = ['rap', 'hiphop', 'ceza', 'sagopa', 'ezhel', 'khontkar', 'defkhan', 'ben fero', 'şehinşah', 'beat', 'drill', 'uzi', 'cakal', 'reckol', 'sansar', 'hidra'];
+    final bassKeywords = ['bass', 'remix', 'edm', 'trap', 'dj', 'club', 'mix', 'k-391', 'alan walker', 'slowed', 'reverb', 'phonk', 'electronic'];
+    final melankolikKeywords = ['slow', 'akustik', 'cover', 'duygusal', 'aşk', 'hüzün', 'melankolik', 'yavaş', 'sad', 'lofi'];
+    final popKeywords = ['pop', 'tarkan', 'murat boz', 'hadise', 'edis', 'zeynep', 'hit', 'türkçe pop', 'gülşen'];
 
     for (String path in allSongPaths) {
       if (path.isEmpty || path == 'bilinmeyen_yol') continue;
@@ -586,22 +586,22 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Rap kontrolü
       if (rapKeywords.any((k) => fileName.contains(k))) {
-        generatedLists["Siber Mix: Rap & Hiphop"]!.add(path);
+        generatedLists['Siber Mix: Rap & Hiphop']!.add(path);
         added = true;
       }
       // Bass kontrolü
       if (bassKeywords.any((k) => fileName.contains(k))) {
-        generatedLists["Siber Mix: Deep Bass & EDM"]!.add(path);
+        generatedLists['Siber Mix: Deep Bass & EDM']!.add(path);
         added = true;
       }
       // Melankolik kontrolü
       if (melankolikKeywords.any((k) => fileName.contains(k))) {
-        generatedLists["Siber Mix: Melankolik"]!.add(path);
+        generatedLists['Siber Mix: Melankolik']!.add(path);
         added = true;
       }
       // Pop kontrolü
       if (popKeywords.any((k) => fileName.contains(k))) {
-        generatedLists["Siber Mix: Türkçe Pop"]!.add(path);
+        generatedLists['Siber Mix: Türkçe Pop']!.add(path);
         added = true;
       }
     }
@@ -621,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Otonom Analiz Tamamlandı! $totalGenerated adet akıllı liste oluşturuldu."),
+          content: Text('Otonom Analiz Tamamlandı! $totalGenerated adet akıllı liste oluşturuldu.'),
           backgroundColor: Colors.greenAccent.shade700,
         ),
       );
@@ -658,7 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) { final _themeColor = Theme.of(context).colorScheme.primary;
+  Widget build(BuildContext context) { final themeColor = Theme.of(context).colorScheme.primary;
     if (!_isHandlerReady) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -697,10 +697,10 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent, // 🎯 SİBER CAM EFEKTİ İÇİN ŞEFFAF
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.75), // Biraz daha saydam
+            color: Colors.black.withValues(alpha: 0.75), // Biraz daha saydam
             border: Border(
                 right: BorderSide(
-                    color: vibe.themeColor.withOpacity(0.4), width: 2.0)),
+                    color: vibe.themeColor.withValues(alpha: 0.4), width: 2.0)),
           ),
           child: SafeArea(
             child: SingleChildScrollView(
@@ -736,7 +736,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   // 🎯 KÜTÜPHANEM ANA BAŞLIĞI
                   Text(
-                    "KÜTÜPHANEM",
+                    'KÜTÜPHANEM',
                     style: TextStyle(
                       color: vibe.themeColor,
                       fontSize: 18,
@@ -755,14 +755,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         _buildSiberStatCard(
-                          title: "ANLIK RUH HALİ",
+                          title: 'ANLIK RUH HALİ',
                           value: _waveType,
                           icon: Icons.psychology,
                           color: vibe.themeColor,
                         ),
                         const SizedBox(width: 10),
                         _buildSiberStatCard(
-                          title: "ZİRVE FREKANS",
+                          title: 'ZİRVE FREKANS',
                           value: _topHistorySongName,
                           icon: Icons.local_fire_department,
                           color: Colors.orangeAccent,
@@ -809,8 +809,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.8),
+                  Colors.black.withValues(alpha: 0.2),
+                  Colors.black.withValues(alpha: 0.8),
                 ],
               ),
             ),
@@ -829,9 +829,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? false
                               : _playlistController.isGlobalLibrary,
                           playlistTitle: _isEmergentMode
-                              ? "SİBER OTONOM"
+                              ? 'SİBER OTONOM'
                               : (_playlistController.currentPlaylistName ??
-                                  "Arşiv"),
+                                  'Arşiv'),
                           themeColor: vibe.themeColor,
                           onClose: () => _isEmergentMode
                               ? setState(() => _isEmergentMode = false)
@@ -843,7 +843,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.only(left: 8.0),
                           child: IconButton(
                             icon: Icon(Icons.save, color: vibe.themeColor),
-                            tooltip: "Otonom Listeyi Mühürle",
+                            tooltip: 'Otonom Listeyi Mühürle',
                             onPressed: () => _saveEmergentPlaylist(vibe.themeColor),
                           ),
                         ),
@@ -854,14 +854,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: vibe.themeColor.withOpacity(0.15),
+                            color: vibe.themeColor.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                             border: Border.all(
-                                color: vibe.themeColor.withOpacity(0.5),
+                                color: vibe.themeColor.withValues(alpha: 0.5),
                                 width: 1.5),
                             boxShadow: [
                               BoxShadow(
-                                  color: vibe.themeColor.withOpacity(0.2),
+                                  color: vibe.themeColor.withValues(alpha: 0.2),
                                   blurRadius: 10)
                             ],
                           ),
@@ -884,12 +884,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     PopupMenuButton<int>(
                       icon: Icon(Icons.sort, color: vibe.themeColor),
                       color: Colors.grey[900],
-                      tooltip: "Siber Sıralama",
+                      tooltip: 'Siber Sıralama',
                       onSelected: (val) => setState(() => _sortMode = val),
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                             value: 0,
-                            child: Text("Sırayı Bozma",
+                            child: Text('Sırayı Bozma',
                                 style: TextStyle(color: Colors.white))),
                         const PopupMenuItem(
                             value: 1,
@@ -912,17 +912,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                         color: Colors.black
-                            .withOpacity(0.35), // Daha zarif saydamlık
+                            .withValues(alpha: 0.35), // Daha zarif saydamlık
                         borderRadius:
                             BorderRadius.circular(25), // Yuvarlatma arttı
                         border: Border.all(
-                            color: vibe.themeColor.withOpacity(
+                            color: vibe.themeColor.withValues(alpha: 
                                 (0.25 * _neonScale).clamp(0.0, 1.0)),
                             width: 1.5 +
                                 (_neonScale > 1.0 ? (_neonScale - 1.0) : 0)),
                         boxShadow: [
                           BoxShadow(
-                              color: vibe.themeColor.withOpacity(
+                              color: vibe.themeColor.withValues(alpha: 
                                   (0.08 * _neonScale).clamp(0.0, 1.0)),
                               blurRadius: 20 * _neonScale,
                               spreadRadius: 2 +
@@ -972,9 +972,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final mediaItems = displayList
                                       .map((s) => MediaItem(
                                             id: s.path ?? 'bilinmeyen_yol',
-                                            album: "ÖZSES Arşivi",
+                                            album: 'ÖZSES Arşivi',
                                             title: _getSafeSongName(s),
-                                            artist: "Victus V7",
+                                            artist: 'Victus V7',
                                             duration: Duration(milliseconds: s.duration ?? 0),
                                           ))
                                       .toList();
@@ -1019,12 +1019,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(25),
                       border: Border.all(
                           color: vibe.themeColor
-                              .withOpacity((0.6 * _neonScale).clamp(0.0, 1.0)),
+                              .withValues(alpha: (0.6 * _neonScale).clamp(0.0, 1.0)),
                           width: 1.5 +
                               (_neonScale > 1.0 ? (_neonScale - 1.0) * 2 : 0)),
                       boxShadow: [
                         BoxShadow(
-                            color: vibe.themeColor.withOpacity(
+                            color: vibe.themeColor.withValues(alpha: 
                                 (0.3 * _neonScale).clamp(0.0, 1.0)),
                             blurRadius: 20 * _neonScale,
                             spreadRadius: 2 +
@@ -1101,8 +1101,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             path: path,
                                             duration: 0,
                                             title: ''));
-                                    if (song.path != 'bilinmeyen_yol')
+                                    if (song.path != 'bilinmeyen_yol') {
                                       _toggleFavorite(song);
+                                    }
                                   },
                                   onAddToPlaylist: (path) =>
                                       _showAddToPlaylistDialog(path),
@@ -1127,8 +1128,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             path: path,
                                             duration: 0,
                                             title: ''));
-                                    if (song.path != 'bilinmeyen_yol')
+                                    if (song.path != 'bilinmeyen_yol') {
                                       _addSongToQueue(song, playNext);
+                                    }
                                   },
                                 ),
                               );
@@ -1161,12 +1163,12 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
+          color: Colors.black.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: themeColor.withOpacity(0.4), width: 1.5),
+          border: Border.all(color: themeColor.withValues(alpha: 0.4), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: themeColor.withOpacity(0.2),
+              color: themeColor.withValues(alpha: 0.2),
               blurRadius: 20,
               spreadRadius: 2,
             ),
@@ -1185,12 +1187,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                      color: themeColor.withOpacity(0.15),
+                      color: themeColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle),
                   child: Icon(Icons.radar, color: themeColor, size: 20),
                 ),
                 title: const Text(
-                  "KEŞFET",
+                  'KEŞFET',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1206,13 +1208,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _buildNeonButton(
                           icon: Icons.travel_explore,
-                          label: "ŞAHSİ KEŞFET",
+                          label: 'ŞAHSİ KEŞFET',
                           themeColor: Colors.purpleAccent,
                           onPressed: () => _launchPersonalDiscover(themeColor),
                         ),
                         _buildNeonButton(
                           icon: Icons.new_releases,
-                          label: "GENEL KEŞFET",
+                          label: 'GENEL KEŞFET',
                           themeColor: Colors.cyanAccent,
                           onPressed: () => _scanNewRecruits(themeColor),
                         ),
@@ -1233,12 +1235,12 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5), // Buzul Cam Etkisi
+          color: Colors.black.withValues(alpha: 0.5), // Buzul Cam Etkisi
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: themeColor.withOpacity(0.4), width: 1.5),
+          border: Border.all(color: themeColor.withValues(alpha: 0.4), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: themeColor.withOpacity(0.2),
+              color: themeColor.withValues(alpha: 0.2),
               blurRadius: 20,
               spreadRadius: 2,
             ),
@@ -1257,12 +1259,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                      color: themeColor.withOpacity(0.15),
+                      color: themeColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle),
                   child: Icon(Icons.settings, color: themeColor, size: 20),
                 ),
                 title: const Text(
-                  "ARAÇLAR VE AYARLAR",
+                  'ARAÇLAR VE AYARLAR',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1278,7 +1280,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _buildNeonButton(
                           icon: Icons.waves,
-                          label: "DİNLEME MODU",
+                          label: 'DİNLEME MODU',
                           themeColor: themeColor,
                           onPressed: () {
                             Navigator.push(
@@ -1292,20 +1294,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         _buildNeonButton(
                           icon: Icons.folder_special,
-                          label: "CİHAZDAN MÜZİK EKLE",
+                          label: 'CİHAZDAN MÜZİK EKLE',
                           themeColor: themeColor,
                           onPressed: _scanFolderForMusic,
                         ),
                         // 🎯 SİBER HAMLE: Otonom Yapay Zeka Butonu
                         _buildNeonButton(
                           icon: Icons.auto_fix_high,
-                          label: "YAPAY ZEKA LİSTELERİ YAP",
+                          label: 'YAPAY ZEKA LİSTELERİ YAP',
                           themeColor: Colors.amber, // Zeka olduğunu belli eden altın renk
                           onPressed: () => _generateAIPlaylists(themeColor),
                         ),
                         _buildNeonButton(
                           icon: Icons.timer_outlined,
-                          label: "UYKU ZAMANLAYICI",
+                          label: 'UYKU ZAMANLAYICI',
                           themeColor: themeColor,
                           onPressed: () =>
                               _showTimerDialog(context, themeColor),
@@ -1314,7 +1316,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         _buildNeonButton(
                           icon: Icons.history,
-                          label: "DİNLEME GEÇMİŞİ",
+                          label: 'DİNLEME GEÇMİŞİ',
                           themeColor: themeColor,
                           onPressed: () => _showHistoryBottomSheet(themeColor),
                         ),
@@ -1345,7 +1347,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(Icons.library_add, color: themeColor),
               const SizedBox(width: 10),
-              const Text("Yeni Playlist Tipi", style: TextStyle(color: Colors.white, fontSize: 18)),
+              const Text('Yeni Playlist Tipi', style: TextStyle(color: Colors.white, fontSize: 18)),
             ],
           ),
           content: Column(
@@ -1353,8 +1355,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.cyanAccent, size: 28),
-                title: const Text("Manuel Oluştur", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Boş bir liste açıp şarkıları tek tek ekleyin.", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                title: const Text('Manuel Oluştur', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Boş bir liste açıp şarkıları tek tek ekleyin.', style: TextStyle(color: Colors.white54, fontSize: 12)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 tileColor: Colors.black45,
                 onTap: () {
@@ -1365,8 +1367,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               ListTile(
                 leading: const Icon(Icons.auto_awesome, color: Colors.orangeAccent, size: 28),
-                title: const Text("Siber Zeka (Otonom)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text("Ruh halinize ve müzik türüne göre otomatik liste hazırlasın.", style: TextStyle(color: Colors.white54, fontSize: 12)),
+                title: const Text('Siber Zeka (Otonom)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: const Text('Ruh halinize ve müzik türüne göre otomatik liste hazırlasın.', style: TextStyle(color: Colors.white54, fontSize: 12)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 tileColor: Colors.black45,
                 onTap: () {
@@ -1384,29 +1386,29 @@ class _HomeScreenState extends State<HomeScreen> {
   // 🎯 SİBER HAMLE: Çevrimdışı Kütüphane İçin Hızlı Otomatik Liste Menüsü
   void _showOfflineAutoPlaylistDialog(BuildContext context, Color themeColor) {
     final List<Map<String, dynamic>> moods = [
-      {"name": "Melankolik", "icon": Icons.water_drop, "color": Colors.blueAccent},
-      {"name": "Efkârlı", "icon": Icons.smoke_free, "color": Colors.grey},
-      {"name": "Enerjik", "icon": Icons.local_fire_department, "color": Colors.orangeAccent},
-      {"name": "Kopmalık", "icon": Icons.celebration, "color": Colors.amberAccent},
-      {"name": "Rahatlatıcı", "icon": Icons.spa, "color": Colors.tealAccent},
-      {"name": "Odaklanma", "icon": Icons.psychology_alt, "color": Colors.green},
-      {"name": "Motivasyon", "icon": Icons.fitness_center, "color": Colors.red},
-      {"name": "Nostaljik", "icon": Icons.history_toggle_off, "color": Colors.brown},
-      {"name": "İsyankâr", "icon": Icons.bolt, "color": Colors.deepPurpleAccent},
-      {"name": "Uyku Öncesi", "icon": Icons.nights_stay, "color": Colors.indigo},
+      {'name': 'Melankolik', 'icon': Icons.water_drop, 'color': Colors.blueAccent},
+      {'name': 'Efkârlı', 'icon': Icons.smoke_free, 'color': Colors.grey},
+      {'name': 'Enerjik', 'icon': Icons.local_fire_department, 'color': Colors.orangeAccent},
+      {'name': 'Kopmalık', 'icon': Icons.celebration, 'color': Colors.amberAccent},
+      {'name': 'Rahatlatıcı', 'icon': Icons.spa, 'color': Colors.tealAccent},
+      {'name': 'Odaklanma', 'icon': Icons.psychology_alt, 'color': Colors.green},
+      {'name': 'Motivasyon', 'icon': Icons.fitness_center, 'color': Colors.red},
+      {'name': 'Nostaljik', 'icon': Icons.history_toggle_off, 'color': Colors.brown},
+      {'name': 'İsyankâr', 'icon': Icons.bolt, 'color': Colors.deepPurpleAccent},
+      {'name': 'Uyku Öncesi', 'icon': Icons.nights_stay, 'color': Colors.indigo},
     ];
 
     final List<Map<String, dynamic>> genres = [
-      {"name": "Türkçe Pop", "icon": Icons.star, "color": Colors.pinkAccent},
-      {"name": "Yabancı Pop", "icon": Icons.public, "color": Colors.lightBlueAccent},
-      {"name": "Arabesk", "icon": Icons.local_drink, "color": Colors.purpleAccent},
-      {"name": "Sokak Ritmi (Rap)", "icon": Icons.sports_kabaddi, "color": Colors.redAccent},
-      {"name": "Rock & Metal", "icon": Icons.album, "color": Colors.blueGrey},
-      {"name": "Anadolu Rock", "icon": Icons.landscape, "color": Colors.orange},
-      {"name": "Türkü", "icon": Icons.music_video, "color": Colors.brown},
-      {"name": "Akustik", "icon": Icons.music_note, "color": Colors.lime},
-      {"name": "Elektronik / EDM", "icon": Icons.graphic_eq, "color": Colors.cyanAccent},
-      {"name": "Klasik Müzik", "icon": Icons.piano, "color": Colors.amber},
+      {'name': 'Türkçe Pop', 'icon': Icons.star, 'color': Colors.pinkAccent},
+      {'name': 'Yabancı Pop', 'icon': Icons.public, 'color': Colors.lightBlueAccent},
+      {'name': 'Arabesk', 'icon': Icons.local_drink, 'color': Colors.purpleAccent},
+      {'name': 'Sokak Ritmi (Rap)', 'icon': Icons.sports_kabaddi, 'color': Colors.redAccent},
+      {'name': 'Rock & Metal', 'icon': Icons.album, 'color': Colors.blueGrey},
+      {'name': 'Anadolu Rock', 'icon': Icons.landscape, 'color': Colors.orange},
+      {'name': 'Türkü', 'icon': Icons.music_video, 'color': Colors.brown},
+      {'name': 'Akustik', 'icon': Icons.music_note, 'color': Colors.lime},
+      {'name': 'Elektronik / EDM', 'icon': Icons.graphic_eq, 'color': Colors.cyanAccent},
+      {'name': 'Klasik Müzik', 'icon': Icons.piano, 'color': Colors.amber},
     ];
 
     Widget buildSection(String title, List<Map<String, dynamic>> items, IconData titleIcon) {
@@ -1417,7 +1419,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(titleIcon, color: Colors.white70, size: 16),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 8),
@@ -1427,12 +1429,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: items.map((item) {
               return ActionChip(
                 backgroundColor: Colors.black45,
-                side: BorderSide(color: item["color"].withOpacity(0.5)),
-                avatar: Icon(item["icon"], color: item["color"], size: 16),
-                label: Text(item["name"], style: const TextStyle(color: Colors.white, fontSize: 13)),
+                side: BorderSide(color: item['color'].withValues(alpha: 0.5)),
+                avatar: Icon(item['icon'], color: item['color'], size: 16),
+                label: Text(item['name'], maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13)),
                 onPressed: () {
                   Navigator.pop(context);
-                  _handleOfflineAutoPlaylist(item["name"], themeColor);
+                  _handleOfflineAutoPlaylist(item['name'], themeColor);
                 },
               );
             }).toList(),
@@ -1455,7 +1457,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(Icons.auto_awesome, color: themeColor),
               const SizedBox(width: 10),
-              const Text("Siber Liste Oluştur", style: TextStyle(color: Colors.white, fontSize: 18)),
+              const Text('Siber Liste Oluştur', style: TextStyle(color: Colors.white, fontSize: 18)),
             ],
           ),
           content: SizedBox(
@@ -1465,8 +1467,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  buildSection("Ruh Haline Göre", moods, Icons.psychology),
-                  buildSection("Müzik Türüne Göre", genres, Icons.album),
+                  buildSection('Ruh Haline Göre', moods, Icons.psychology),
+                  buildSection('Müzik Türüne Göre', genres, Icons.album),
                 ],
               ),
             ),
@@ -1485,12 +1487,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: themeColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: themeColor.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: themeColor.withOpacity(0.05),
+            color: themeColor.withValues(alpha: 0.05),
             blurRadius: 10,
             spreadRadius: 1,
           ),
@@ -1505,8 +1507,8 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.transparent,
             child: InkWell(
               onTap: onPressed,
-              splashColor: themeColor.withOpacity(0.2),
-              highlightColor: themeColor.withOpacity(0.1),
+              splashColor: themeColor.withValues(alpha: 0.2),
+              highlightColor: themeColor.withValues(alpha: 0.1),
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -1528,7 +1530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Icon(Icons.chevron_right,
-                        color: themeColor.withOpacity(0.6), size: 18),
+                        color: themeColor.withValues(alpha: 0.6), size: 18),
                   ],
                 ),
               ),
@@ -1545,8 +1547,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void _handleOfflineAutoPlaylist(String selection, Color themeColor) {
     if (_playlist.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text("Siber Hata: Cihazınızda hiç şarkı yok!"),
-        backgroundColor: Colors.redAccent.withOpacity(0.8),
+        content: const Text('Siber Hata: Cihazınızda hiç şarkı yok!'),
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
       ));
       return;
     }
@@ -1563,12 +1565,12 @@ class _HomeScreenState extends State<HomeScreen> {
       filteredSongs = filteredSongs.take(15).toList();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("Siber Zeka: '$selection' için çevrimdışı arşivinizden uygun şarkılar harmanlandı!"),
-        backgroundColor: themeColor.withOpacity(0.8),
+        backgroundColor: themeColor.withValues(alpha: 0.8),
       ));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text("🎵 Çevrimdışı Otonom Liste hazır! Çalınmaya başlanıyor..."),
-        backgroundColor: themeColor.withOpacity(0.8),
+        content: const Text('🎵 Çevrimdışı Otonom Liste hazır! Çalınmaya başlanıyor...'),
+        backgroundColor: themeColor.withValues(alpha: 0.8),
       ));
     }
 
@@ -1586,7 +1588,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _saveEmergentPlaylist(Color themeColor) {
     if (_emergentPlaylist.isEmpty) return;
     
-    final TextEditingController tc = TextEditingController(text: "$_waveType Mix");
+    final TextEditingController tc = TextEditingController(text: '$_waveType Mix');
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -1596,9 +1598,9 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: Colors.grey[900],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
-            side: BorderSide(color: themeColor.withOpacity(0.5)),
+            side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
           ),
-          title: Text("OTONOM LİSTEYİ MÜHÜRLE",
+          title: Text('OTONOM LİSTEYİ MÜHÜRLE',
               style: TextStyle(color: themeColor, fontWeight: FontWeight.bold)),
           content: Form(
             key: formKey,
@@ -1606,14 +1608,14 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: tc,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
-                hintText: "Bir liste adı girin...",
+                hintText: 'Bir liste adı girin...',
                 hintStyle: TextStyle(color: Colors.white38),
                 enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.deepPurple)),
                 focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.cyanAccent)),
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty) return "Liste adı boş olamaz!";
-                if (!RegExp(r'^[a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]+$').hasMatch(value)) return "Özel karakter kullanılamaz!";
+                if (value == null || value.trim().isEmpty) return 'Liste adı boş olamaz!';
+                if (!RegExp(r'^[a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]+$').hasMatch(value)) return 'Özel karakter kullanılamaz!';
                 return null;
               },
             ),
@@ -1621,11 +1623,11 @@ class _HomeScreenState extends State<HomeScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("İptal", style: TextStyle(color: Colors.white54)),
+              child: const Text('İptal', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: themeColor.withOpacity(0.5),
+                backgroundColor: themeColor.withValues(alpha: 0.5),
               ),
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
@@ -1651,7 +1653,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
                 }
               },
-              child: const Text("Mühürle", style: TextStyle(color: Colors.white)),
+              child: const Text('Mühürle', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -1672,12 +1674,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
             boxShadow: [
               BoxShadow(
-                  color: color.withOpacity(0.05),
+                  color: color.withValues(alpha: 0.05),
                   blurRadius: 10,
                   spreadRadius: 1),
             ],
@@ -1731,7 +1733,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "ÖZSES V7",
+                  'ÖZSES V7',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -1743,7 +1745,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 // 🎯 SİBER YAPAY ZEKA: Anlık ruh hali burada!
                 Text(
-                  "Ruh Hali: $_waveType",
+                  'Ruh Hali: $_waveType',
                   style: TextStyle(
                     color: themeColor,
                     fontSize: 10,
@@ -1767,18 +1769,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.2),
+                  color: Colors.redAccent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: Colors.redAccent.withOpacity(0.8), width: 1.5),
+                      color: Colors.redAccent.withValues(alpha: 0.8), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.4),
+                      color: Colors.redAccent.withValues(alpha: 0.4),
                       blurRadius: 10,
                       spreadRadius: 1,
                     ),
                     BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.15),
+                      color: Colors.redAccent.withValues(alpha: 0.15),
                       blurRadius: 25,
                       spreadRadius: 8,
                     ),
@@ -1829,7 +1831,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: Icon(Icons.psychology, color: themeColor, size: 28),
-            tooltip: "Kişisel İstihbarat Raporu",
+            tooltip: 'Kişisel İstihbarat Raporu',
             onPressed: () => _showIntelligenceBottomSheet(themeColor),
           ),
         ],
@@ -1864,7 +1866,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: tc,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
-                  hintText: "Var olan bir liste adı girin...",
+                  hintText: 'Var olan bir liste adı girin...',
                   hintStyle: TextStyle(color: Colors.white38),
                   enabledBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.deepPurple)),
@@ -1873,10 +1875,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return "Liste adı boş olamaz usta!";
+                    return 'Liste adı boş olamaz usta!';
                   }
                   if (!RegExp(r'^[a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]+$').hasMatch(value)) {
-                    return "Özel karakter kullanılamaz!";
+                    return 'Özel karakter kullanılamaz!';
                   }
                   return null;
                 },
@@ -1887,11 +1889,11 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child:
-                  const Text("İptal", style: TextStyle(color: Colors.white54)),
+                  const Text('İptal', style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurpleAccent.withOpacity(0.5),
+                backgroundColor: Colors.deepPurpleAccent.withValues(alpha: 0.5),
                 side: const BorderSide(color: Colors.cyanAccent),
               ),
               onPressed: () async {
@@ -1929,7 +1931,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               child:
-                  const Text("Mühürle", style: TextStyle(color: Colors.white)),
+                  const Text('Mühürle', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -1975,8 +1977,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return; // 🛡️ SİBER KALKAN: Güvenli çıkış
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("${_getSafeSongName(song)} sistemden söküldü!"),
-        backgroundColor: Colors.redAccent.withOpacity(0.8),
+        content: Text('${_getSafeSongName(song)} sistemden söküldü!'),
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -1989,9 +1991,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final mediaItem = MediaItem(
       id: safePath,
-      album: "ÖZSES Arşivi",
+      album: 'ÖZSES Arşivi',
       title: _getSafeSongName(song),
-      artist: "Victus V7",
+      artist: 'Victus V7',
     );
 
     if (playNext) {
@@ -2000,7 +2002,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await audioHandler.insertQueueItem(nextIndex, mediaItem);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("${mediaItem.title} sıradakine mühürlendi!"),
+            content: Text('${mediaItem.title} sıradakine mühürlendi!'),
             backgroundColor: Colors.cyanAccent,
             duration: const Duration(seconds: 1)));
       }
@@ -2009,7 +2011,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await audioHandler.addQueueItem(mediaItem);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("${mediaItem.title} kuyruğun sonuna mühürlendi!"),
+            content: Text('${mediaItem.title} kuyruğun sonuna mühürlendi!'),
             backgroundColor: Colors.greenAccent,
             duration: const Duration(seconds: 1)));
       }
@@ -2035,7 +2037,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SlidableAction(
             onPressed:
                 isDownloading ? null : (context) => _deleteSong(song, safePath),
-            backgroundColor: Colors.redAccent.withOpacity(0.8),
+            backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
             icon: Icons.delete,
             label: 'Sök At',
           ),
@@ -2051,16 +2053,16 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: isSelected
               ? BoxDecoration(
                   color: themeColor
-                      .withOpacity((0.08 * _neonScale).clamp(0.0, 1.0)),
+                      .withValues(alpha: (0.08 * _neonScale).clamp(0.0, 1.0)),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                       color: themeColor
-                          .withOpacity((0.8 * _neonScale).clamp(0.0, 1.0)),
+                          .withValues(alpha: (0.8 * _neonScale).clamp(0.0, 1.0)),
                       width: 1.5 + (_neonScale > 1.0 ? _neonScale - 1.0 : 0)),
                   boxShadow: [
                     BoxShadow(
                       color: themeColor
-                          .withOpacity((0.3 * _neonScale).clamp(0.0, 1.0)),
+                          .withValues(alpha: (0.3 * _neonScale).clamp(0.0, 1.0)),
                       blurRadius: 12 * _neonScale,
                       spreadRadius:
                           1 + (3 * (_neonScale > 1.0 ? _neonScale - 1.0 : 0)),
@@ -2068,7 +2070,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     BoxShadow(
                       // Şarkı kartından taşan dalga
                       color: themeColor
-                          .withOpacity((0.15 * _neonScale).clamp(0.0, 1.0)),
+                          .withValues(alpha: (0.15 * _neonScale).clamp(0.0, 1.0)),
                       blurRadius: 25 * _neonScale,
                       spreadRadius: 8 * _neonScale,
                     ),
@@ -2160,8 +2162,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                       isFav
-                                          ? "Favorilerden Çıkar"
-                                          : "Favorilere Ekle",
+                                          ? 'Favorilerden Çıkar'
+                                          : 'Favorilere Ekle',
                                       style: const TextStyle(
                                           color: Colors.white, fontSize: 13)),
                                 ],
@@ -2174,7 +2176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(Icons.queue_play_next,
                                       color: Colors.cyanAccent, size: 20),
                                   SizedBox(width: 8),
-                                  Text("Sıradakini Çal",
+                                  Text('Sıradakini Çal',
                                       style: TextStyle(
                                           color: Colors.white, fontSize: 13)),
                                 ],
@@ -2187,7 +2189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(Icons.playlist_add_circle,
                                       color: Colors.greenAccent, size: 20),
                                   SizedBox(width: 8),
-                                  Text("Kuyruğa Ekle",
+                                  Text('Kuyruğa Ekle',
                                       style: TextStyle(
                                           color: Colors.white, fontSize: 13)),
                                 ],
@@ -2213,7 +2215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Icon(Icons.delete_outline,
                                       color: Colors.redAccent, size: 20),
                                   SizedBox(width: 8),
-                                  Text("Sök At (Sil)",
+                                  Text('Sök At (Sil)',
                                       style: TextStyle(
                                           color: Colors.white, fontSize: 13)),
                                 ],
@@ -2240,10 +2242,10 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black.withOpacity(0.95),
+      backgroundColor: Colors.black.withValues(alpha: 0.95),
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: themeColor.withOpacity(0.5), width: 1),
+        side: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 1),
       ),
       builder: (context) {
         return Container(
@@ -2270,7 +2272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Icon(Icons.library_music, color: themeColor, size: 24),
                         const SizedBox(width: 8),
-                        Text("SİBER PLAYLİSTLER",
+                        Text('SİBER PLAYLİSTLER',
                             style: TextStyle(
                                 color: themeColor,
                                 fontWeight: FontWeight.bold,
@@ -2281,7 +2283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline,
                           color: Colors.cyanAccent),
-                      tooltip: "Yeni Playlist Oluştur",
+                      tooltip: 'Yeni Playlist Oluştur',
                       onPressed: () {
                         Navigator.pop(context);
                         _showPlaylistTypeSelectionDialog(context, themeColor);
@@ -2297,7 +2299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     ListTile(
                       leading: Icon(Icons.all_inclusive, color: themeColor),
-                      title: const Text("Ana Arşiv (Tüm Müzikler)",
+                      title: const Text('Ana Arşiv (Tüm Müzikler)',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold)),
@@ -2333,7 +2335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _toggleLibraryView(pName);
                         },
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
@@ -2353,28 +2355,28 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.grey[900],
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: themeColor.withOpacity(0.5)),
+          side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
         ),
-        title: Text("UYKU ZAMANLAYICI",
+        title: Text('UYKU ZAMANLAYICI',
             style: TextStyle(color: themeColor, fontWeight: FontWeight.bold)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _timerOption(context, "15 Dakika", 15, themeColor),
-              _timerOption(context, "30 Dakika", 30, themeColor),
-              _timerOption(context, "60 Dakika", 60, themeColor),
+              _timerOption(context, '15 Dakika', 15, themeColor),
+              _timerOption(context, '30 Dakika', 30, themeColor),
+              _timerOption(context, '60 Dakika', 60, themeColor),
               const Divider(color: Colors.white24),
               TextField(
                 controller: tc,
                 keyboardType: TextInputType.number,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: "Manuel dakika girin...",
+                  hintText: 'Manuel dakika girin...',
                   hintStyle: const TextStyle(color: Colors.white38),
                   enabledBorder: UnderlineInputBorder(
                       borderSide:
-                          BorderSide(color: themeColor.withOpacity(0.5))),
+                          BorderSide(color: themeColor.withValues(alpha: 0.5))),
                   focusedBorder: UnderlineInputBorder(
                       borderSide: BorderSide(color: themeColor)),
                   suffixIcon: IconButton(
@@ -2387,7 +2389,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                               content: Text(
-                                  "Sistem $minutes dakika sonra mühürlenecek."),
+                                  'Sistem $minutes dakika sonra mühürlenecek.'),
                               backgroundColor: themeColor),
                         );
                       }
@@ -2396,7 +2398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              _timerOption(context, "İptal Et", 0, themeColor),
+              _timerOption(context, 'İptal Et', 0, themeColor),
             ],
           ),
         ),
@@ -2407,19 +2409,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _timerOption(
       BuildContext context, String title, int minutes, Color themeColor) {
     return ListTile(
-      title: Text(title, style: const TextStyle(color: Colors.white)),
+      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white)),
       onTap: () {
         startSleepTimer(minutes);
         if (minutes > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text("Sistem $minutes dakika sonra mühürlenecek."),
+                content: Text('Sistem $minutes dakika sonra mühürlenecek.'),
                 backgroundColor: themeColor),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text("Zamanlayıcı iptal edildi."),
+                content: Text('Zamanlayıcı iptal edildi.'),
                 backgroundColor: Colors.redAccent),
           );
         }
@@ -2437,9 +2439,9 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.grey[900],
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: themeColor.withOpacity(0.5)),
+          side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
         ),
-        title: Text("Yeni Playlist", style: TextStyle(color: themeColor)),
+        title: Text('Yeni Playlist', style: TextStyle(color: themeColor)),
         content: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -2447,16 +2449,17 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: controller,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: "Liste adı...",
+                hintText: 'Liste adı...',
                 hintStyle: const TextStyle(color: Colors.white30),
                 enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: themeColor)),
               ),
               validator: (value) {
-                if (value == null || value.trim().isEmpty)
-                  return "Liste adı boş olamaz usta!";
+                if (value == null || value.trim().isEmpty) {
+                  return 'Liste adı boş olamaz usta!';
+                }
                 if (!RegExp(r'^[a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]+$').hasMatch(value)) {
-                  return "Özel karakter kullanılamaz!";
+                  return 'Özel karakter kullanılamaz!';
                 }
                 return null;
               },
@@ -2488,7 +2491,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }
             },
-            child: Text("Oluştur", style: TextStyle(color: themeColor)),
+            child: Text('Oluştur', style: TextStyle(color: themeColor)),
           ),
         ],
       ),
@@ -2499,10 +2502,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showQueueBottomSheet(Color themeColor) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black.withOpacity(0.95),
+      backgroundColor: Colors.black.withValues(alpha: 0.95),
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: themeColor.withOpacity(0.5), width: 1),
+        side: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 1),
       ),
       builder: (context) {
         return StreamBuilder<List<MediaItem>>(
@@ -2526,7 +2529,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Icon(Icons.queue_music, color: themeColor, size: 20),
                       const SizedBox(width: 8),
-                      Text("ÇALMA KUYRUĞU (${queue.length})",
+                      Text('ÇALMA KUYRUĞU (${queue.length})',
                           style: TextStyle(
                               color: themeColor,
                               fontWeight: FontWeight.bold,
@@ -2538,7 +2541,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (queue.isEmpty)
                   const Expanded(
                       child: Center(
-                          child: Text("Kuyruk boş usta!",
+                          child: Text('Kuyruk boş usta!',
                               style: TextStyle(color: Colors.white54))))
                 else
                   Expanded(
@@ -2585,7 +2588,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             : FontWeight.normal),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis),
-                                subtitle: Text(item.artist ?? "Bilinmeyen",
+                                subtitle: Text(item.artist ?? 'Bilinmeyen',
                                     style: const TextStyle(
                                         color: Colors.white38, fontSize: 11)),
                                 trailing: IconButton(
@@ -2619,10 +2622,10 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.black.withOpacity(0.95),
+        backgroundColor: Colors.black.withValues(alpha: 0.95),
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          side: BorderSide(color: themeColor.withOpacity(0.5), width: 1),
+          side: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 1),
         ),
         builder: (context) {
           return StatefulBuilder(builder: (context, setModalState) {
@@ -2646,7 +2649,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Icon(Icons.history, color: themeColor, size: 24),
                             const SizedBox(width: 8),
-                            Text("DİNLEME GEÇMİŞİ",
+                            Text('DİNLEME GEÇMİŞİ',
                                 style: TextStyle(
                                     color: themeColor,
                                     fontWeight: FontWeight.bold,
@@ -2657,7 +2660,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         IconButton(
                             icon: const Icon(Icons.delete_sweep,
                                 color: Colors.redAccent),
-                            tooltip: "Geçmişi Sök At",
+                            tooltip: 'Geçmişi Sök At',
                             onPressed: () async {
                               await HistoryService.clearHistory();
                               setModalState(() => historyList.clear());
@@ -2669,7 +2672,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (historyList.isEmpty)
                     const Expanded(
                         child: Center(
-                            child: Text("Siber geçmiş tertemiz usta!",
+                            child: Text('Siber geçmiş tertemiz usta!',
                                 style: TextStyle(color: Colors.white54))))
                   else
                     Expanded(
@@ -2681,14 +2684,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             final secs = item.totalListenSeconds % 60;
                             return ListTile(
                               leading: Icon(Icons.music_note,
-                                  color: themeColor.withOpacity(0.6)),
+                                  color: themeColor.withValues(alpha: 0.6)),
                               title: Text(item.name,
                                   style: const TextStyle(
                                       color: Colors.white, fontSize: 14),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis),
                               subtitle: Text(
-                                  "${item.playCount} Kez Mühürlendi • Toplam: $mins Dk $secs Sn",
+                                  '${item.playCount} Kez Mühürlendi • Toplam: $mins Dk $secs Sn',
                                   style: const TextStyle(
                                       color: Colors.white38, fontSize: 11)),
                               onTap: () {
@@ -2723,7 +2726,7 @@ class _HomeScreenState extends State<HomeScreen> {
         n.contains('hüzün') ||
         n.contains('acı') ||
         n.contains('kalp')) {
-      return "Melankolik";
+      return 'Melankolik';
     }
     // Hareketli / Enerjik
     if (n.contains('dans') ||
@@ -2732,7 +2735,7 @@ class _HomeScreenState extends State<HomeScreen> {
         n.contains('enerji') ||
         n.contains('hadi') ||
         n.contains('kop')) {
-      return "Enerjik";
+      return 'Enerjik';
     }
     // Rap / Sokak
     if (n.contains('sokak') ||
@@ -2740,7 +2743,7 @@ class _HomeScreenState extends State<HomeScreen> {
         n.contains('trap') ||
         n.contains('drill') ||
         n.contains('rap')) {
-      return "Sokak Ritmi";
+      return 'Sokak Ritmi';
     }
     // Sakin / Akustik
     if (n.contains('akustik') ||
@@ -2748,9 +2751,9 @@ class _HomeScreenState extends State<HomeScreen> {
         n.contains('yavaş') ||
         n.contains('sakin') ||
         n.contains('slow')) {
-      return "Akustik";
+      return 'Akustik';
     }
-    return "Dengeli";
+    return 'Dengeli';
   }
 
   // 🎯 SİBER HAMLE: Kişisel İstihbarat ve Analiz Paneli (Bottom Sheet)
@@ -2776,28 +2779,28 @@ class _HomeScreenState extends State<HomeScreen> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     // Rütbe Sistemi
-    String rank = "Acemi Dinleyici";
+    String rank = 'Acemi Dinleyici';
     IconData rankIcon = Icons.star_border;
     Color rankColor = Colors.white54;
 
     if (totalHours >= 300) {
-      rank = "ÖZSES VETERANI";
+      rank = 'ÖZSES VETERANI';
       rankIcon = Icons.local_police;
       rankColor = Colors.redAccent;
     } else if (totalHours >= 150) {
-      rank = "Kıdemli Komutan";
+      rank = 'Kıdemli Komutan';
       rankIcon = Icons.military_tech;
       rankColor = Colors.orangeAccent;
     } else if (totalHours >= 75) {
-      rank = "Usta Analist";
+      rank = 'Usta Analist';
       rankIcon = Icons.star;
       rankColor = Colors.cyanAccent;
     } else if (totalHours >= 25) {
-      rank = "Saha Operatörü";
+      rank = 'Saha Operatörü';
       rankIcon = Icons.star_half;
       rankColor = Colors.greenAccent;
     } else if (totalHours >= 5) {
-      rank = "Çırak Taktisyen";
+      rank = 'Çırak Taktisyen';
       rankIcon = Icons.star_outline;
       rankColor = Colors.lightBlueAccent;
     }
@@ -2812,13 +2815,13 @@ class _HomeScreenState extends State<HomeScreen> {
         return Container(
           height: MediaQuery.of(context).size.height * 0.65,
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.85),
+            color: Colors.black.withValues(alpha: 0.85),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             border: Border(
-                top: BorderSide(color: themeColor.withOpacity(0.5), width: 2)),
+                top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
             boxShadow: [
               BoxShadow(
-                  color: themeColor.withOpacity(0.2),
+                  color: themeColor.withValues(alpha: 0.2),
                   blurRadius: 30,
                   spreadRadius: 5)
             ],
@@ -2846,7 +2849,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(width: 10),
                         Flexible(
                           // 🎯 SİBER KALKAN: Yazı yanlardan taşarsa hata vermesin diye esnek mühür
-                          child: Text("KİŞİSEL İSTİHBARAT RAPORU",
+                          child: Text('KİŞİSEL İSTİHBARAT RAPORU',
                               style: TextStyle(
                                   color: themeColor,
                                   fontSize: 18,
@@ -2861,33 +2864,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 🎯 RÜTBE KARTI
                     _buildIntelligenceCard(
-                      title: "MEVCUT RÜTBE",
+                      title: 'MEVCUT RÜTBE',
                       value: rank,
                       icon: rankIcon,
                       color: rankColor,
-                      subtitle: "Sonraki rütbe için müzik dinlemeye devam et.",
+                      subtitle: 'Sonraki rütbe için müzik dinlemeye devam et.',
                     ),
 
                     // 🎯 OTONOM DURUM KARTI
                     _buildIntelligenceCard(
-                      title: "SİBER RUH HALİ",
+                      title: 'SİBER RUH HALİ',
                       value: _waveType,
                       icon: Icons.psychology,
                       color: themeColor,
                       subtitle:
-                          "Yapay zeka anlık dinleme modunuzu analiz ediyor.",
+                          'Yapay zeka anlık dinleme modunuzu analiz ediyor.',
                     ),
 
                     // 🎯 İSTATİSTİK KARTLARI (RUH HALİNE GÖRE)
-                    Padding(
-                      padding: const EdgeInsets.only(
+                    const Padding(
+                      padding: EdgeInsets.only(
                           left: 20.0, top: 20, bottom: 10),
                       child: Row(
                         children: [
-                          const Icon(Icons.data_usage,
+                          Icon(Icons.data_usage,
                               color: Colors.white54, size: 18),
-                          const SizedBox(width: 8),
-                          Text("TOPLAM VERİ ANALİZİ",
+                          SizedBox(width: 8),
+                          Text('TOPLAM VERİ ANALİZİ',
                               style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -2898,11 +2901,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     if (sortedMoods.isEmpty)
                       _buildIntelligenceCard(
-                        title: "TOPLAM SÜRE",
-                        value: "Veri Yok",
+                        title: 'TOPLAM SÜRE',
+                        value: 'Veri Yok',
                         icon: Icons.hourglass_empty,
                         color: Colors.grey,
-                        subtitle: "Henüz dinleme geçmişi kaydedilmemiş.",
+                        subtitle: 'Henüz dinleme geçmişi kaydedilmemiş.',
                       )
                     else
                       ...sortedMoods.map((moodEntry) {
@@ -2912,16 +2915,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         final moodHours = moodMinutes ~/ 60;
                         return _buildIntelligenceCard(
                           title: moodName.toUpperCase(),
-                          value: "$moodHours Saat ${moodMinutes % 60} Dk",
+                          value: '$moodHours Saat ${moodMinutes % 60} Dk',
                           icon: _getIconForMood(moodName),
                           color: _getColorForMood(moodName),
-                          subtitle: "Bu ruh halinde dinlenen toplam süre.",
+                          subtitle: 'Bu ruh halinde dinlenen toplam süre.',
                         );
-                      }).toList(),
+                      }),
 
-                    Padding(
-                      padding: const EdgeInsets.all(30.0),
-                      child: Text("Siber Beyin Otonom İzleme Sistemi Aktif.",
+                    const Padding(
+                      padding: EdgeInsets.all(30.0),
+                      child: Text('Siber Beyin Otonom İzleme Sistemi Aktif.',
                           style: TextStyle(
                               color: Colors.white30,
                               fontSize: 11,
@@ -2939,13 +2942,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   IconData _getIconForMood(String mood) {
     switch (mood) {
-      case "Melankolik":
+      case 'Melankolik':
         return Icons.sentiment_very_dissatisfied;
-      case "Enerjik":
+      case 'Enerjik':
         return Icons.local_fire_department;
-      case "Sokak Ritmi":
+      case 'Sokak Ritmi':
         return Icons.sports_kabaddi;
-      case "Akustik":
+      case 'Akustik':
         return Icons.music_note;
       default:
         return Icons.balance;
@@ -2954,13 +2957,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Color _getColorForMood(String mood) {
     switch (mood) {
-      case "Melankolik":
+      case 'Melankolik':
         return Colors.blueAccent;
-      case "Enerjik":
+      case 'Enerjik':
         return Colors.orangeAccent;
-      case "Sokak Ritmi":
+      case 'Sokak Ritmi':
         return Colors.redAccent;
-      case "Akustik":
+      case 'Akustik':
         return Colors.greenAccent;
       default:
         return Colors.purpleAccent;
@@ -2978,16 +2981,16 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.4),
+        color: Colors.black.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.1), shape: BoxShape.circle),
+                color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: 16),
@@ -3024,13 +3027,13 @@ class _HomeScreenState extends State<HomeScreen> {
     // 1. Siber Radar Görseli
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
+        content: const Row(
           children: [
-            const Icon(Icons.radar, color: Colors.purpleAccent),
-            const SizedBox(width: 10),
-            const Expanded(
+            Icon(Icons.radar, color: Colors.purpleAccent),
+            SizedBox(width: 10),
+            Expanded(
                 child: Text(
-                    "Yapay Zeka Analizi: Dinleme geçmişin ve günün saati taranıyor...")),
+                    'Yapay Zeka Analizi: Dinleme geçmişin ve günün saati taranıyor...')),
           ],
         ),
         backgroundColor: Colors.black87,
@@ -3056,7 +3059,7 @@ class _HomeScreenState extends State<HomeScreen> {
             (moodDurations[mood] ?? 0) + item.totalListenSeconds;
       }
 
-      String favoriteMood = "Dengeli";
+      String favoriteMood = 'Dengeli';
       if (moodDurations.isNotEmpty) {
         favoriteMood = moodDurations.entries
             .reduce((a, b) => a.value > b.value ? a : b)
@@ -3065,15 +3068,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 4. Günün Saatine Göre Psikolojik Mod Belirle
       final int currentHour = DateTime.now().hour;
-      String timeMood = "Dengeli";
+      String timeMood = 'Dengeli';
       if (currentHour >= 6 && currentHour < 12) {
-        timeMood = "Enerjik"; // Sabah
+        timeMood = 'Enerjik'; // Sabah
       } else if (currentHour >= 12 && currentHour < 18) {
-        timeMood = "Sokak Ritmi"; // Öğle
+        timeMood = 'Sokak Ritmi'; // Öğle
       } else if (currentHour >= 18 && currentHour < 23) {
-        timeMood = "Akustik"; // Akşam
+        timeMood = 'Akustik'; // Akşam
       } else {
-        timeMood = "Melankolik"; // Gece
+        timeMood = 'Melankolik'; // Gece
       }
 
       // 5. Arşivdeki Tüm Müzikleri Çek
@@ -3091,7 +3094,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Kütüphane boş usta! Önce sisteme müzik mühürle."),
+              content: Text('Kütüphane boş usta! Önce sisteme müzik mühürle.'),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -3156,8 +3159,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                "🎵 Şahsi Mix Hazır! Favori modun: $favoriteMood. En iyi ${personalDiscoverList.length} öneri yüklendi."),
-            backgroundColor: Colors.greenAccent.withOpacity(0.8),
+                '🎵 Şahsi Mix Hazır! Favori modun: $favoriteMood. En iyi ${personalDiscoverList.length} öneri yüklendi.'),
+            backgroundColor: Colors.greenAccent.withValues(alpha: 0.8),
           ),
         );
       }
@@ -3165,7 +3168,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Siber Hata: Şahsi Keşfet çöktü -> $e"),
+            content: Text('Siber Hata: Şahsi Keşfet çöktü -> $e'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -3191,21 +3194,21 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showPersonalSurveyDialog(Color themeColor) async {
     final prefs = await SharedPreferences.getInstance();
     List<String> availableGenres = [
-      "Türkçe Rap",
-      "Arabesk",
-      "Akustik",
-      "Deep House",
-      "Pop",
-      "Rock",
-      "Türkü",
-      "R&B",
-      "Özgün Müzik",
-      "Slow"
+      'Türkçe Rap',
+      'Arabesk',
+      'Akustik',
+      'Deep House',
+      'Pop',
+      'Rock',
+      'Türkü',
+      'R&B',
+      'Özgün Müzik',
+      'Slow'
     ];
     List<String> selectedGenres =
         prefs.getStringList('siber_personal_genres') ?? [];
     TextEditingController artistController = TextEditingController(
-        text: prefs.getString('siber_personal_artists') ?? "");
+        text: prefs.getString('siber_personal_artists') ?? '');
 
     if (!mounted) return;
 
@@ -3218,9 +3221,9 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.grey[900],
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
-                side: BorderSide(color: themeColor.withOpacity(0.5)),
+                side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
               ),
-              title: Text("İLK GİRİŞ: ŞAHSİ KEŞFET PROFİLİ",
+              title: Text('İLK GİRİŞ: ŞAHSİ KEŞFET PROFİLİ',
                   style: TextStyle(
                       color: themeColor, fontWeight: FontWeight.bold)),
               content: SingleChildScrollView(
@@ -3229,7 +3232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                        "Siber yapay zekanın seni tanıması için dinlediğin müzik türlerini seç (Maks 4):",
+                        'Siber yapay zekanın seni tanıması için dinlediğin müzik türlerini seç (Maks 4):',
                         style: TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 10),
                     Wrap(
@@ -3249,8 +3252,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           onSelected: (selected) {
                             setDialogState(() {
                               if (selected) {
-                                if (selectedGenres.length < 4)
+                                if (selectedGenres.length < 4) {
                                   selectedGenres.add(genre);
+                                }
                               } else {
                                 selectedGenres.remove(genre);
                               }
@@ -3260,18 +3264,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 20),
-                    const Text("Favori Sanatçıların (Virgülle ayırarak yaz):",
+                    const Text('Favori Sanatçıların (Virgülle ayırarak yaz):',
                         style: TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 10),
                     TextField(
                       controller: artistController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: "Örn: Sagopa, Müslüm, Ceza...",
+                        hintText: 'Örn: Sagopa, Müslüm, Ceza...',
                         hintStyle: const TextStyle(color: Colors.white30),
                         enabledBorder: UnderlineInputBorder(
                             borderSide:
-                                BorderSide(color: themeColor.withOpacity(0.5))),
+                                BorderSide(color: themeColor.withValues(alpha: 0.5))),
                         focusedBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: themeColor)),
                       ),
@@ -3282,7 +3286,7 @@ class _HomeScreenState extends State<HomeScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("İptal",
+                  child: const Text('İptal',
                       style: TextStyle(color: Colors.white54)),
                 ),
                 ElevatedButton(
@@ -3292,7 +3296,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         artistController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text(
-                            "Yapay zekanın seni tanıması için en az 1 tür seçmeli veya 1 sanatçı yazmalısın!"),
+                            'Yapay zekanın seni tanıması için en az 1 tür seçmeli veya 1 sanatçı yazmalısın!'),
                         backgroundColor: Colors.redAccent,
                       ));
                       return;
@@ -3310,7 +3314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           themeColor); // Şahsi Keşfete Fırla!
                     }
                   },
-                  child: const Text("Mühürle & Keşfete Git",
+                  child: const Text('Mühürle & Keşfete Git',
                       style: TextStyle(
                           color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
@@ -3324,7 +3328,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _launchPersonalDiscover(Color themeColor) async {
     final prefs = await SharedPreferences.getInstance();
     final genres = prefs.getStringList('siber_personal_genres') ?? [];
-    final artists = prefs.getString('siber_personal_artists') ?? "";
+    final artists = prefs.getString('siber_personal_artists') ?? '';
 
     // Eğer kullanıcı daha önce sistemi doldurmadıysa (ilk tık)
     if (genres.isEmpty && artists.isEmpty) {
@@ -3382,7 +3386,7 @@ class _NeonWaveBackgroundState extends State<NeonWaveBackground>
   }
 
   @override
-  Widget build(BuildContext context) { final _themeColor = Theme.of(context).colorScheme.primary;
+  Widget build(BuildContext context) { final themeColor = Theme.of(context).colorScheme.primary;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -3429,8 +3433,8 @@ class WavePainter extends CustomPainter {
 
     final paint = Paint()
       ..color = isNight
-          ? Colors.white.withOpacity(0.05)
-          : color.withOpacity(isOcean ? 0.15 : 0.3)
+          ? Colors.white.withValues(alpha: 0.05)
+          : color.withValues(alpha: isOcean ? 0.15 : 0.3)
       ..style = isOcean ? PaintingStyle.fill : PaintingStyle.stroke
       ..strokeWidth = isOcean ? 0.0 : 3.0
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, isOcean ? 30 : 15);
@@ -3484,7 +3488,7 @@ class WavePainter extends CustomPainter {
         !isOcean &&
         !isNight) {
       final paint2 = Paint()
-        ..color = color.withOpacity(0.6)
+        ..color = color.withValues(alpha: 0.6)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
 

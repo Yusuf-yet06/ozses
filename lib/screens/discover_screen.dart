@@ -37,10 +37,10 @@ class DiscoverScreen extends StatefulWidget {
 class DiscoverCache {
   List<dynamic> trendList = [];
   List<dynamic> searchResults = [];
-  String nextPageToken = "";
-  String activeCategory = "Trendler";
+  String nextPageToken = '';
+  String activeCategory = 'Trendler';
   bool isSearching = false;
-  String lastSearchQuery = "";
+  String lastSearchQuery = '';
   int searchPage = 1;
   bool hasMoreSearch = true;
   Map<String, List<dynamic>> genreLists = {};
@@ -56,10 +56,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 YENİ SİBER HAMLE: Otonom AI Mix Motoru & Hava Durumu
   List<Map<String, dynamic>> _aiMixes = [];
-  String _dominantMood = "Genel";
+  String _dominantMood = 'Genel';
   
   Weather? _currentWeather;
-  String _atmosphereMood = "Genel";
+  String _atmosphereMood = 'Genel';
 
   final TextEditingController _searchController = TextEditingController();
   final OzsesBridge _bridge = OzsesBridge();
@@ -92,11 +92,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   List<dynamic> _trendList = [];
   List<dynamic> _searchResults = [];
-  String _nextPageToken = "";
+  String _nextPageToken = '';
   Map<String, List<dynamic>> _genreLists = {};
 
-  String _activeCategory = "Trendler";
-  String _activeSearchFilter = ""; // 🎯 GELİŞMİŞ ARAMA FİLTRESİ
+  String _activeCategory = 'Trendler';
+  String _activeSearchFilter = ''; // 🎯 GELİŞMİŞ ARAMA FİLTRESİ
   List<String> _searchHistory = []; // 🎯 ARAMA GEÇMİŞİ
 
   // 🎯 SİBER HAMLE: Canlı Arama Önerileri (Autocomplete)
@@ -121,13 +121,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
-  List<String> _categories = [
-    "Trendler",
-    "Türkçe Rap",
-    "Melankolik",
-    "Akustik",
-    "Deep House",
-    "Arabesk"
+  final List<String> _categories = [
+    'Trendler',
+    'Türkçe Rap',
+    'Melankolik',
+    'Akustik',
+    'Deep House',
+    'Arabesk'
   ];
 
   @override
@@ -206,7 +206,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       if (item != null && mounted) {
         setState(() {
           _currentSongName = item.title;
-          _currentArtist = item.artist ?? "Victus V7";
+          _currentArtist = item.artist ?? 'Victus V7';
           _dur = item.duration ?? Duration.zero;
         });
 
@@ -247,9 +247,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       }
     });
     _positionSub = AudioService.position.listen((position) {
-      if (mounted)
+      if (mounted) {
         _pos =
             position; // 🎯 SİBER HAMLE: Sadece arka planda günceller, UI'ı StreamBuilder çizer.
+      }
     });
   }
 
@@ -263,7 +264,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           decoration: BoxDecoration(
             color: const Color(0xFF0A0C16),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: widget.themeColor.withOpacity(0.3)),
+            border: Border.all(color: widget.themeColor.withValues(alpha: 0.3)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -273,7 +274,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 height: 4,
                 margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                    color: widget.themeColor.withOpacity(0.5),
+                    color: widget.themeColor.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2)),
               ),
               Padding(
@@ -283,7 +284,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     Icon(Icons.tune, color: widget.themeColor),
                     const SizedBox(width: 10),
                     Text(
-                      "GELİŞMİŞ ARAMA FİLTRELERİ",
+                      'GELİŞMİŞ ARAMA FİLTRELERİ',
                       style: TextStyle(
                           color: widget.themeColor,
                           fontWeight: FontWeight.bold,
@@ -292,12 +293,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   ],
                 ),
               ),
-              Divider(color: widget.themeColor.withOpacity(0.2)),
-              _buildFilterOption("Hepsi", ""),
-              _buildFilterOption("Sadece Orijinal Ses (Kapak)", "official audio"),
-              _buildFilterOption("Canlı Performanslar", "live performance"),
-              _buildFilterOption("Remix & Editler", "remix"),
-              _buildFilterOption("Şarkı Sözleri (Lyrics)", "lyrics"),
+              Divider(color: widget.themeColor.withValues(alpha: 0.2)),
+              _buildFilterOption('Hepsi', ''),
+              _buildFilterOption('Sadece Orijinal Ses (Kapak)', 'official audio'),
+              _buildFilterOption('Canlı Performanslar', 'live performance'),
+              _buildFilterOption('Remix & Editler', 'remix'),
+              _buildFilterOption('Şarkı Sözleri (Lyrics)', 'lyrics'),
               const SizedBox(height: 20),
             ],
           ),
@@ -360,8 +361,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: widget.themeColor.withOpacity(0.15),
-          border: Border.all(color: widget.themeColor.withOpacity(0.4)),
+          color: widget.themeColor.withValues(alpha: 0.15),
+          border: Border.all(color: widget.themeColor.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -377,8 +378,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 2. Metamorfoz Modu (Duygusal Dönüşüm)
   void _showMetamorphosisDialog() {
-    String startMood = "Hüzünlü";
-    String endMood = "Enerjik";
+    String startMood = 'Hüzünlü';
+    String endMood = 'Enerjik';
     
     showDialog(
       context: context,
@@ -391,44 +392,44 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               children: [
                 Icon(Icons.auto_awesome, color: widget.themeColor),
                 const SizedBox(width: 8),
-                const Text("Metamorfoz Rotası", style: TextStyle(color: Colors.white, fontSize: 18)),
+                const Text('Metamorfoz Rotası', style: TextStyle(color: Colors.white, fontSize: 18)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Mevcut ruh halinden, ulaşmak istediğin ruh haline seni 10 şarkılık kesintisiz bir siber listeyle taşıyacağız.", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const Text('Mevcut ruh halinden, ulaşmak istediğin ruh haline seni 10 şarkılık kesintisiz bir siber listeyle taşıyacağız.', style: TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
-                  value: startMood,
+                  initialValue: startMood,
                   dropdownColor: Colors.black,
                   style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(labelText: "Şu Anki Modun", labelStyle: TextStyle(color: widget.themeColor)),
-                  items: ["Hüzünlü", "Yorgun", "Sakin", "Gergin"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  decoration: InputDecoration(labelText: 'Şu Anki Modun', labelStyle: TextStyle(color: widget.themeColor)),
+                  items: ['Hüzünlü', 'Yorgun', 'Sakin', 'Gergin'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                   onChanged: (v) => setStateSB(() => startMood = v!),
                 ),
                 const SizedBox(height: 10),
                 Icon(Icons.arrow_downward, color: widget.themeColor),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: endMood,
+                  initialValue: endMood,
                   dropdownColor: Colors.black,
                   style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(labelText: "Hedeflenen Mod", labelStyle: TextStyle(color: widget.themeColor)),
-                  items: ["Enerjik", "Odaklanmış", "Mutlu", "Savaşçı"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  decoration: InputDecoration(labelText: 'Hedeflenen Mod', labelStyle: TextStyle(color: widget.themeColor)),
+                  items: ['Enerjik', 'Odaklanmış', 'Mutlu', 'Savaşçı'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                   onChanged: (v) => setStateSB(() => endMood = v!),
                 ),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("İptal", style: TextStyle(color: Colors.white54))),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('İptal', style: TextStyle(color: Colors.white54))),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: widget.themeColor),
                 onPressed: () {
                   Navigator.pop(ctx);
-                  _performSearch("$startMood to $endMood metamorphosis music mix official audio");
+                  _performSearch('$startMood to $endMood metamorphosis music mix official audio');
                 },
-                child: const Text("Dönüşümü Başlat", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                child: const Text('Dönüşümü Başlat', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               ),
             ],
           );
@@ -450,12 +451,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             color: Colors.black87,
             borderRadius: BorderRadius.circular(30),
             border: Border.all(color: widget.themeColor, width: 2),
-            boxShadow: [BoxShadow(color: widget.themeColor.withOpacity(0.5), blurRadius: 30, spreadRadius: 5)],
+            boxShadow: [BoxShadow(color: widget.themeColor.withValues(alpha: 0.5), blurRadius: 30, spreadRadius: 5)],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text("Siber Ses İzin", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 2)),
+              const Text('Siber Ses İzin', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 2)),
               const SizedBox(height: 30),
               // Sahte 3D Küre (Animasyonlu Gradient)
               TweenAnimationBuilder(
@@ -470,24 +471,24 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       gradient: RadialGradient(
                         colors: [
                           widget.themeColor,
-                          widget.themeColor.withOpacity(0.5),
+                          widget.themeColor.withValues(alpha: 0.5),
                           Colors.transparent,
                         ],
                       ),
                       boxShadow: [
-                        BoxShadow(color: widget.themeColor.withOpacity(0.8), blurRadius: 50 * val, spreadRadius: 10 * val)
+                        BoxShadow(color: widget.themeColor.withValues(alpha: 0.8), blurRadius: 50 * val, spreadRadius: 10 * val)
                       ]
                     ),
                   );
                 },
               ),
               const SizedBox(height: 30),
-              const Text("En çok dinlenen tarz:\nKARANLIK SİBER POP", textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 16)),
+              const Text('En çok dinlenen tarz:\nKARANLIK SİBER POP', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 16)),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: widget.themeColor),
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("Kapat", style: TextStyle(color: Colors.black)),
+                child: const Text('Kapat', style: TextStyle(color: Colors.black)),
               )
             ],
           ),
@@ -499,16 +500,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   // 🎯 5. Otonom Akıllı İndirme (Smart Downloads)
   void _triggerSmartDownloads() {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text("⚡ Siber İndirme: Wi-Fi analizi yapılıyor. Çevrimdışı mühimmatınız güncelleniyor..."),
+      content: const Text('⚡ Siber İndirme: Wi-Fi analizi yapılıyor. Çevrimdışı mühimmatınız güncelleniyor...'),
       backgroundColor: widget.themeColor,
     ));
     
     // Geçmişten rastgele 2 şarkı indir
     if (_searchHistory.isNotEmpty) {
       Future.delayed(const Duration(seconds: 2), () {
-        _performSearch("${_searchHistory.first} official audio");
+        _performSearch('${_searchHistory.first} official audio');
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("⚡ Arka Planda Mühürleme Başladı!"),
+          content: Text('⚡ Arka Planda Mühürleme Başladı!'),
           backgroundColor: Colors.green,
         ));
       });
@@ -534,8 +535,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       // 🎯 300 Piksel kala otonom olarak (Infinite Scroll) yeni mühimmat çek
       if (!_isLoadingMore &&
           !_isSearching &&
-          (_activeCategory == "Trendler" ||
-              _activeCategory == "Size Özel Mix") &&
+          (_activeCategory == 'Trendler' ||
+              _activeCategory == 'Size Özel Mix') &&
           _nextPageToken.isNotEmpty) {
         _loadMoreTrends();
       } else if (_isSearching && !_isLoadingMore && _hasMoreSearch) {
@@ -586,13 +587,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       _isLoading = true;
       _isSearching = false;
       _searchController.clear();
-      _currentCache.lastSearchQuery = "";
+      _currentCache.lastSearchQuery = '';
       _trendList.clear();
       _genreLists.clear();
-      _nextPageToken = "";
+      _nextPageToken = '';
       _currentCache.trendList.clear();
       _currentCache.genreLists.clear();
-      _activeCategory = widget.isPersonalMode ? "Size Özel Mix" : "Trendler";
+      _activeCategory = widget.isPersonalMode ? 'Size Özel Mix' : 'Trendler';
       _searchPage = 1;
       _hasMoreSearch = true;
     });
@@ -624,16 +625,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           _isLoading = false;
           _isOfflineMode = true; // 🎯 Siber Kalkan: Çevrimdışı modda olduğumuzu anladık
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Siber Ağ: Yurt interneti çok yavaş veya koptu! Önbellekteki veriler gösteriliyor."),
-            backgroundColor: Colors.redAccent));
+
         return;
       }
       setState(() {
         _isOfflineMode = false;
         _trendList = res['oneriler'] ?? [];
         _currentCache.trendList = _trendList;
-        _nextPageToken = res['nextPageToken'] ?? "";
+        _nextPageToken = res['nextPageToken'] ?? '';
         _currentCache.nextPageToken = _nextPageToken;
         _isLoading = false;
         _showSkeletonTimeout = false;
@@ -649,7 +648,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     if (!silent) setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     final favGenres = prefs.getStringList('siber_personal_genres') ?? [];
-    final favArtistsRaw = prefs.getString('siber_personal_artists') ?? "";
+    final favArtistsRaw = prefs.getString('siber_personal_artists') ?? '';
     final favArtists = favArtistsRaw
         .split(',')
         .map((e) => e.trim())
@@ -660,14 +659,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     // 1. Sanatçılardan sorgu üret
     if (favArtists.isNotEmpty) {
-      searchQueries.add("${favArtists.first} mix");
-      if (favArtists.length > 1)
-        searchQueries.add("${favArtists[1]} şarkıları");
+      searchQueries.add('${favArtists.first} mix');
+      if (favArtists.length > 1) {
+        searchQueries.add('${favArtists[1]} şarkıları');
+      }
     }
 
     // 2. Türlerden sorgu üret
     if (favGenres.isNotEmpty) {
-      searchQueries.add("${favGenres.first} popüler");
+      searchQueries.add('${favGenres.first} popüler');
     }
 
     // 3. Geçmiş Dinleme Analizi (İstihbarat) ve Siber DJ Mood Hesaplaması
@@ -676,34 +676,36 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       
       // 🌤️ SİBER HAMLE: HAVA DURUMU VE ZAMAN BAĞLAMI
       final now = DateTime.now();
-      String timeContext = "Gündüz";
-      if (now.hour >= 18 || now.hour < 5) timeContext = "Gece";
-      else if (now.hour >= 5 && now.hour < 11) timeContext = "Sabah";
+      String timeContext = 'Gündüz';
+      if (now.hour >= 18 || now.hour < 5) {
+        timeContext = 'Gece';
+      } else if (now.hour >= 5 && now.hour < 11) timeContext = 'Sabah';
       
       final weather = await WeatherService.getCurrentWeather();
       String weatherMood = WeatherService.getAtmosphereMood(weather);
-      print("Siber Bağlam: $timeContext, Hava Modu: $weatherMood");
+      print('Siber Bağlam: $timeContext, Hava Modu: $weatherMood');
       
       // Eğer hava modu özel ise, doğrudan onu arat
-      if (weatherMood != "Genel") {
-        searchQueries.add("$weatherMood müzikleri");
+      if (weatherMood != 'Genel') {
+        searchQueries.add('$weatherMood müzikleri');
       }
       
       if (historyList.isNotEmpty) {
         historyList.sort((a, b) => b.playCount.compareTo(a.playCount));
         
         // --- 🎯 SİBER HAMLE: MOOD HESAPLAMA ---
-        Map<String, int> moodTags = {"Enerji": 0, "Sokak": 0, "Melankoli": 0, "Odak": 0, "Gizem": 0};
+        Map<String, int> moodTags = {'Enerji': 0, 'Sokak': 0, 'Melankoli': 0, 'Odak': 0, 'Gizem': 0};
         for (var h in historyList) {
           final t = h.name.toLowerCase();
-          if (t.contains("rap") || t.contains("drill") || t.contains("hip") || t.contains("ezhel") || t.contains("sokak")) moodTags["Sokak"] = moodTags["Sokak"]! + h.playCount;
-          else if (t.contains("slow") || t.contains("akustik") || t.contains("aşk") || t.contains("sezen") || t.contains("müslüm") || t.contains("arabesk")) moodTags["Melankoli"] = moodTags["Melankoli"]! + h.playCount;
-          else if (t.contains("mix") || t.contains("club") || t.contains("remix") || t.contains("pop") || t.contains("hareketli")) moodTags["Enerji"] = moodTags["Enerji"]! + h.playCount;
-          else if (t.contains("lofi") || t.contains("chill") || t.contains("study") || t.contains("odak")) moodTags["Odak"] = moodTags["Odak"]! + h.playCount;
-          else moodTags["Gizem"] = moodTags["Gizem"]! + h.playCount;
+          if (t.contains('rap') || t.contains('drill') || t.contains('hip') || t.contains('ezhel') || t.contains('sokak')) {
+            moodTags['Sokak'] = moodTags['Sokak']! + h.playCount;
+          } else if (t.contains('slow') || t.contains('akustik') || t.contains('aşk') || t.contains('sezen') || t.contains('müslüm') || t.contains('arabesk')) moodTags['Melankoli'] = moodTags['Melankoli']! + h.playCount;
+          else if (t.contains('mix') || t.contains('club') || t.contains('remix') || t.contains('pop') || t.contains('hareketli')) moodTags['Enerji'] = moodTags['Enerji']! + h.playCount;
+          else if (t.contains('lofi') || t.contains('chill') || t.contains('study') || t.contains('odak')) moodTags['Odak'] = moodTags['Odak']! + h.playCount;
+          else moodTags['Gizem'] = moodTags['Gizem']! + h.playCount;
         }
 
-        String dMood = "Gizem";
+        String dMood = 'Gizem';
         int maxCount = -1;
         moodTags.forEach((k, v) {
           if (v > maxCount) {
@@ -722,12 +724,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             .first
             .trim();
         if (topSong.isNotEmpty && topSong.length > 2) {
-          searchQueries.add("$topSong mix");
+          searchQueries.add('$topSong mix');
         }
       }
     } catch (e) {}
 
-    if (searchQueries.isEmpty) searchQueries.add("Türkçe müzik trendleri");
+    if (searchQueries.isEmpty) searchQueries.add('Türkçe müzik trendleri');
 
     List<dynamic> combinedResults = [];
     bool hasAuthError = false;
@@ -737,7 +739,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     try {
     final futures = queriesToRun.map((query) => _bridge.searchMusic(query, limit: 10).catchError((e) {
         if (e == 'auth_required') hasAuthError = true;
-        print("Arama hatası ($query): $e");
+        print('Arama hatası ($query): $e');
         return <dynamic>[];
       }));
       final results = await Future.wait(futures);
@@ -749,7 +751,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       if (e == 'auth_required') {
         hasAuthError = true;
       } else {
-        print("Arama hatası: $e");
+        print('Arama hatası: $e');
       }
     }
 
@@ -772,7 +774,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     if (uniqueResults.isEmpty) {
       // 🛡️ Siber Kalkan: Eğer Şahsi Keşfet motoru (API veya Ağ hatası yüzünden) boş dönerse, boş ekran göstermek yerine Trendleri (Genel Keşfet) yükle!
-      print("Siber Uyarı: Şahsi Keşfet sonuçları boş döndü. Otonom olarak Trendlere (Genel) geçiş yapılıyor...");
+      print('Siber Uyarı: Şahsi Keşfet sonuçları boş döndü. Otonom olarak Trendlere (Genel) geçiş yapılıyor...');
       await _fetchTrends(silent: silent);
       return;
     }
@@ -784,11 +786,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
         // 🎯 KATEGORİLERİ KİŞİYE ÖZEL İNŞA ET!
         _categories.clear();
-        _categories.add("Size Özel Mix");
+        _categories.add('Size Özel Mix');
         _categories.addAll(favGenres);
         if (favArtists.isNotEmpty) _categories.addAll(favArtists.take(2));
 
-        _activeCategory = "Size Özel Mix";
+        _activeCategory = 'Size Özel Mix';
         _currentCache.activeCategory = _activeCategory;
         _isLoading = false;
       });
@@ -800,16 +802,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   // 🎯 SİBER HAMLE: Otonom Alt Listeleri Sessizce ve Sırayla Çek (Ağı Yormadan)
   Future<void> _fetchGenresSequentially() async {
     final genresToFetch = widget.isPersonalMode
-        ? _categories.where((c) => c != "Size Özel Mix" && c != "Trendler").toList()
-        : ["Türkçe Rap", "Arabesk", "Deep House", "Akustik", "Popüler Albüm", "Türkçe Mixler"];
+        ? _categories.where((c) => c != 'Size Özel Mix' && c != 'Trendler').toList()
+        : ['Türkçe Rap', 'Arabesk', 'Deep House', 'Akustik', 'Popüler Albüm', 'Türkçe Mixler'];
 
     for (var genre in genresToFetch) {
       if (!_genreLists.containsKey(genre)) {
         final query = widget.isPersonalMode
-            ? "$genre şarkıları"
-            : ((genre == "Popüler Albüm" || genre == "Türkçe Mixler")
+            ? '$genre şarkıları'
+            : ((genre == 'Popüler Albüm' || genre == 'Türkçe Mixler')
                 ? genre
-                : "$genre trend şarkılar");
+                : '$genre trend şarkılar');
 
         try {
           // Ağı boğmamak için aralarda ufak bir mola veriyoruz
@@ -841,7 +843,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       setState(() {
         _trendList.addAll(res['oneriler'] ?? []);
         _currentCache.trendList = _trendList;
-        _nextPageToken = res['nextPageToken'] ?? "";
+        _nextPageToken = res['nextPageToken'] ?? '';
         _currentCache.nextPageToken = _nextPageToken;
         _isLoadingMore = false;
       });
@@ -903,7 +905,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     // 🎯 SİBER HAMLE: Filtre (Kapak / Video / Canlı vb.) Uygulama
     String finalQuery = query;
     if (_activeSearchFilter.isNotEmpty) {
-      finalQuery = "$query $_activeSearchFilter";
+      finalQuery = '$query $_activeSearchFilter';
     }
 
     // 🎯 SİBER HAMLE: Sayfalama (page) parametresini de köprüden geçiriyoruz
@@ -924,7 +926,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     if (mounted) {
       if (results.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Siber Radar: Bağlantı zayıf veya sonuç bulunamadı!"),
+            content: Text('Siber Radar: Bağlantı zayıf veya sonuç bulunamadı!'),
             backgroundColor: Colors.orangeAccent));
         _hasMoreSearch = false;
       } else {
@@ -950,11 +952,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     showModalBottomSheet(
         context: context,
-        backgroundColor: Colors.black.withOpacity(0.95),
+        backgroundColor: Colors.black.withValues(alpha: 0.95),
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           side:
-              BorderSide(color: widget.themeColor.withOpacity(0.5), width: 1.5),
+              BorderSide(color: widget.themeColor.withValues(alpha: 0.5), width: 1.5),
         ),
         builder: (context) {
           return SafeArea(
@@ -987,17 +989,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           color: Colors.white, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
-                  subtitle: Text("Siber Radar: Ne yapmak istersin?",
+                  subtitle: Text('Siber Radar: Ne yapmak istersin?',
                       style: TextStyle(color: widget.themeColor)),
                 ),
                 const Divider(color: Colors.white24),
                 ListTile(
                   leading:
                       const Icon(Icons.headphones, color: Colors.cyanAccent),
-                  title: const Text("🎵 Sadece Ses Dinle (Plak Modu)",
+                  title: const Text('🎵 Sadece Ses Dinle (Plak Modu)',
                       style: TextStyle(color: Colors.white)),
                   subtitle: const Text(
-                      "Ofline özellikleri kullanarak çevrimiçi dinle",
+                      'Ofline özellikleri kullanarak çevrimiçi dinle',
                       style: TextStyle(color: Colors.white54, fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
@@ -1009,10 +1011,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ListTile(
                   leading:
                       const Icon(Icons.playlist_play, color: Colors.cyanAccent),
-                  title: const Text("🎵 Sıradakini Çal (Kuyruğa Ekle)",
+                  title: const Text('🎵 Sıradakini Çal (Kuyruğa Ekle)',
                       style: TextStyle(color: Colors.white)),
                   subtitle: const Text(
-                      "Çalmakta olan bitince siber akışta çalar",
+                      'Çalmakta olan bitince siber akışta çalar',
                       style: TextStyle(color: Colors.white54, fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
@@ -1046,7 +1048,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       // Bu, listeyi anında yüklememizi sağlar ve uygulamayı kastırmaz.
       return MediaItem(
         id: 'yt:$cVId',
-        album: "Siber Keşfet Akışı",
+        album: 'Siber Keşfet Akışı',
         title: cTitle,
         artist: cArtist,
         duration: Duration(seconds: songItem['duration'] ?? 0),
@@ -1064,7 +1066,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Future<void> _playOnlineStream(
       String videoId, String title, String artist, String? imgUrl, Duration duration) async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("📡 $title frekansı çevrimiçi çözülüyor..."),
+        content: Text('📡 $title frekansı çevrimiçi çözülüyor...'),
         backgroundColor: widget.themeColor));
 
     final res = await _bridge.getStreamUrl(videoId);
@@ -1074,7 +1076,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       // 🎯 Otonom olarak offline MediaItem yapısına çeviriyoruz! (Thumbnail dahil)
       final mediaItem = MediaItem(
         id: streamUrl,
-        album: "Siber Keşfet Akışı",
+        album: 'Siber Keşfet Akışı',
         title: title,
         artist: artist,
         duration: duration,
@@ -1088,11 +1090,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content:
-              Text("🎶 Siber çevrimiçi akış başlatıldı! (Plak kapak aktif)"),
+              Text('🎶 Siber çevrimiçi akış başlatıldı! (Plak kapak aktif)'),
           backgroundColor: Colors.cyanAccent));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("❌ Akış frekansı koparılamadı!"),
+          content: Text('❌ Akış frekansı koparılamadı!'),
           backgroundColor: Colors.redAccent));
     }
   }
@@ -1101,13 +1103,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Future<void> _queueOnlineStream(
       String videoId, String title, String artist, String? imgUrl, Duration duration) async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("📡 $title kuyruğa ekleniyor..."),
+        content: Text('📡 $title kuyruğa ekleniyor...'),
         backgroundColor: widget.themeColor));
     final res = await _bridge.getStreamUrl(videoId);
     if (res['status'] == 'basarili' && res['stream_url'] != null) {
       final mediaItem = MediaItem(
         id: res['stream_url'],
-        album: "Siber Keşfet Akışı",
+        album: 'Siber Keşfet Akışı',
         title: title,
         artist: artist,
         duration: duration,
@@ -1115,7 +1117,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       );
       await audioHandler.addQueueItem(mediaItem);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("✅ Siber Kuyruğa mühürlendi!"),
+          content: Text('✅ Siber Kuyruğa mühürlendi!'),
           backgroundColor: Colors.green));
     }
   }
@@ -1123,7 +1125,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   // 🎯 SİBER HAMLE 2: Gerçek İndirme Motoru
   Future<void> _startRealDownload(String videoId, String title) async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("🚀 $title arka planda indiriliyor..."),
+        content: Text('🚀 $title arka planda indiriliyor...'),
         backgroundColor: Colors.green));
 
     if (widget.onDownloadStart != null) {
@@ -1132,10 +1134,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     final res = await _bridge.downloadMusic(videoId, title);
     if (res['status'] != 'basladi') {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("❌ İndirme Başlatılamadı!"),
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('❌ İndirme Başlatılamadı!'),
           backgroundColor: Colors.redAccent,
-          duration: const Duration(seconds: 4)));
+          duration: Duration(seconds: 4)));
     }
   }
 
@@ -1146,7 +1148,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text("SİBER KEŞFET",
+        title: Text('SİBER KEŞFET',
             style: TextStyle(
                 color: widget.themeColor,
                 fontWeight: FontWeight.bold,
@@ -1156,34 +1158,25 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            tooltip: "Frekansları Yenile (Taze Mühimmat Çek)",
+            tooltip: 'Frekansları Yenile (Taze Mühimmat Çek)',
             onPressed: _isLoading ? null : _refreshData,
           ),
         ],
       ),
       body: Column(
         children: [
-          // 🎯 SİBER ÇEVRİMDIŞI BİLDİRİMİ
+          // 🎯 SİBER ÇEVRİMDIŞI BİLDİRİMİ (Spotify Tarzı Kusursuz Deneyim)
           if (_isOfflineMode)
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
-              ),
-              child: Row(
-                children: const [
-                  Icon(Icons.wifi_off, color: Colors.redAccent),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Bağlantı Yok! Siber Önbellek Verileri Gösteriliyor. İndirme veya oynatma yapılamayabilir.",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ),
-                ],
+              margin: const EdgeInsets.only(bottom: 12.0),
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              width: double.infinity,
+              color: Colors.black87,
+              child: const Center(
+                child: Text(
+                  'Çevrimdışı Mod. İndirilenler gösteriliyor.',
+                  style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500),
+                ),
               ),
             ),
           // 🎯 SİBER ATMOSFER PANELİ
@@ -1195,19 +1188,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      widget.themeColor.withOpacity(0.2),
+                      widget.themeColor.withValues(alpha: 0.2),
                       Colors.black54,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: widget.themeColor.withOpacity(0.3)),
+                  border: Border.all(color: widget.themeColor.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      _atmosphereMood == "Enerjik" ? Icons.wb_sunny :
-                      _atmosphereMood == "Melankolik" ? Icons.water_drop :
-                      _atmosphereMood == "Akustik" ? Icons.ac_unit : Icons.cloud,
+                      _atmosphereMood == 'Enerjik' ? Icons.wb_sunny :
+                      _atmosphereMood == 'Melankolik' ? Icons.water_drop :
+                      _atmosphereMood == 'Akustik' ? Icons.ac_unit : Icons.cloud,
                       color: widget.themeColor,
                     ),
                     const SizedBox(width: 10),
@@ -1216,11 +1209,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Siber Atmosfer: ${_currentWeather!.temperature?.celsius?.toStringAsFixed(1)}°C",
+                            'Siber Atmosfer: ${_currentWeather!.temperature?.celsius?.toStringAsFixed(1)}°C',
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            "Önerilen Mod: $_atmosphereMood",
+                            'Önerilen Mod: $_atmosphereMood',
                             style: const TextStyle(color: Colors.white70, fontSize: 12),
                           ),
                         ],
@@ -1228,11 +1221,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.themeColor.withOpacity(0.8),
+                        backgroundColor: widget.themeColor.withValues(alpha: 0.8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
-                      onPressed: () => _performSearch("$_atmosphereMood şarkılar official audio"),
-                      child: const Text("Moda Gir", style: TextStyle(color: Colors.white)),
+                      onPressed: () => _performSearch('$_atmosphereMood şarkılar official audio'),
+                      child: const Text('Moda Gir', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -1245,9 +1238,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildSiberButton(Icons.auto_awesome, "Metamorfoz", _showMetamorphosisDialog),
-                _buildSiberButton(Icons.graphic_eq, "Ses İzim", _showSonicAuraDialog),
-                _buildSiberButton(Icons.bolt, "Siber İndirme", _triggerSmartDownloads),
+                _buildSiberButton(Icons.auto_awesome, 'Metamorfoz', _showMetamorphosisDialog),
+                _buildSiberButton(Icons.graphic_eq, 'Ses İzim', _showSonicAuraDialog),
+                _buildSiberButton(Icons.bolt, 'Siber İndirme', _triggerSmartDownloads),
               ],
             ),
           ),
@@ -1258,9 +1251,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: widget.themeColor.withOpacity(0.5)),
+                border: Border.all(color: widget.themeColor.withValues(alpha: 0.5)),
               ),
               child: TextField(
                 controller: _searchController,
@@ -1268,7 +1261,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 onSubmitted: _performSearch,
                 onChanged: _onSearchTextChanged,
                 decoration: InputDecoration(
-                    hintText: "Şarkı, sanatçı, albüm veya şarkı sözü ara...",
+                    hintText: 'Şarkı, sanatçı, albüm veya şarkı sözü ara...',
                     hintStyle: const TextStyle(color: Colors.white38),
                     border: InputBorder.none,
                     prefixIcon: Icon(Icons.search, color: widget.themeColor),
@@ -1280,13 +1273,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             icon: const Icon(Icons.clear, color: Colors.white54),
                             onPressed: () {
                               _searchController.clear();
-                              _currentCache.lastSearchQuery = "";
+                              _currentCache.lastSearchQuery = '';
                               setState(() {
                                 _liveSuggestions.clear();
                                 _isSearching = false;
                                 _currentCache.isSearching = false;
-                                _activeCategory = "Trendler";
-                                _currentCache.activeCategory = "Trendler";
+                                _activeCategory = 'Trendler';
+                                _currentCache.activeCategory = 'Trendler';
                               });
                             },
                           ),
@@ -1321,7 +1314,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           child: InputChip(
                             backgroundColor: Colors.black45,
                             side: BorderSide(
-                                color: widget.themeColor.withOpacity(0.3)),
+                                color: widget.themeColor.withValues(alpha: 0.3)),
                             labelStyle: const TextStyle(
                                 color: Colors.white70, fontSize: 11),
                             avatar: Icon(Icons.history,
@@ -1343,7 +1336,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     icon: const Icon(Icons.delete_sweep,
                         color: Colors.redAccent, size: 22),
-                    tooltip: "Tüm Geçmişi Sök At",
+                    tooltip: 'Tüm Geçmişi Sök At',
                     onPressed: _clearSearchHistory,
                   ),
                   const SizedBox(width: 8),
@@ -1367,20 +1360,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       _activeCategory = cat;
                       _currentCache.activeCategory = cat;
                     });
-                    if (cat == "Trendler") {
+                    if (cat == 'Trendler') {
                       setState(() {
                         _isSearching = false;
                         _currentCache.isSearching = false;
                         _searchController.clear();
-                        _currentCache.lastSearchQuery = "";
+                        _currentCache.lastSearchQuery = '';
                       });
                       if (_trendList.isEmpty) _fetchTrends();
-                    } else if (cat == "Size Özel Mix") {
+                    } else if (cat == 'Size Özel Mix') {
                       setState(() {
                         _isSearching = false;
                         _currentCache.isSearching = false;
                         _searchController.clear();
-                        _currentCache.lastSearchQuery = "";
+                        _currentCache.lastSearchQuery = '';
                       });
                     } else {
                       _searchController.text = cat;
@@ -1393,8 +1386,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: isActive
-                          ? widget.themeColor.withOpacity(0.2)
-                          : Colors.white.withOpacity(0.05),
+                          ? widget.themeColor.withValues(alpha: 0.2)
+                          : Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color:
@@ -1439,11 +1432,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(25),
                           border: Border.all(
-                              color: widget.themeColor.withOpacity(0.6),
+                              color: widget.themeColor.withValues(alpha: 0.6),
                               width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                                color: widget.themeColor.withOpacity(0.2),
+                                color: widget.themeColor.withValues(alpha: 0.2),
                                 blurRadius: 20,
                                 spreadRadius: 2)
                           ]),
@@ -1470,7 +1463,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                           content: Text(
-                                              "Çevrimiçi akışlar cihaza inmeden mühürlenemez!"),
+                                              'Çevrimiçi akışlar cihaza inmeden mühürlenemez!'),
                                           backgroundColor:
                                               Colors.orangeAccent));
                                 },
@@ -1500,7 +1493,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
                                                 content: Text(
-                                                    "Siber Ağ: Çevrimiçi müzikler indirilmeden favorilere alınamaz!"),
+                                                    'Siber Ağ: Çevrimiçi müzikler indirilmeden favorilere alınamaz!'),
                                                 backgroundColor:
                                                     Colors.orangeAccent));
                                       },
@@ -1508,7 +1501,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
                                                 content: Text(
-                                                    "Siber Ağ: Çevrimiçi müzikler indirilmeden listelere eklenemez!"),
+                                                    'Siber Ağ: Çevrimiçi müzikler indirilmeden listelere eklenemez!'),
                                                 backgroundColor:
                                                     Colors.orangeAccent));
                                       },
@@ -1526,7 +1519,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                           content: Text(
-                                              "Tam kontrol için Ana Karargaha dönün."),
+                                              'Tam kontrol için Ana Karargaha dönün.'),
                                           backgroundColor:
                                               Colors.deepPurpleAccent));
                                 },
@@ -1552,8 +1545,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 SİBER HAMLE: Animasyonlu Skeleton Yükleyici (Max 5 sn)
   Widget _buildSkeletonLoader() {
-    final Color shimmerBase = Colors.white.withOpacity(0.06);
-    final Color shimmerHigh = widget.themeColor.withOpacity(0.12);
+    final Color shimmerBase = Colors.white.withValues(alpha: 0.06);
+    final Color shimmerHigh = widget.themeColor.withValues(alpha: 0.12);
 
     Widget skeletonBox(double w, double h, {double radius = 10}) {
       return TweenAnimationBuilder<double>(
@@ -1584,10 +1577,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           children: [
             Icon(Icons.wifi_find, color: widget.themeColor, size: 60),
             const SizedBox(height: 16),
-            Text("Bağlantı yavaş...",
+            Text('Bağlantı yavaş...',
                 style: TextStyle(color: widget.themeColor, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text("Veri çekilmeye devam ediyor, lütfen bekle",
+            const Text('Veri çekilmeye devam ediyor, lütfen bekle',
                 style: TextStyle(color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 24),
             SizedBox(
@@ -1645,35 +1638,35 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 YENİ SİBER HAMLE: Otonom AI Albüm Üretici (Siber DJ)
   void _generateAiMixes(String mood) {
-    if (mood == "Sokak") {
+    if (mood == 'Sokak') {
       _aiMixes = [
-        {"name": "Sokak İsyanı", "query": "Türkçe Rap Drill", "color": Colors.redAccent, "icon": Icons.sports_kabaddi},
-        {"name": "Karanlık Flow", "query": "Dark Trap Rap", "color": Colors.deepPurpleAccent, "icon": Icons.nightlight_round},
-        {"name": "Yeraltı Zirvesi", "query": "Underground Rap Türkçe", "color": Colors.orangeAccent, "icon": Icons.whatshot},
+        {'name': 'Sokak İsyanı', 'query': 'Türkçe Rap Drill', 'color': Colors.redAccent, 'icon': Icons.sports_kabaddi},
+        {'name': 'Karanlık Flow', 'query': 'Dark Trap Rap', 'color': Colors.deepPurpleAccent, 'icon': Icons.nightlight_round},
+        {'name': 'Yeraltı Zirvesi', 'query': 'Underground Rap Türkçe', 'color': Colors.orangeAccent, 'icon': Icons.whatshot},
       ];
-    } else if (mood == "Melankoli") {
+    } else if (mood == 'Melankoli') {
       _aiMixes = [
-        {"name": "Gece Sürüşü", "query": "Gece Arabada Dinlenecek Şarkılar", "color": Colors.blueAccent, "icon": Icons.directions_car},
-        {"name": "Derin Melankoli", "query": "Slow Akustik Türkçe", "color": Colors.teal, "icon": Icons.water_drop},
-        {"name": "Efkâr Dozu", "query": "Damar Arabesk", "color": Colors.brown, "icon": Icons.wine_bar},
+        {'name': 'Gece Sürüşü', 'query': 'Gece Arabada Dinlenecek Şarkılar', 'color': Colors.blueAccent, 'icon': Icons.directions_car},
+        {'name': 'Derin Melankoli', 'query': 'Slow Akustik Türkçe', 'color': Colors.teal, 'icon': Icons.water_drop},
+        {'name': 'Efkâr Dozu', 'query': 'Damar Arabesk', 'color': Colors.brown, 'icon': Icons.wine_bar},
       ];
-    } else if (mood == "Enerji") {
+    } else if (mood == 'Enerji') {
       _aiMixes = [
-        {"name": "Siber Enerji", "query": "Hareketli Pop Mix", "color": Colors.yellowAccent, "icon": Icons.bolt},
-        {"name": "Kopmalık", "query": "Türkçe Club Remix", "color": Colors.pinkAccent, "icon": Icons.local_fire_department},
-        {"name": "Motivasyon", "query": "Spor Motivasyon Müzikleri", "color": Colors.greenAccent, "icon": Icons.fitness_center},
+        {'name': 'Siber Enerji', 'query': 'Hareketli Pop Mix', 'color': Colors.yellowAccent, 'icon': Icons.bolt},
+        {'name': 'Kopmalık', 'query': 'Türkçe Club Remix', 'color': Colors.pinkAccent, 'icon': Icons.local_fire_department},
+        {'name': 'Motivasyon', 'query': 'Spor Motivasyon Müzikleri', 'color': Colors.greenAccent, 'icon': Icons.fitness_center},
       ];
-    } else if (mood == "Odak") {
+    } else if (mood == 'Odak') {
       _aiMixes = [
-        {"name": "Lofi Odak", "query": "Lofi hip hop beats", "color": Colors.indigo, "icon": Icons.headphones},
-        {"name": "Derin Çalışma", "query": "Deep Focus Music", "color": Colors.blueGrey, "icon": Icons.menu_book},
-        {"name": "Sakin Zihin", "query": "Chillout Lounge", "color": Colors.cyan, "icon": Icons.spa},
+        {'name': 'Lofi Odak', 'query': 'Lofi hip hop beats', 'color': Colors.indigo, 'icon': Icons.headphones},
+        {'name': 'Derin Çalışma', 'query': 'Deep Focus Music', 'color': Colors.blueGrey, 'icon': Icons.menu_book},
+        {'name': 'Sakin Zihin', 'query': 'Chillout Lounge', 'color': Colors.cyan, 'icon': Icons.spa},
       ];
     } else {
       _aiMixes = [
-        {"name": "Siber Gizem", "query": "Siberpunk Synthwave", "color": Colors.deepPurple, "icon": Icons.memory},
-        {"name": "Keşfedilmemiş", "query": "Alternative Indie Türkçe", "color": Colors.lightGreen, "icon": Icons.explore},
-        {"name": "Günün Zirvesi", "query": "Türkiye En Çok Dinlenenler", "color": Colors.amber, "icon": Icons.star},
+        {'name': 'Siber Gizem', 'query': 'Siberpunk Synthwave', 'color': Colors.deepPurple, 'icon': Icons.memory},
+        {'name': 'Keşfedilmemiş', 'query': 'Alternative Indie Türkçe', 'color': Colors.lightGreen, 'icon': Icons.explore},
+        {'name': 'Günün Zirvesi', 'query': 'Türkiye En Çok Dinlenenler', 'color': Colors.amber, 'icon': Icons.star},
       ];
     }
     
@@ -1684,7 +1677,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   // 🎯 SİBER HAMLE: Sana Özel Otonom Mixler (Yatay Kaydırmalı Kartlar)
   Widget _buildAutoMixCarousel() {
     final List<Map<String, dynamic>> mixes = _aiMixes.isEmpty ? [
-      {"name": "Siber Analiz", "query": "Türkçe trend", "color": Colors.grey, "icon": Icons.search}
+      {'name': 'Siber Analiz', 'query': 'Türkçe trend', 'color': Colors.grey, 'icon': Icons.search}
     ] : _aiMixes;
 
 
@@ -1700,26 +1693,26 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             itemBuilder: (context, index) {
               final mix = mixes[index];
               return GestureDetector(
-                onTap: () => _handleAutoPlaylist(mix["query"]),
+                onTap: () => _handleAutoPlaylist(mix['query']),
                 child: Container(
                   width: 140,
                   margin: const EdgeInsets.only(right: 12.0),
                   padding: const EdgeInsets.all(12.0),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: mix["color"].withOpacity(0.5), width: 1.5),
+                    border: Border.all(color: mix['color'].withValues(alpha: 0.5), width: 1.5),
                     boxShadow: [
-                      BoxShadow(color: mix["color"].withOpacity(0.1), blurRadius: 10, spreadRadius: 1),
+                      BoxShadow(color: mix['color'].withValues(alpha: 0.1), blurRadius: 10, spreadRadius: 1),
                     ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(mix["icon"], color: mix["color"], size: 36),
+                      Icon(mix['icon'], color: mix['color'], size: 36),
                       const SizedBox(height: 10),
                       Text(
-                        mix["name"],
+                        mix['name'],
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -1759,14 +1752,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     ));
 
     // Arama kutusuna yansıt ve aramayı başlat
-    _searchController.text = "$selection şarkılar";
-    await _performSearch("$selection şarkılar");
+    _searchController.text = '$selection şarkılar';
+    await _performSearch('$selection şarkılar');
 
     // Sonuçlar geldiyse ve oynatıcı boş değilse, ilkini çal ve tüm listeyi kuyruğa at
     if (_searchResults.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text("🎵 Otonom Liste hazır! Çalınmaya başlanıyor..."),
-        backgroundColor: widget.themeColor.withOpacity(0.8),
+        content: const Text('🎵 Otonom Liste hazır! Çalınmaya başlanıyor...'),
+        backgroundColor: widget.themeColor.withValues(alpha: 0.8),
       ));
       
       // Çalma listesini başlat
@@ -1785,12 +1778,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle((widget.isPersonalMode || _activeCategory == "Size Özel Mix")
-              ? "🧠 Yapay Zeka: Size Özel Mix"
+          _buildSectionTitle((widget.isPersonalMode || _activeCategory == 'Size Özel Mix')
+              ? '🧠 Yapay Zeka: Size Özel Mix'
               : "🔥 Şu An Türkiye'de Trend"),
               
           // 🎯 SİBER HAMLE: Sana Özel Mixler (Şahsi Keşfet'te Görünür)
-          if (widget.isPersonalMode || _activeCategory == "Size Özel Mix")
+          if (widget.isPersonalMode || _activeCategory == 'Size Özel Mix')
             _buildAutoMixCarousel(),
             
           _buildHorizontalCarousel(_trendList),
@@ -1799,25 +1792,25 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
           // 🎯 SİBER HAMLE: Seçilen sanatçılara/türlere göre otonom çoğalan kategoriler!
           ..._categories
-              .where((c) => c != "Trendler" && c != "Size Özel Mix")
+              .where((c) => c != 'Trendler' && c != 'Size Özel Mix')
               .map((category) {
             if (_genreLists[category] != null &&
                 _genreLists[category]!.isNotEmpty) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle("🎧 $category Frekansları"),
+                  _buildSectionTitle('🎧 $category Frekansları'),
                   _buildHorizontalCarousel(_genreLists[category]!),
                   const SizedBox(height: 20),
                 ],
               );
             }
             return const SizedBox.shrink();
-          }).toList(),
+          }),
 
           _buildSectionTitle(widget.isPersonalMode
-              ? "🎵 Kütüphane İstihbarat Radarı"
-              : "🎧 Sizin İçin Önerilenler"),
+              ? '🎵 Kütüphane İstihbarat Radarı'
+              : '🎧 Sizin İçin Önerilenler'),
           _buildVerticalList(
               _trendList), // Artık tersine çevirmeden doğrudan basıyoruz
 

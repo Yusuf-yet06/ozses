@@ -7,7 +7,7 @@ class FilePickerService {
       FilePickerResult? result = await FilePicker.pickFiles(
         allowMultiple: true,
         type: FileType.audio,
-        dialogTitle: "Siber Arşive Eklenecek Müzikleri Seçin (Tümünü Seç Yapabilirsiniz)",
+        dialogTitle: 'Siber Arşive Eklenecek Müzikleri Seçin (Tümünü Seç Yapabilirsiniz)',
       );
       
       if (result != null) {
@@ -16,7 +16,7 @@ class FilePickerService {
       }
       return null;
     } catch (e) {
-      print("Siber Hata: Dosya seçici servisi çöktü -> $e");
+      print('Siber Hata: Dosya seçici servisi çöktü -> $e');
       return null;
     }
   }

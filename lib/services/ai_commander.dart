@@ -24,7 +24,7 @@ class AICommander {
   // 🎯 SİBER HAMLE: Mikrofondan komut dinlemeye başla
   void startListening(Function(String) onResult) async {
     if (!_isReady) {
-      print("⚠️ Siber Kulak hazır değil! Mikrofon iznini kontrol et.");
+      print('⚠️ Siber Kulak hazır değil! Mikrofon iznini kontrol et.');
       return;
     }
     if (_speech.isListening) {
@@ -47,37 +47,37 @@ class AICommander {
     List<SongModel> Function() getPlaylist,
     Function(List<SongModel>) onUpdate,
   ) async {
-    print("🤖 Siber Komut Alındı: $command");
+    print('🤖 Siber Komut Alındı: $command');
 
     String karar = await SiberKopru.komutGonder(command);
 
     // 🛡️ SİBER İZOLATÖR: Ağa ulaşılamadıysa LOKAL MOTOR devreye girer!
-    if (karar == "offline_mod" || karar == "hata") {
+    if (karar == 'offline_mod' || karar == 'hata') {
       print(
-          "🛡️ SİBER İZOLATÖR: Ağ koptu, Lokal Zeka (Yedek Beyin) devreye giriyor!");
+          '🛡️ SİBER İZOLATÖR: Ağ koptu, Lokal Zeka (Yedek Beyin) devreye giriyor!');
       karar = _lokalZekaKararVer(command.toLowerCase());
     }
-    print("🧠 Nihai Karar: $karar");
+    print('🧠 Nihai Karar: $karar');
 
-    if (karar == "play") {
+    if (karar == 'play') {
       audioHandler.play();
-    } else if (karar == "pause") {
+    } else if (karar == 'pause') {
       audioHandler.pause();
-    } else if (karar == "bass_boost_on") {
-      print("🔊 Siber Bass Motoru Kökleniyor!");
+    } else if (karar == 'bass_boost_on') {
+      print('🔊 Siber Bass Motoru Kökleniyor!');
       if (SiberPlatform.instance.supportsHardwareDSP) {
         audioHandler.siberBassBooster.setEnabled(true);
         audioHandler.siberBassBooster
             .setTargetGain(1000.0); // 🎯 Maksimum derinlik!
       }
-    } else if (karar == "bass_boost_off") {
-      print("🔈 Siber Bass Motoru Kapatılıyor!");
+    } else if (karar == 'bass_boost_off') {
+      print('🔈 Siber Bass Motoru Kapatılıyor!');
       if (SiberPlatform.instance.supportsHardwareDSP) audioHandler.siberBassBooster.setEnabled(false);
-    } else if (karar == "eq_on") {
-      print("🎛️ Siber EQ Motoru Açılıyor!");
+    } else if (karar == 'eq_on') {
+      print('🎛️ Siber EQ Motoru Açılıyor!');
       if (SiberPlatform.instance.supportsHardwareDSP) audioHandler.siberEqualizer.setEnabled(true);
-    } else if (karar == "eq_off") {
-      print("🎛️ Siber EQ Motoru Kapatılıyor!");
+    } else if (karar == 'eq_off') {
+      print('🎛️ Siber EQ Motoru Kapatılıyor!');
       if (SiberPlatform.instance.supportsHardwareDSP) audioHandler.siberEqualizer.setEnabled(false);
     }
 
@@ -86,30 +86,33 @@ class AICommander {
 
   // 🛡️ LOKAL ZEKA (İnternetsiz / Çevrimdışı Çevrimdışı Kural Motoru)
   String _lokalZekaKararVer(String metin) {
-    if (metin.contains("çal") ||
-        metin.contains("başlat") ||
-        metin.contains("devam")) {
-      return "play";
+    if (metin.contains('çal') ||
+        metin.contains('başlat') ||
+        metin.contains('devam')) {
+      return 'play';
     }
-    if (metin.contains("durdur") ||
-        metin.contains("bekle") ||
-        metin.contains("sus")) {
-      return "pause";
+    if (metin.contains('durdur') ||
+        metin.contains('bekle') ||
+        metin.contains('sus')) {
+      return 'pause';
     }
-    if (metin.contains("bas") || metin.contains("bass")) {
-      if (metin.contains("aç") ||
-          metin.contains("kökle") ||
-          metin.contains("arttır")) return "bass_boost_on";
-      if (metin.contains("kapat") || metin.contains("kıs"))
-        return "bass_boost_off";
+    if (metin.contains('bas') || metin.contains('bass')) {
+      if (metin.contains('aç') ||
+          metin.contains('kökle') ||
+          metin.contains('arttır')) {
+        return 'bass_boost_on';
+      }
+      if (metin.contains('kapat') || metin.contains('kıs')) {
+        return 'bass_boost_off';
+      }
     }
-    if (metin.contains("ekolayzır") ||
-        metin.contains("eq") ||
-        metin.contains("frekans")) {
-      if (metin.contains("aç") || metin.contains("başlat")) return "eq_on";
-      if (metin.contains("kapat") || metin.contains("durdur")) return "eq_off";
+    if (metin.contains('ekolayzır') ||
+        metin.contains('eq') ||
+        metin.contains('frekans')) {
+      if (metin.contains('aç') || metin.contains('başlat')) return 'eq_on';
+      if (metin.contains('kapat') || metin.contains('durdur')) return 'eq_off';
     }
 
-    return "bilinmiyor";
+    return 'bilinmiyor';
   }
 }

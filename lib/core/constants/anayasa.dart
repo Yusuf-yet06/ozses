@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class OzsesAnayasa {
-  static const String projeAdi = "ÖZSES IMPERIUM V7";
-  static const String surum = "7.0.0-Beta";
+  static const String projeAdi = 'ÖZSES IMPERIUM V7';
+  static const String surum = '7.0.0-Beta';
 
   // ⚖️ ETİK REKLAM ANAYASASI (Senin 0-3-7-14 kuralın)
   static const List<int> reklamDongusu = [0, 3, 7, 14];

@@ -128,16 +128,17 @@ class _MusicListScreenState extends State<MusicListScreen> {
         List<String> paths = validFiles.map((f) => f.path!).toList();
         await _storage.savePlaylist(paths);
 
-        if (!mounted)
+        if (!mounted) {
           return; // 🛡️ SİBER KALKAN: Asenkron sonrası context güvenliği (94. Satır Hatasının Kesin Çözümü)
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content:
-                  Text("${validFiles.length} şarkı hafızaya mühürlendi usta!")),
+                  Text('${validFiles.length} şarkı hafızaya mühürlendi usta!')),
         );
       }
     } catch (e) {
-      print("Siber Hata: FilePicker platformda çöktü usta! -> $e");
+      print('Siber Hata: FilePicker platformda çöktü usta! -> $e');
     }
   }
 
@@ -152,7 +153,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
           _isPlaying = true;
         });
       } catch (e) {
-        print("Siber Hata: Oynatıcı platformda çöktü! -> $e");
+        print('Siber Hata: Oynatıcı platformda çöktü! -> $e');
       }
     }
   }
@@ -257,6 +258,6 @@ class _MusicListScreenState extends State<MusicListScreen> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(child: Text("Hafıza Boş. Müzik ekle gardaşım!"));
+    return const Center(child: Text('Hafıza Boş. Müzik ekle gardaşım!'));
   }
 }

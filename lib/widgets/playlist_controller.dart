@@ -15,7 +15,7 @@ class PlaylistController {
       // 1. ANA ARŞİVİ GETİR (Tüm şarkılar)
       paths = await _storage.getPlaylist();
       print(
-        "[+] Siber Ana Arşiv (Global Library) tarandı, ${paths.length} mühimmat bulundu.",
+        '[+] Siber Ana Arşiv (Global Library) tarandı, ${paths.length} mühimmat bulundu.',
       );
     } else if (currentPlaylistName != null) {
       // 2. PLAYLIST'İ HAFIZADAN ÇEK (Kritik nokta burası!)
@@ -23,7 +23,7 @@ class PlaylistController {
       final String key = 'playlist_$currentPlaylistName';
       paths = prefs.getStringList(key) ?? [];
       print(
-        "[+] Siber Playlist Kontrolü: $key sektöründen ${paths.length} özel mühimmat çekildi.",
+        '[+] Siber Playlist Kontrolü: $key sektöründen ${paths.length} özel mühimmat çekildi.',
       );
     }
 

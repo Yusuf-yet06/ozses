@@ -16,7 +16,7 @@ class StorageService {
     try {
       return await SiberPlatform.instance.scanMusicFolders();
     } catch (e) {
-      print("Siber Tarama Hatası: $e");
+      print('Siber Tarama Hatası: $e');
       return [];
     }
   }
