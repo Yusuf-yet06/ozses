@@ -8,6 +8,8 @@ import 'dart:io'; // 🎯 SİBER HAMLE: Platform Algılayıcı
 import 'package:flutter/foundation.dart'; // 🌐 WEB KALKANI İÇİN
 import '../services/services.dart'; // 🎯 SİBER HAMLE: OzsesBridge için
 import 'package:http/http.dart' as http; // SİBER AKIŞ İÇİN
+import 'dart:convert'; // JSON İÇİN
+import 'package:youtube_explode_dart/youtube_explode_dart.dart'; // 🚀 NÜKLEER ÇÖZÜM V2 İÇİN
 
 class MyAudioHandler extends BaseAudioHandler {
   late final AudioPlayer
@@ -351,12 +353,12 @@ class MyAudioHandler extends BaseAudioHandler {
         final videoId = item.id.substring(3);
         final bridge = OzsesBridge();
 
-        // 🔥 UI'ya "indiriliyor" sinyali ver (kullanıcı bekleyeceğini bilsin)
         playbackState.add(playbackState.value.copyWith(
           playing: false,
           processingState: AudioProcessingState.loading,
         ));
-        // ⏳ Dosya indirilene kadar bekle — timeout YOK (şarkı boyutuna göre 10-60sn)
+
+        // ⏳ Dosya indirilene kadar bekle
         final res = await bridge.getStreamUrl(videoId);
 
         if (_currentIndex != index) {
@@ -366,23 +368,20 @@ class MyAudioHandler extends BaseAudioHandler {
 
         if (res['status'] == 'basarili' && res['stream_url'] != null) {
           resolvedUrl = res['stream_url'];
-          // 🔥 SİBER KALKAN: Eğer YoutubeExplode native indirme yaptıysa (temp dosya)
-          // just_audio'nun dahili proxy'sini bypass edip direkt dosyayı oku
+          
+          if (resolvedUrl == 'proxy_will_handle_it') {
+            resolvedUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
+          }
+          
           if (res['is_file'] == true) {
-            // Yerel dosyadan oynat — timeout yok, dosya zaten var
             await _player.setAudioSource(AudioSource.file(resolvedUrl));
             _lastBass = -1.0; _lastTreble = -1.0; _lastVocal = -1.0; _lastTempo = -1.0; _lastVolume = -1.0;
             applySiberDSP();
             await _player.play();
             return;
           }
-          // 🚀 SİBER HAMLE: Tüm yerel mobil cihazlarda ve Windows'ta player'lar (MediaFoundation/AVPlayer/ExoPlayer) 
-          // YouTube 403 Forbidden hatası atabiliyor. Bunu aşmak için yerel proxy üzerinden geçiriyoruz!
-          if (!kIsWeb) {
-             // 🎯 SİBER KALKAN: URL'nin sonuna &ext=.m4a ekliyoruz ki ExoPlayer dosyayı anında M4A olarak tanısın.
-             resolvedUrl = 'https://ozses.onrender.com/stream?id=$videoId&ext=.m4a';
-             print('🎯 Siber Proxy Yönlendirmesi: $resolvedUrl');
-          }
+          // 🚀 SİBER HAMLE: Yerel proxy'i (Otonom Motor) direkt kullanıyoruz! (Render'a gitmiyoruz)
+          print('🎯 Otonom Motor Yönlendirmesi: $resolvedUrl');
         } else {
           print('❌ Hata: Akış çözülemedi, siber kalkan ile oynatma durduruldu!');
           playbackState.add(playbackState.value.copyWith(
@@ -396,11 +395,8 @@ class MyAudioHandler extends BaseAudioHandler {
       if (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://')) {
         await _player.setAudioSource(AudioSource.uri(
           Uri.parse(resolvedUrl),
-          // SİBER HIZLANDIRICI: Render sunucumuz (Cloudflare arkasında) YouTube Referer'ını
-          // şüpheli bulup 403 Forbidden fırlatıyordu. Kendi sunucumuza gittiğimiz için
-          // sahte YouTube başlıklarına artık ihtiyacımız yok!
         )).timeout(
-          const Duration(seconds: 120),
+          const Duration(seconds: 60),
           onTimeout: () {
             throw TimeoutException('Akış yüklenemedi veya dosya bağlantısı koptu.');
           },

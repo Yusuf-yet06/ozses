@@ -34,7 +34,7 @@ class MobilePlatform implements SiberPlatform {
     try {
       final response = await http.get(
         Uri.parse('https://ozses.onrender.com/search?q=${Uri.encodeComponent(query)}')
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 45)); // Render uyanması (cold start) için 45 sn
       
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -54,7 +54,7 @@ class MobilePlatform implements SiberPlatform {
     try {
       final response = await http.get(
         Uri.parse('https://ozses.onrender.com/search?q=${Uri.encodeComponent(query)}')
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 45)); // Render uyanması (cold start) için 45 sn
       
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));

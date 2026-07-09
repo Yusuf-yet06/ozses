@@ -181,16 +181,16 @@ final List<String> invidiousInstances = [
             print('🔄 SİBER KALKAN: Piped Yedek (Fallback) Devrede...');
             
             final List<String> pipedInstances = [
-              'https://api.piped.private.coffee',
               'https://pipedapi.kavin.rocks',
-              'https://api.piped.privacydev.net',
-              'https://piped-api.lunar.icu',
+              'https://pipedapi.moomoo.me',
+              'https://pipedapi.syncpundit.io',
+              'https://api.piped.projectsegfau.lt',
               'https://pipedapi.smnz.de'
             ];
             
             for (var instance in pipedInstances) {
               try {
-                final response = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 4));
+                final response = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 12));
                 if (response.statusCode == 200) {
                   final data = jsonDecode(response.body);
                   if (data['audioStreams'] != null && (data['audioStreams'] as List).isNotEmpty) {
@@ -204,12 +204,79 @@ final List<String> invidiousInstances = [
                     break;
                   }
                 }
-              } catch (_) {}
+              } catch (e) {
+                print('⚠️ Piped Sunucusu Hatası ($instance): $e');
+              }
             }
           }
           
           if (finalStreamUrl == null) {
-            throw Exception('Tüm akış motorları (YoutubeExplode + Piped) çöktü!');
+            print('⚠️ Tüm Piped sunucuları başarısız! INVIDIOUS API Devrede...');
+            
+            final List<String> invidiousInstances = [
+              'https://inv.tux.pizza',
+              'https://invidious.asir.dev',
+              'https://invidious.io.lol',
+              'https://invidious.slipfox.xyz',
+              'https://inv.bp.projectsegfau.lt'
+            ];
+            
+            for (var instance in invidiousInstances) {
+              try {
+                final response = await http.get(Uri.parse('$instance/api/v1/videos/$videoId')).timeout(const Duration(seconds: 10));
+                if (response.statusCode == 200) {
+                  final data = jsonDecode(response.body);
+                  if (data['formatStreams'] != null && (data['formatStreams'] as List).isNotEmpty) {
+                    var formatStreams = data['formatStreams'] as List;
+                    var bestAudio = formatStreams.firstWhere(
+                      (s) => s['type'] != null && s['type'].toString().contains('audio'),
+                      orElse: () => formatStreams.first,
+                    );
+                    finalStreamUrl = Uri.parse(bestAudio['url'].toString());
+                    print('✅ Invidious Fallback Başarılı: $instance');
+                    break;
+                  }
+                }
+              } catch (e) {
+                print('⚠️ Invidious Sunucusu Hatası ($instance): $e');
+              }
+            }
+          }
+          
+          if (finalStreamUrl == null) {
+            print('⚠️ Tüm Invidious sunucuları başarısız! COBALT API Devrede...');
+            try {
+              final cobaltResponse = await http.post(
+                Uri.parse('https://api.cobalt.tools/'),
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Origin': 'https://cobalt.tools',
+                  'Referer': 'https://cobalt.tools/',
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                },
+                body: jsonEncode({
+                  'url': 'https://www.youtube.com/watch?v=$videoId',
+                  'downloadMode': 'audio'
+                }),
+              ).timeout(const Duration(seconds: 15));
+              
+              if (cobaltResponse.statusCode == 200) {
+                final data = jsonDecode(cobaltResponse.body);
+                if (data['url'] != null) {
+                  finalStreamUrl = Uri.parse(data['url'].toString());
+                  print('✅ Cobalt Fallback Başarılı: $finalStreamUrl');
+                }
+              } else {
+                print('⚠️ Cobalt API Hata Kodu Döndürdü: ${cobaltResponse.statusCode} - ${cobaltResponse.body}');
+              }
+            } catch (e) {
+              print('⚠️ Cobalt Sunucusu Hatası: $e');
+            }
+          }
+          
+          if (finalStreamUrl == null) {
+            throw Exception('Tüm akış motorları (YoutubeExplode + Piped + Invidious + Cobalt) çöktü!');
           }
           
           Stream<List<int>> dataStream;

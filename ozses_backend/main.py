@@ -24,6 +24,9 @@ ydl_opts = {
     'socket_timeout': 10,
 }
 
+if os.path.exists('cookies.txt'):
+    ydl_opts['cookiefile'] = 'cookies.txt'
+
 @app.get("/")
 def read_root():
     return {"status": "OZSES API is running"}
