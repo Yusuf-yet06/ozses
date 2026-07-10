@@ -1261,10 +1261,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                       color: themeColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle),
-                  child: Icon(Icons.settings, color: themeColor, size: 20),
+                  child: Icon(Icons.settings_suggest_rounded, color: themeColor, size: 20),
                 ),
                 title: const Text(
-                  'ARAÇLAR VE AYARLAR',
+                  'ARAÇLAR VE SİSTEM',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -1279,46 +1279,44 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       children: [
                         _buildNeonButton(
-                          icon: Icons.waves,
-                          label: 'DİNLEME MODU',
-                          themeColor: themeColor,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ListeningModeScreen(),
-                              ),
-                            );
-                          },
+                          icon: Icons.auto_fix_high_rounded,
+                          label: 'YAPAY ZEKA LİSTELERİ YAP',
+                          themeColor: Colors.amber, // Zeka
+                          onPressed: () => _generateAIPlaylists(themeColor),
                         ),
-
                         _buildNeonButton(
-                          icon: Icons.folder_special,
+                          icon: Icons.folder_special_rounded,
                           label: 'CİHAZDAN MÜZİK EKLE',
                           themeColor: themeColor,
                           onPressed: _scanFolderForMusic,
                         ),
-                        // 🎯 SİBER HAMLE: Otonom Yapay Zeka Butonu
                         _buildNeonButton(
-                          icon: Icons.auto_fix_high,
-                          label: 'YAPAY ZEKA LİSTELERİ YAP',
-                          themeColor: Colors.amber, // Zeka olduğunu belli eden altın renk
-                          onPressed: () => _generateAIPlaylists(themeColor),
+                          icon: Icons.nights_stay_rounded,
+                          label: 'UYKU MODU (SİBER ZAMANLAYICI)',
+                          themeColor: Colors.indigoAccent,
+                          onPressed: () => _showSiberSleepBottomSheet(themeColor),
                         ),
                         _buildNeonButton(
-                          icon: Icons.timer_outlined,
-                          label: 'UYKU ZAMANLAYICI',
-                          themeColor: themeColor,
-                          onPressed: () =>
-                              _showTimerDialog(context, themeColor),
+                          icon: Icons.palette_rounded,
+                          label: 'SİBER TEMA MERKEZİ',
+                          themeColor: Colors.pinkAccent,
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tema Merkezi yakında aktifleşecek!')));
+                          },
                         ),
-
-
                         _buildNeonButton(
-                          icon: Icons.history,
-                          label: 'DİNLEME GEÇMİŞİ',
-                          themeColor: themeColor,
-                          onPressed: () => _showHistoryBottomSheet(themeColor),
+                          icon: Icons.backup_rounded,
+                          label: 'ARŞİV YEDEKLEME',
+                          themeColor: Colors.lightBlueAccent,
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Arşiv Yedekleme ve Dışa Aktarma modülü başlatılıyor...')));
+                          },
+                        ),
+                        _buildNeonButton(
+                          icon: Icons.graphic_eq_rounded,
+                          label: 'SİBER SES STÜDYOSU',
+                          themeColor: Colors.cyanAccent,
+                          onPressed: () => _showCyberStudioBottomSheet(themeColor),
                         ),
                       ],
                     ),
@@ -1333,57 +1331,121 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 🎯 SİBER HAMLE: Playlist Oluşturma Tipi Seçim Ekranı
+  // 🎯 SİBER HAMLE: Playlist Oluşturma Tipi Seçim Ekranı
   void _showPlaylistTypeSelectionDialog(BuildContext context, Color themeColor) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey.shade900,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: themeColor, width: 2),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.library_add, color: themeColor),
-              const SizedBox(width: 10),
-              const Text('Yeni Playlist Tipi', style: TextStyle(color: Colors.white, fontSize: 18)),
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.9),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border(top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
+            boxShadow: [
+              BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 5)
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit, color: Colors.cyanAccent, size: 28),
-                title: const Text('Manuel Oluştur', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Boş bir liste açıp şarkıları tek tek ekleyin.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                tileColor: Colors.black45,
-                onTap: () {
-                  Navigator.pop(context);
-                  _showCreateDialog(context, themeColor);
-                },
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.library_add, color: themeColor, size: 28),
+                        const SizedBox(width: 10),
+                        Text('YENİ LİSTE OLUŞTUR', style: TextStyle(color: themeColor, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      ],
+                    ),
+                    const SizedBox(height: 25),
+                    _buildSelectionTile(
+                      context: context,
+                      title: 'Manuel Oluştur',
+                      subtitle: 'Boş bir liste açıp şarkıları tek tek ekleyin.',
+                      icon: Icons.edit_rounded,
+                      color: Colors.cyanAccent,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showCreateDialog(context, themeColor);
+                      },
+                    ),
+                    const SizedBox(height: 15),
+                    _buildSelectionTile(
+                      context: context,
+                      title: 'Siber Zeka (Otonom)',
+                      subtitle: 'Ruh halinize ve müzik türüne göre otomatik liste hazırlasın.',
+                      icon: Icons.auto_awesome_rounded,
+                      color: Colors.orangeAccent,
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showOfflineAutoPlaylistDialog(context, themeColor);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
-              ListTile(
-                leading: const Icon(Icons.auto_awesome, color: Colors.orangeAccent, size: 28),
-                title: const Text('Siber Zeka (Otonom)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Ruh halinize ve müzik türüne göre otomatik liste hazırlasın.', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                tileColor: Colors.black45,
-                onTap: () {
-                  Navigator.pop(context);
-                  _showOfflineAutoPlaylistDialog(context, themeColor);
-                },
-              ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
+  Widget _buildSelectionTile({required BuildContext context, required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   // 🎯 SİBER HAMLE: Çevrimdışı Kütüphane İçin Hızlı Otomatik Liste Menüsü
+  // 🎯 SİBER HAMLE: Çevrimdışı Kütüphane İçin Hızlı Otomatik Liste Menüsü
+  // 🎯 SİBER HAMLE: Çevrimdışı Kütüphane İçin Hızlı Otomatik Liste Menüsü (ÇİFT ÇARK)
   void _showOfflineAutoPlaylistDialog(BuildContext context, Color themeColor) {
     final List<Map<String, dynamic>> moods = [
       {'name': 'Melankolik', 'icon': Icons.water_drop, 'color': Colors.blueAccent},
@@ -1397,82 +1459,211 @@ class _HomeScreenState extends State<HomeScreen> {
       {'name': 'İsyankâr', 'icon': Icons.bolt, 'color': Colors.deepPurpleAccent},
       {'name': 'Uyku Öncesi', 'icon': Icons.nights_stay, 'color': Colors.indigo},
     ];
-
+    
     final List<Map<String, dynamic>> genres = [
       {'name': 'Türkçe Pop', 'icon': Icons.star, 'color': Colors.pinkAccent},
       {'name': 'Yabancı Pop', 'icon': Icons.public, 'color': Colors.lightBlueAccent},
       {'name': 'Arabesk', 'icon': Icons.local_drink, 'color': Colors.purpleAccent},
-      {'name': 'Sokak Ritmi (Rap)', 'icon': Icons.sports_kabaddi, 'color': Colors.redAccent},
-      {'name': 'Rock & Metal', 'icon': Icons.album, 'color': Colors.blueGrey},
+      {'name': 'Rap / Sokak', 'icon': Icons.sports_kabaddi, 'color': Colors.redAccent},
+      {'name': 'Rock / Metal', 'icon': Icons.album, 'color': Colors.blueGrey},
       {'name': 'Anadolu Rock', 'icon': Icons.landscape, 'color': Colors.orange},
       {'name': 'Türkü', 'icon': Icons.music_video, 'color': Colors.brown},
       {'name': 'Akustik', 'icon': Icons.music_note, 'color': Colors.lime},
-      {'name': 'Elektronik / EDM', 'icon': Icons.graphic_eq, 'color': Colors.cyanAccent},
+      {'name': 'Elektronik', 'icon': Icons.graphic_eq, 'color': Colors.cyanAccent},
       {'name': 'Klasik Müzik', 'icon': Icons.piano, 'color': Colors.amber},
     ];
 
-    Widget buildSection(String title, List<Map<String, dynamic>> items, IconData titleIcon) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(titleIcon, color: Colors.white70, size: 16),
-              const SizedBox(width: 8),
-              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: items.map((item) {
-              return ActionChip(
-                backgroundColor: Colors.black45,
-                side: BorderSide(color: item['color'].withValues(alpha: 0.5)),
-                avatar: Icon(item['icon'], color: item['color'], size: 16),
-                label: Text(item['name'], maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13)),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _handleOfflineAutoPlaylist(item['name'], themeColor);
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
-    }
+    int selectedMoodIndex = 0;
+    int selectedGenreIndex = 0;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.grey.shade900,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: themeColor, width: 2),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.auto_awesome, color: themeColor),
-              const SizedBox(width: 10),
-              const Text('Siber Liste Oluştur', style: TextStyle(color: Colors.white, fontSize: 18)),
-            ],
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildSection('Ruh Haline Göre', moods, Icons.psychology),
-                  buildSection('Müzik Türüne Göre', genres, Icons.album),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              height: 450,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.9),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                border: Border(top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
+                boxShadow: [
+                  BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)
                 ],
               ),
-            ),
-          ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 15, bottom: 15),
+                        width: 50,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.auto_awesome, color: themeColor, size: 28),
+                          const SizedBox(width: 10),
+                          Text('SİBER ZEKÂ OTONOM', style: TextStyle(color: themeColor, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text('Ruh hali ve Müzik Türünü çevirerek seç', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(child: Center(child: Text("RUH HALİ", style: TextStyle(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14)))),
+                            Expanded(child: Center(child: Text("MÜZİK TÜRÜ", style: TextStyle(color: themeColor, fontWeight: FontWeight.bold, fontSize: 14)))),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // 🎯 SİBER ÇİFT ÇEVİRMELİ TEKERLEK
+                      Expanded(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Seçili öğe arka planı (Highlight)
+                            Container(
+                              height: 50,
+                              margin: const EdgeInsets.symmetric(horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(color: themeColor.withValues(alpha: 0.3)),
+                                boxShadow: [
+                                  BoxShadow(color: themeColor.withValues(alpha: 0.05), blurRadius: 10)
+                                ]
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                // RUH HALI TEKERLEĞİ
+                                Expanded(
+                                  child: ListWheelScrollView.useDelegate(
+                                    itemExtent: 50,
+                                    physics: const FixedExtentScrollPhysics(),
+                                    diameterRatio: 1.5,
+                                    onSelectedItemChanged: (index) {
+                                      setState(() {
+                                        selectedMoodIndex = index;
+                                      });
+                                    },
+                                    childDelegate: ListWheelChildBuilderDelegate(
+                                      childCount: moods.length,
+                                      builder: (context, index) {
+                                        final item = moods[index];
+                                        final isSelected = index == selectedMoodIndex;
+                                        return AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          alignment: Alignment.center,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(item['icon'], color: isSelected ? item['color'] : Colors.white24, size: isSelected ? 18 : 14),
+                                              const SizedBox(width: 8),
+                                              Flexible(
+                                                child: Text(
+                                                  item['name'],
+                                                  style: TextStyle(
+                                                    color: isSelected ? Colors.white : Colors.white38,
+                                                    fontSize: isSelected ? 16 : 13,
+                                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                // TÜR TEKERLEĞİ
+                                Expanded(
+                                  child: ListWheelScrollView.useDelegate(
+                                    itemExtent: 50,
+                                    physics: const FixedExtentScrollPhysics(),
+                                    diameterRatio: 1.5,
+                                    onSelectedItemChanged: (index) {
+                                      setState(() {
+                                        selectedGenreIndex = index;
+                                      });
+                                    },
+                                    childDelegate: ListWheelChildBuilderDelegate(
+                                      childCount: genres.length,
+                                      builder: (context, index) {
+                                        final item = genres[index];
+                                        final isSelected = index == selectedGenreIndex;
+                                        return AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          alignment: Alignment.center,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(item['icon'], color: isSelected ? item['color'] : Colors.white24, size: isSelected ? 18 : 14),
+                                              const SizedBox(width: 8),
+                                              Flexible(
+                                                child: Text(
+                                                  item['name'],
+                                                  style: TextStyle(
+                                                    color: isSelected ? Colors.white : Colors.white38,
+                                                    fontSize: isSelected ? 16 : 13,
+                                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: Colors.black,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                            elevation: 10,
+                            shadowColor: themeColor.withValues(alpha: 0.5),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            final selection = "${moods[selectedMoodIndex]['name']} - ${genres[selectedGenreIndex]['name']}";
+                            _handleOfflineAutoPlaylist(selection, themeColor);
+                          },
+                          child: const Text('Otonom Listeyi Başlat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
         );
       },
     );
@@ -1832,7 +2023,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(Icons.psychology, color: themeColor, size: 28),
             tooltip: 'Kişisel İstihbarat Raporu',
-            onPressed: () => _showIntelligenceBottomSheet(themeColor),
+            onPressed: () => _showCyberStudioBottomSheet(themeColor),
           ),
         ],
       ),
@@ -2019,15 +2210,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSongTile(SongModel song, bool isSelected, Color themeColor) {
-    // 🛡️ SİBER KALKAN: ListTile ve ValueKey için güvenli değerler
     final safePath = song.path ?? 'bilinmeyen_yol';
-    final safeName = _getSafeSongName(song); // Siber İsim Çözücü kullanıldı
-    final bool isFav = _favoritePaths.contains(safePath); // Bu şarkı favori mi?
+    final safeName = _getSafeSongName(song);
+    final bool isFav = _favoritePaths.contains(safePath);
 
     bool isDownloading = safePath.startsWith('downloading:');
     String videoId = isDownloading ? safePath.substring(12) : '';
-    Map<String, dynamic>? dTask =
-        isDownloading ? _downloadingTasks[videoId] : null;
+    Map<String, dynamic>? dTask = isDownloading ? _downloadingTasks[videoId] : null;
 
     return Slidable(
       key: ValueKey(safePath.isNotEmpty ? safePath : song.hashCode.toString()),
@@ -2035,176 +2224,191 @@ class _HomeScreenState extends State<HomeScreen> {
         motion: const BehindMotion(),
         children: [
           SlidableAction(
-            onPressed:
-                isDownloading ? null : (context) => _deleteSong(song, safePath),
-            backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
-            icon: Icons.delete,
+            onPressed: isDownloading ? null : (context) => _deleteSong(song, safePath),
+            backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
+            icon: Icons.delete_sweep,
             label: 'Sök At',
           ),
         ],
       ),
       child: Opacity(
-        opacity:
-            isDownloading ? 0.4 : 1.0, // 🎯 Şarkı inerken mat görüntü (%40)
+        opacity: isDownloading ? 0.4 : 1.0,
         child: AnimatedContainer(
-          duration: const Duration(
-              milliseconds: 120), // 🎯 SİBER RİTİM: Şarkı kartı nefes alır
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          decoration: isSelected
-              ? BoxDecoration(
-                  color: themeColor
-                      .withValues(alpha: (0.08 * _neonScale).clamp(0.0, 1.0)),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: themeColor
-                          .withValues(alpha: (0.8 * _neonScale).clamp(0.0, 1.0)),
-                      width: 1.5 + (_neonScale > 1.0 ? _neonScale - 1.0 : 0)),
-                  boxShadow: [
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutExpo,
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // 🎯 Daha geniş aralık, kart görünümü
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isSelected
+                  ? [
+                      themeColor.withValues(alpha: (0.2 * _neonScale).clamp(0.0, 1.0)),
+                      Colors.black.withValues(alpha: 0.8),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.05),
+                      Colors.black.withValues(alpha: 0.6),
+                    ],
+            ),
+            borderRadius: BorderRadius.circular(20), // 🎯 Daha yuvarlak köşeler
+            border: Border.all(
+              color: isSelected
+                  ? themeColor.withValues(alpha: (0.6 * _neonScale).clamp(0.0, 1.0))
+                  : Colors.white.withValues(alpha: 0.1),
+              width: isSelected ? 1.5 + (_neonScale > 1.0 ? _neonScale - 1.0 : 0) : 1.0,
+            ),
+            boxShadow: isSelected
+                ? [
                     BoxShadow(
-                      color: themeColor
-                          .withValues(alpha: (0.3 * _neonScale).clamp(0.0, 1.0)),
-                      blurRadius: 12 * _neonScale,
-                      spreadRadius:
-                          1 + (3 * (_neonScale > 1.0 ? _neonScale - 1.0 : 0)),
-                    ),
-                    BoxShadow(
-                      // Şarkı kartından taşan dalga
-                      color: themeColor
-                          .withValues(alpha: (0.15 * _neonScale).clamp(0.0, 1.0)),
-                      blurRadius: 25 * _neonScale,
-                      spreadRadius: 8 * _neonScale,
-                    ),
-                  ],
-                )
-              : null,
+                      color: themeColor.withValues(alpha: (0.2 * _neonScale).clamp(0.0, 1.0)),
+                      blurRadius: 15 * _neonScale,
+                      spreadRadius: 2 * _neonScale,
+                    )
+                  ]
+                : [],
+          ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
             child: BackdropFilter(
-              filter: isSelected
-                  ? ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8)
-                  : ui.ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10), // 🎯 Kalın buzlu cam
               child: InkWell(
                 onTap: isDownloading ? null : () => _playSong(song),
+                splashColor: themeColor.withValues(alpha: 0.3),
+                highlightColor: themeColor.withValues(alpha: 0.1),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.all(12.0),
                   child: Row(
                     children: [
-                      isSelected
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: MiniEqVisualizer(
-                                themeColor: themeColor,
-                                isPlaying: _isPlaying,
-                              ),
-                            )
-                          : const Icon(Icons.music_note, color: Colors.white24),
+                      // 🎯 SİBER KAPAK VEYA İKON ALANI
+                      Container(
+                        width: 55,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? themeColor.withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: isSelected
+                                ? themeColor.withValues(alpha: 0.5)
+                                : Colors.white.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                          boxShadow: isSelected ? [
+                            BoxShadow(color: themeColor.withValues(alpha: 0.3), blurRadius: 8)
+                          ] : [],
+                        ),
+                        child: Center(
+                          child: isSelected
+                              ? SizedBox(
+                                  width: 30,
+                                  height: 30,
+                                  child: MiniEqVisualizer(
+                                    themeColor: themeColor,
+                                    isPlaying: _isPlaying,
+                                  ),
+                                )
+                              : Icon(Icons.music_note_rounded,
+                                  color: Colors.white.withValues(alpha: 0.6), size: 28),
+                        ),
+                      ),
                       const SizedBox(width: 16),
+                      // 🎯 ŞARKI BİLGİLERİ
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               safeName,
                               style: TextStyle(
                                 color: isSelected ? themeColor : Colors.white,
-                                fontSize: 13,
+                                fontSize: 14,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                letterSpacing: 0.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            const SizedBox(height: 4),
                             if (isDownloading && dTask != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Text(
-                                  "📥 İniyor: ${dTask['percent']}  •  ${dTask['mb']}",
-                                  style: const TextStyle(
-                                    color: Colors.cyanAccent,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              Text(
+                                "📥 İniyor: ${dTask['percent']}  •  ${dTask['mb']}",
+                                style: const TextStyle(
+                                  color: Colors.cyanAccent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            else
+                              Text(
+                                "Siber Arşiv • V7", // Yerel müzik olduğu için
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  fontSize: 11,
                                 ),
                               ),
                           ],
                         ),
                       ),
+                      // 🎯 SEÇENEKLER (3 NOKTA)
                       if (!isDownloading)
                         PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert,
+                          icon: Icon(Icons.more_vert_rounded,
                               color: isSelected ? themeColor : Colors.white54),
-                          color: Colors.grey[900],
+                          color: Colors.black.withValues(alpha: 0.9),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
+                          ),
                           onSelected: (value) {
-                            if (value == 'add_playlist') {
-                              _showAddToPlaylistDialog(safePath);
-                            } else if (value == 'favorite') {
-                              _toggleFavorite(song);
-                            } else if (value == 'delete') {
-                              _deleteSong(song, safePath);
-                            } else if (value == 'play_next') {
-                              _addSongToQueue(song, true);
-                            } else if (value == 'add_queue') {
-                              _addSongToQueue(song, false);
-                            }
+                            if (value == 'add_playlist') _showAddToPlaylistDialog(safePath);
+                            else if (value == 'favorite') _toggleFavorite(song);
+                            else if (value == 'delete') _deleteSong(song, safePath);
+                            else if (value == 'play_next') _addSongToQueue(song, true);
+                            else if (value == 'add_queue') _addSongToQueue(song, false);
                           },
                           itemBuilder: (BuildContext context) => [
                             PopupMenuItem(
                               value: 'favorite',
                               child: Row(
                                 children: [
-                                  Icon(
-                                      isFav
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: Colors.redAccent,
-                                      size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                      isFav
-                                          ? 'Favorilerden Çıkar'
-                                          : 'Favorilere Ekle',
-                                      style: const TextStyle(
-                                          color: Colors.white, fontSize: 13)),
+                                  Icon(isFav ? Icons.favorite : Icons.favorite_border_rounded,
+                                      color: Colors.redAccent, size: 20),
+                                  const SizedBox(width: 12),
+                                  Text(isFav ? 'Favorilerden Çıkar' : 'Favorilere Ekle',
+                                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'play_next',
                               child: Row(
                                 children: [
-                                  Icon(Icons.queue_play_next,
-                                      color: Colors.cyanAccent, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Sıradakini Çal',
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 13)),
+                                  Icon(Icons.skip_next_rounded, color: themeColor, size: 20),
+                                  const SizedBox(width: 12),
+                                  const Text('Sıradakini Çal', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'add_queue',
                               child: Row(
                                 children: [
-                                  Icon(Icons.playlist_add_circle,
-                                      color: Colors.greenAccent, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Kuyruğa Ekle',
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 13)),
+                                  Icon(Icons.queue_music_rounded, color: themeColor, size: 20),
+                                  const SizedBox(width: 12),
+                                  const Text('Kuyruğa Ekle', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
+                            PopupMenuItem(
                               value: 'add_playlist',
                               child: Row(
                                 children: [
-                                  Icon(Icons.playlist_add,
-                                      color: Colors.cyanAccent, size: 20),
-                                  SizedBox(width: 8),
-                                  Text("Playlist'e Ekle",
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 13)),
+                                  const Icon(Icons.playlist_add_rounded, color: Colors.cyanAccent, size: 20),
+                                  const SizedBox(width: 12),
+                                  const Text("Playlist'e Ekle", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
@@ -2212,12 +2416,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete_outline,
-                                      color: Colors.redAccent, size: 20),
-                                  SizedBox(width: 8),
-                                  Text('Sök At (Sil)',
-                                      style: TextStyle(
-                                          color: Colors.white, fontSize: 13)),
+                                  Icon(Icons.delete_sweep_rounded, color: Colors.redAccent, size: 20),
+                                  SizedBox(width: 12),
+                                  Text('Sök At (Sil)', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
@@ -2229,12 +2430,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        ), // 🎯 SİBER KALKAN: Opacity kapanış mührü
+        ),
       ),
     );
   }
 
-  // 🎯 SİBER HAMLE: Otonom Playlist Seçici Paneli
   void _showPlaylistSelectorBottomSheet(Color themeColor) async {
     final playlists = await _playlistService.getAllPlaylistNames();
     if (!mounted) return;
@@ -2242,191 +2442,322 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black.withValues(alpha: 0.95),
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        side: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 1),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6,
+            maxHeight: MediaQuery.of(context).size.height * 0.65,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 5),
-                width: 40,
-                height: 5,
-                decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(10)),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.9),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border(top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
+            boxShadow: [
+              BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 15, bottom: 15),
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.library_music, color: themeColor, size: 24),
-                        const SizedBox(width: 8),
-                        Text('SİBER PLAYLİSTLER',
-                            style: TextStyle(
-                                color: themeColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                letterSpacing: 1.2)),
+                        Row(
+                          children: [
+                            Icon(Icons.library_music_rounded, color: themeColor, size: 28),
+                            const SizedBox(width: 10),
+                            Text('SİBER PLAYLİSTLER',
+                                style: TextStyle(
+                                    color: themeColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    letterSpacing: 1.2)),
+                          ],
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.cyanAccent.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.5))
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.add_rounded, color: Colors.cyanAccent),
+                            tooltip: 'Yeni Playlist Oluştur',
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _showPlaylistTypeSelectionDialog(context, themeColor);
+                            },
+                          ),
+                        )
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline,
-                          color: Colors.cyanAccent),
-                      tooltip: 'Yeni Playlist Oluştur',
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showPlaylistTypeSelectionDialog(context, themeColor);
-                      },
-                    )
-                  ],
-                ),
-              ),
-              const Divider(color: Colors.white10),
-              Expanded(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ListTile(
-                      leading: Icon(Icons.all_inclusive, color: themeColor),
-                      title: const Text('Ana Arşiv (Tüm Müzikler)',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                      trailing:
-                          _playlistController.currentPlaylistName == null &&
-                                  !_isEmergentMode
-                              ? Icon(Icons.check_circle, color: themeColor)
-                              : null,
-                      onTap: () {
-                        Navigator.pop(context);
-                        _toggleLibraryView(null);
-                      },
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Divider(color: Colors.white24, thickness: 1),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                      shrinkWrap: true,
+                      children: [
+                        _buildPlaylistTile(
+                          title: 'Ana Arşiv (Tüm Müzikler)',
+                          icon: Icons.all_inclusive_rounded,
+                          color: themeColor,
+                          isCurrent: _playlistController.currentPlaylistName == null && !_isEmergentMode,
+                          onTap: () {
+                            Navigator.pop(context);
+                            _toggleLibraryView(null);
+                          }
+                        ),
+                        const SizedBox(height: 10),
+                        ...playlists.map((pName) {
+                          final isCurrent = _playlistController.currentPlaylistName == pName && !_isEmergentMode;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _buildPlaylistTile(
+                              title: pName,
+                              icon: Icons.queue_music_rounded,
+                              color: themeColor,
+                              isCurrent: isCurrent,
+                              onTap: () {
+                                Navigator.pop(context);
+                                _toggleLibraryView(pName);
+                              }
+                            ),
+                          );
+                        }),
+                      ],
                     ),
-                    const Divider(color: Colors.white10),
-                    ...playlists.map((pName) {
-                      final isCurrent =
-                          _playlistController.currentPlaylistName == pName &&
-                              !_isEmergentMode;
-                      return ListTile(
-                        leading: Icon(Icons.queue_music,
-                            color: isCurrent ? themeColor : Colors.white54),
-                        title: Text(pName,
-                            style: TextStyle(
-                                color: isCurrent ? themeColor : Colors.white,
-                                fontWeight: isCurrent
-                                    ? FontWeight.bold
-                                    : FontWeight.normal)),
-                        trailing: isCurrent
-                            ? Icon(Icons.check_circle, color: themeColor)
-                            : null,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _toggleLibraryView(pName);
-                        },
-                      );
-                    }),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
-  // --- DİALOG METOTLARI (Ayarlar Paneli İçin) ---
-  void _showTimerDialog(BuildContext context, Color themeColor) {
-    final TextEditingController tc = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(
+  Widget _buildPlaylistTile({required String title, required IconData icon, required Color color, required bool isCurrent, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: isCurrent ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
+          border: Border.all(color: isCurrent ? color.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.1), width: isCurrent ? 2 : 1),
+          boxShadow: isCurrent ? [
+            BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 10, spreadRadius: 1)
+          ] : [],
         ),
-        title: Text('UYKU ZAMANLAYICI',
-            style: TextStyle(color: themeColor, fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _timerOption(context, '15 Dakika', 15, themeColor),
-              _timerOption(context, '30 Dakika', 30, themeColor),
-              _timerOption(context, '60 Dakika', 60, themeColor),
-              const Divider(color: Colors.white24),
-              TextField(
-                controller: tc,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Manuel dakika girin...',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  enabledBorder: UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: themeColor.withValues(alpha: 0.5))),
-                  focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: themeColor)),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.play_circle_fill, color: themeColor),
-                    onPressed: () {
-                      final int? minutes = int.tryParse(tc.text);
-                      if (minutes != null && minutes > 0) {
-                        startSleepTimer(minutes);
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  'Sistem $minutes dakika sonra mühürlenecek.'),
-                              backgroundColor: themeColor),
-                        );
-                      }
-                    },
-                  ),
+        child: Row(
+          children: [
+            Icon(icon, color: isCurrent ? color : Colors.white54, size: 24),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: isCurrent ? Colors.white : Colors.white70,
+                  fontSize: 16,
+                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                  letterSpacing: 0.5,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 10),
-              _timerOption(context, 'İptal Et', 0, themeColor),
-            ],
-          ),
+            ),
+            if (isCurrent)
+              Icon(Icons.check_circle_rounded, color: color, size: 24),
+          ],
         ),
       ),
     );
   }
 
-  Widget _timerOption(
-      BuildContext context, String title, int minutes, Color themeColor) {
-    return ListTile(
-      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white)),
+  // --- DİALOG METOTLARI (Ayarlar Paneli İçin) ---
+  // 🎯 SİBER HAMLE: Gelişmiş Uyku Zamanlayıcı (Müzik Çalardaki Gibi Premium Bottom Sheet)
+  void _showSiberSleepBottomSheet(Color themeColor) {
+    final TextEditingController tc = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.55,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.85),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              border: Border(top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
+              boxShadow: [
+                BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 20),
+                      width: 50,
+                      height: 5,
+                      decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.nights_stay_rounded, color: themeColor, size: 28),
+                        const SizedBox(width: 10),
+                        Text('SİBER UYKU MODU',
+                            style: TextStyle(
+                                color: themeColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5)),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        children: [
+                          _buildSleepCard(context, '15 Dakika', 'Hafif kestirme', 15, themeColor),
+                          const SizedBox(height: 10),
+                          _buildSleepCard(context, '30 Dakika', 'Standart uyku', 30, themeColor),
+                          const SizedBox(height: 10),
+                          _buildSleepCard(context, '60 Dakika', 'Derin uyku döngüsü', 60, themeColor),
+                          const SizedBox(height: 10),
+                          _buildSleepCard(context, 'Uyku Modunu İptal Et', 'Zamanlayıcıyı durdurur', 0, Colors.redAccent),
+                          
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            child: Divider(color: Colors.white24),
+                          ),
+                          
+                          // Manuel Giriş
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: themeColor.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.timer_rounded, color: themeColor),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: TextField(
+                                    controller: tc,
+                                    keyboardType: TextInputType.number,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Manuel dakika gir...',
+                                      hintStyle: TextStyle(color: Colors.white38),
+                                      border: InputBorder.none,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.play_arrow_rounded, color: themeColor, size: 30),
+                                  onPressed: () {
+                                    final int? minutes = int.tryParse(tc.text);
+                                    if (minutes != null && minutes > 0) {
+                                      startSleepTimer(minutes);
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Sistem $minutes dakika sonra kapanacak.'), backgroundColor: themeColor),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSleepCard(BuildContext context, String title, String subtitle, int minutes, Color color) {
+    return InkWell(
       onTap: () {
         startSleepTimer(minutes);
         if (minutes > 0) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Sistem $minutes dakika sonra mühürlenecek.'),
-                backgroundColor: themeColor),
+            SnackBar(content: Text('Sistem $minutes dakika sonra kapanacak.'), backgroundColor: color),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Zamanlayıcı iptal edildi.'),
-                backgroundColor: Colors.redAccent),
+            const SnackBar(content: Text('Zamanlayıcı iptal edildi.'), backgroundColor: Colors.redAccent),
           );
         }
         Navigator.pop(context);
       },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: Icon(minutes == 0 ? Icons.alarm_off_rounded : Icons.access_time_rounded, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white24)
+          ],
+        ),
+      ),
     );
   }
 
@@ -2436,64 +2767,122 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: themeColor.withValues(alpha: 0.5)),
-        ),
-        title: Text('Yeni Playlist', style: TextStyle(color: themeColor)),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: controller,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Liste adı...',
-                hintStyle: const TextStyle(color: Colors.white30),
-                enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: themeColor)),
+        backgroundColor: Colors.transparent,
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: themeColor.withValues(alpha: 0.5), width: 2),
+            boxShadow: [
+              BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 5)
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.edit_note_rounded, color: themeColor, size: 30),
+                        const SizedBox(width: 10),
+                        Text('YENİ PLAYLİST', style: TextStyle(color: themeColor, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Form(
+                      key: formKey,
+                      child: TextFormField(
+                        controller: controller,
+                        style: const TextStyle(color: Colors.white, fontSize: 18),
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Liste adı...',
+                          hintStyle: const TextStyle(color: Colors.white30),
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(color: themeColor, width: 1.5),
+                          ),
+                          errorStyle: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Liste adı boş olamaz usta!';
+                          }
+                          if (!RegExp(r'^[a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]+$').hasMatch(value)) {
+                            return 'Özel karakter kullanılamaz!';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('İptal', style: TextStyle(color: Colors.white54)),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () async {
+                            if (formKey.currentState!.validate()) {
+                              final newName = controller.text.trim();
+                              final existingPlaylists = await _playlistService.getAllPlaylistNames();
+                              if (existingPlaylists.contains(newName)) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Row(
+                                        children: [
+                                          const Icon(Icons.error_outline, color: Colors.white),
+                                          const SizedBox(width: 10),
+                                          Expanded(child: Text("Siber Hata: '$newName' adında bir liste zaten mühürlenmiş usta!", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                                        ],
+                                      ),
+                                      backgroundColor: Colors.redAccent.shade700,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      margin: const EdgeInsets.all(10),
+                                    ),
+                                  );
+                                }
+                                return; // DO NOT SAVE, JUST RETURN
+                              }
+                              await _playlistService.createPlaylist(newName);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                _toggleLibraryView(newName);
+                              }
+                            }
+                          },
+                          child: const Text('Oluştur', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Liste adı boş olamaz usta!';
-                }
-                if (!RegExp(r'^[a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]+$').hasMatch(value)) {
-                  return 'Özel karakter kullanılamaz!';
-                }
-                return null;
-              },
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final newName = controller.text.trim();
-                final existingPlaylists =
-                    await _playlistService.getAllPlaylistNames();
-                if (existingPlaylists.contains(newName)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          "Siber Hata: '$newName' adında bir liste zaten mühürlenmiş usta!"),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                  return;
-                }
-                await _playlistService.createPlaylist(newName);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  _toggleLibraryView(
-                      newName); // 🎯 Yeni oluşturulan listeye otonom geçiş yap
-                }
-              }
-            },
-            child: Text('Oluştur', style: TextStyle(color: themeColor)),
-          ),
-        ],
       ),
     );
   }
@@ -2756,182 +3145,105 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Dengeli';
   }
 
-  // 🎯 SİBER HAMLE: Kişisel İstihbarat ve Analiz Paneli (Bottom Sheet)
-  void _showIntelligenceBottomSheet(Color themeColor) async {
-    final historyList = await HistoryService.getHistory();
-
-    // İstihbarat Verilerini Hesapla
-    int totalSeconds = 0;
-    for (var item in historyList) {
-      totalSeconds += item.totalListenSeconds;
-    }
-    int totalMinutes = totalSeconds ~/ 60;
-    int totalHours = totalMinutes ~/ 60;
-
-    // Ruh Hali Analizi
-    final Map<String, int> moodDurations = {};
-    for (var item in historyList) {
-      final mood = _analyzeSongMoodFromName(item.name);
-      moodDurations[mood] =
-          (moodDurations[mood] ?? 0) + item.totalListenSeconds;
-    }
-    final sortedMoods = moodDurations.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    // Rütbe Sistemi
-    String rank = 'Acemi Dinleyici';
-    IconData rankIcon = Icons.star_border;
-    Color rankColor = Colors.white54;
-
-    if (totalHours >= 300) {
-      rank = 'ÖZSES VETERANI';
-      rankIcon = Icons.local_police;
-      rankColor = Colors.redAccent;
-    } else if (totalHours >= 150) {
-      rank = 'Kıdemli Komutan';
-      rankIcon = Icons.military_tech;
-      rankColor = Colors.orangeAccent;
-    } else if (totalHours >= 75) {
-      rank = 'Usta Analist';
-      rankIcon = Icons.star;
-      rankColor = Colors.cyanAccent;
-    } else if (totalHours >= 25) {
-      rank = 'Saha Operatörü';
-      rankIcon = Icons.star_half;
-      rankColor = Colors.greenAccent;
-    } else if (totalHours >= 5) {
-      rank = 'Çırak Taktisyen';
-      rankIcon = Icons.star_outline;
-      rankColor = Colors.lightBlueAccent;
-    }
-
-    if (!mounted) return;
-
+  // 🎯 SİBER HAMLE: Siber Ses Stüdyosu (Efekt ve EQ Merkezi)
+  void _showCyberStudioBottomSheet(Color themeColor) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent, // Cam efekti için şeffaf
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.65,
+          height: MediaQuery.of(context).size.height * 0.60,
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.85),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            border: Border(
-                top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
+            border: Border(top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
             boxShadow: [
-              BoxShadow(
-                  color: themeColor.withValues(alpha: 0.2),
-                  blurRadius: 30,
-                  spreadRadius: 5)
+              BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)
             ],
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             child: BackdropFilter(
               filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: SingleChildScrollView(
-                // 🎨 PİXEL HATASI DÜZELTMESİ: Taşmaları önleyen siber zırh
-                child: Column(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 20),
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 20),
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.graphic_eq_rounded, color: themeColor, size: 28),
+                      const SizedBox(width: 10),
+                      Text('SİBER SES STÜDYOSU',
+                          style: TextStyle(
+                              color: themeColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5)),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  
+                  // Gelişmiş Efekt Kartları
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
-                        Icon(Icons.insights, color: themeColor, size: 28),
-                        const SizedBox(width: 10),
-                        Flexible(
-                          // 🎯 SİBER KALKAN: Yazı yanlardan taşarsa hata vermesin diye esnek mühür
-                          child: Text('KİŞİSEL İSTİHBARAT RAPORU',
-                              style: TextStyle(
-                                  color: themeColor,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
+                        _buildStudioCard(
+                          title: '3D Siber Akustik',
+                          subtitle: 'Mekansal ses derinliği ve geniş sahne efekti.',
+                          icon: Icons.threed_rotation,
+                          color: Colors.cyanAccent,
+                          onTap: () {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('3D Akustik Motoru başlatılıyor... (Yakında)')));
+                          }
+                        ),
+                        const SizedBox(height: 15),
+                        _buildStudioCard(
+                          title: 'Deep Bass Boost',
+                          subtitle: 'Sub-bass frekanslarını otonom olarak güçlendirir.',
+                          icon: Icons.speaker,
+                          color: Colors.orangeAccent,
+                          onTap: () {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Siber Bass Motoru devrede! (Yakında)')));
+                          }
+                        ),
+                        const SizedBox(height: 15),
+                        _buildStudioCard(
+                          title: 'Vokal Ayrıştırıcı',
+                          subtitle: 'Yapay zeka ile sadece vokalleri (karaoke) öne çıkarır.',
+                          icon: Icons.mic_external_on,
+                          color: Colors.purpleAccent,
+                          onTap: () {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yapay Zeka Vokal Analizi yapılıyor... (Yakında)')));
+                          }
+                        ),
+                        const SizedBox(height: 15),
+                        _buildStudioCard(
+                          title: 'Manuel Ekolayzer',
+                          subtitle: 'Frekansları kendi zevkine göre hassas ayarla.',
+                          icon: Icons.tune_rounded,
+                          color: themeColor,
+                          onTap: () {
+                            Navigator.pop(context);
+                            // Ekolayzer paneli açılabilir
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Manuel EQ Paneli açılıyor...')));
+                          }
                         ),
                       ],
                     ),
-                    const SizedBox(height: 30),
-
-                    // 🎯 RÜTBE KARTI
-                    _buildIntelligenceCard(
-                      title: 'MEVCUT RÜTBE',
-                      value: rank,
-                      icon: rankIcon,
-                      color: rankColor,
-                      subtitle: 'Sonraki rütbe için müzik dinlemeye devam et.',
-                    ),
-
-                    // 🎯 OTONOM DURUM KARTI
-                    _buildIntelligenceCard(
-                      title: 'SİBER RUH HALİ',
-                      value: _waveType,
-                      icon: Icons.psychology,
-                      color: themeColor,
-                      subtitle:
-                          'Yapay zeka anlık dinleme modunuzu analiz ediyor.',
-                    ),
-
-                    // 🎯 İSTATİSTİK KARTLARI (RUH HALİNE GÖRE)
-                    const Padding(
-                      padding: EdgeInsets.only(
-                          left: 20.0, top: 20, bottom: 10),
-                      child: Row(
-                        children: [
-                          Icon(Icons.data_usage,
-                              color: Colors.white54, size: 18),
-                          SizedBox(width: 8),
-                          Text('TOPLAM VERİ ANALİZİ',
-                              style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2)),
-                        ],
-                      ),
-                    ),
-                    if (sortedMoods.isEmpty)
-                      _buildIntelligenceCard(
-                        title: 'TOPLAM SÜRE',
-                        value: 'Veri Yok',
-                        icon: Icons.hourglass_empty,
-                        color: Colors.grey,
-                        subtitle: 'Henüz dinleme geçmişi kaydedilmemiş.',
-                      )
-                    else
-                      ...sortedMoods.map((moodEntry) {
-                        final moodName = moodEntry.key;
-                        final moodSeconds = moodEntry.value;
-                        final moodMinutes = moodSeconds ~/ 60;
-                        final moodHours = moodMinutes ~/ 60;
-                        return _buildIntelligenceCard(
-                          title: moodName.toUpperCase(),
-                          value: '$moodHours Saat ${moodMinutes % 60} Dk',
-                          icon: _getIconForMood(moodName),
-                          color: _getColorForMood(moodName),
-                          subtitle: 'Bu ruh halinde dinlenen toplam süre.',
-                        );
-                      }),
-
-                    const Padding(
-                      padding: EdgeInsets.all(30.0),
-                      child: Text('Siber Beyin Otonom İzleme Sistemi Aktif.',
-                          style: TextStyle(
-                              color: Colors.white30,
-                              fontSize: 11,
-                              fontStyle: FontStyle.italic)),
-                    )
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -2940,87 +3252,42 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  IconData _getIconForMood(String mood) {
-    switch (mood) {
-      case 'Melankolik':
-        return Icons.sentiment_very_dissatisfied;
-      case 'Enerjik':
-        return Icons.local_fire_department;
-      case 'Sokak Ritmi':
-        return Icons.sports_kabaddi;
-      case 'Akustik':
-        return Icons.music_note;
-      default:
-        return Icons.balance;
-    }
-  }
-
-  Color _getColorForMood(String mood) {
-    switch (mood) {
-      case 'Melankolik':
-        return Colors.blueAccent;
-      case 'Enerjik':
-        return Colors.orangeAccent;
-      case 'Sokak Ritmi':
-        return Colors.redAccent;
-      case 'Akustik':
-        return Colors.greenAccent;
-      default:
-        return Colors.purpleAccent;
-    }
-  }
-
-  // 🎯 İSTİHBARAT KARTI TASARIM MOTORU
-  Widget _buildIntelligenceCard(
-      {required String title,
-      required String value,
-      required IconData icon,
-      required Color color,
-      required String subtitle}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2)),
-                const SizedBox(height: 4),
-                Text(value,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(subtitle,
-                    style:
-                        const TextStyle(color: Colors.white30, fontSize: 10)),
-              ],
+  Widget _buildStudioCard({required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 28),
             ),
-          )
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white24)
+          ],
+        ),
       ),
     );
   }
+
 
   // 🎯 SİBER HAMLE: Profesyonel Şahsi Keşfet (Yapay Zeka Destekli Öneri Motoru)
   void _scanDarkZone(Color themeColor) async {

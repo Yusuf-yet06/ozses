@@ -471,9 +471,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 2)),
                           PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert,
-                                color: Colors.white),
-                            color: Colors.grey[900],
+                            icon: const Icon(Icons.more_vert, color: Colors.white),
+                            color: Colors.black.withOpacity(0.85),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: (_dynamicColor ?? widget.themeColor).withOpacity(0.3), width: 1),
+                            ),
+                            elevation: 12,
                             onSelected: (value) async {
                               if (value == 'add_playlist') {
                                 widget.onAddToPlaylist(_songPath);
@@ -490,12 +494,6 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                 } else {
                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Siber Ağ: Bu ekrandan indirme yapılamaz!'), backgroundColor: Colors.redAccent));
                                 }
-                              } else if (value == 'share_song') {
-                                final String text = 'Şu an dinliyorum: $_songName - $_artistName\n(Victus V7 IMPERIUM Siber Ağı)';
-                                await Clipboard.setData(ClipboardData(text: text));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Siber Ağ: Pano Bağlantısı Sağlandı (Paylaşıma Hazır)'), backgroundColor: Colors.greenAccent));
-                                }
                               } else if (value == 'analyze_mood') {
                                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Siber Beyin: "$_songName" analiz ediliyor...'), backgroundColor: (_dynamicColor ?? widget.themeColor)));
                                 await Future.delayed(const Duration(seconds: 2));
@@ -505,52 +503,40 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                               }
                             },
                             itemBuilder: (context) {
+                              PopupMenuItem<String> buildItem(String val, IconData icon, String title, {bool isRed = false}) {
+                                return PopupMenuItem<String>(
+                                  value: val,
+                                  child: Row(
+                                    children: [
+                                      Icon(icon, color: isRed ? Colors.redAccent : (_dynamicColor ?? widget.themeColor), size: 20),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        title,
+                                        style: TextStyle(
+                                          color: isRed ? Colors.redAccent : Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
                               bool isOnline = _songPath.startsWith('yt:');
                               if (isOnline) {
                                 return [
-                                  const PopupMenuItem(
-                                      value: 'play_next',
-                                      child: Text('Sıradakini Çal',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'add_queue',
-                                      child: Text('Kuyruğa Ekle',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'download_song',
-                                      child: Text('Şarkıyı İndir',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'analyze_mood',
-                                      child: Text('Yapay Zeka Ruh Hali Analizi',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'share_song',
-                                      child: Text('Paylaş',
-                                          style: TextStyle(color: Colors.white))),
+                                  buildItem('play_next', Icons.skip_next_rounded, 'Sıradakini Çal'),
+                                  buildItem('add_queue', Icons.queue_music_rounded, 'Kuyruğa Ekle'),
+                                  buildItem('download_song', Icons.download_rounded, 'Şarkıyı İndir'),
+                                  buildItem('analyze_mood', Icons.psychology_rounded, 'Yapay Zeka Analizi'),
                                 ];
                               } else {
                                 return [
-                                  const PopupMenuItem(
-                                      value: 'play_next',
-                                      child: Text('Sıradakini Çal',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'add_queue',
-                                      child: Text('Kuyruğa Ekle',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'add_playlist',
-                                      child: Text("Playlist'e Ekle",
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'share_song',
-                                      child: Text('Paylaş',
-                                          style: TextStyle(color: Colors.white))),
-                                  const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Sök At (Sil)',
-                                          style: TextStyle(color: Colors.redAccent))),
+                                  buildItem('play_next', Icons.skip_next_rounded, 'Sıradakini Çal'),
+                                  buildItem('add_queue', Icons.queue_music_rounded, 'Kuyruğa Ekle'),
+                                  buildItem('add_playlist', Icons.playlist_add_rounded, "Playlist'e Ekle"),
+                                  buildItem('delete', Icons.delete_sweep_rounded, 'Sök At (Sil)', isRed: true),
                                 ];
                               }
                             },

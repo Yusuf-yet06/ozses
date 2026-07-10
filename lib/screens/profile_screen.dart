@@ -14,6 +14,8 @@ import 'package:path_provider/path_provider.dart';
 import '../services/siber_theme_service.dart'; // 🔮 Siber Tema Bağlantısı
 import '../widgets/siber_theme_picker_sheet.dart'; // 🎨 Yeni Tema Rengi Seçici
 import '../widgets/siber_istatistik_sheet.dart'; // 📊 İstatistik Radarı
+import 'listening_mode_screen.dart'; // 🎯 Dinlenme Modu
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1484,6 +1486,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.person_search,
                   color: _auraColor,
                   onTap: _showPersonalSurveyDialog,
+                ),
+
+                const SizedBox(height: 15),
+
+                _buildProfileButton(
+                  title: 'DİNLENME MODU',
+                  subtitle: 'Arka plan tınılarıyla zihnini dinlendir',
+                  icon: Icons.waves_rounded,
+                  color: Colors.cyanAccent,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ListeningModeScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 25),

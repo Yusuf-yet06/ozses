@@ -14,7 +14,7 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart'; // 🚀 NÜKLEE
 class MyAudioHandler extends BaseAudioHandler {
   late final AudioPlayer
       _player; // 🎯 SİBER HAMLE: Motoru sonradan bağlamak için zırhladık
-  
+
   // 🧬 SİBER HAMLE: Biyolojik Hack için görünmez arka plan oynatıcısı
   final AudioPlayer _bioPlayer = AudioPlayer();
 
@@ -53,19 +53,20 @@ class MyAudioHandler extends BaseAudioHandler {
       if (duration != null && _player.playing) {
         final remaining = duration - position;
         double fadeVolume = 1.0;
-        
+
         if (remaining.inMilliseconds <= 5000) {
-           // Son 5 saniye kala yavaşça sesi kıs (Fade Out)
-           fadeVolume = max(0.0, remaining.inMilliseconds / 5000.0);
+          // Son 5 saniye kala yavaşça sesi kıs (Fade Out)
+          fadeVolume = max(0.0, remaining.inMilliseconds / 5000.0);
         } else if (position.inMilliseconds <= 4000) {
-           // İlk 4 saniye yavaşça sesi aç (Fade In)
-           fadeVolume = min(1.0, position.inMilliseconds / 4000.0);
+          // İlk 4 saniye yavaşça sesi aç (Fade In)
+          fadeVolume = min(1.0, position.inMilliseconds / 4000.0);
         }
-        
+
         // Eğer Fake DSP varsa o da etkilensin
         double targetVolume = fadeVolume;
-        if (!SiberPlatform.instance.supportsHardwareDSP && AudioEngine.manualBass > 1.0) {
-           targetVolume += (AudioEngine.manualBass - 1.0) * 0.5;
+        if (!SiberPlatform.instance.supportsHardwareDSP &&
+            AudioEngine.manualBass > 1.0) {
+          targetVolume += (AudioEngine.manualBass - 1.0) * 0.5;
         }
         _player.setVolume(targetVolume);
       }
@@ -139,9 +140,12 @@ class MyAudioHandler extends BaseAudioHandler {
           String assetPath = '';
           if (_lastBioFrequency == 'Rahatlama (Relax)') {
             assetPath = 'assets/audio/frequencies/432hz.mp3';
-          } else if (_lastBioFrequency == 'Yenilenme (Recovery)') assetPath = 'assets/audio/frequencies/528hz.mp3';
-          else if (_lastBioFrequency == 'Derin Odak (Focus)') assetPath = 'assets/audio/frequencies/focus_40hz.mp3';
-          else if (_lastBioFrequency == 'Derin Uyku (Sleep)') assetPath = 'assets/audio/frequencies/sleep_4hz.mp3';
+          } else if (_lastBioFrequency == 'Yenilenme (Recovery)')
+            assetPath = 'assets/audio/frequencies/528hz.mp3';
+          else if (_lastBioFrequency == 'Derin Odak (Focus)')
+            assetPath = 'assets/audio/frequencies/focus_40hz.mp3';
+          else if (_lastBioFrequency == 'Derin Uyku (Sleep)')
+            assetPath = 'assets/audio/frequencies/sleep_4hz.mp3';
 
           if (assetPath.isNotEmpty) {
             await _bioPlayer.setAsset(assetPath);
@@ -153,10 +157,10 @@ class MyAudioHandler extends BaseAudioHandler {
           }
         }
       } else if (_lastBioFrequency != 'Kapalı') {
-         // Ses ayarı değişirse anında uygula
-         if (_bioPlayer.volume != AudioEngine.bioVolume) {
-            await _bioPlayer.setVolume(AudioEngine.bioVolume);
-         }
+        // Ses ayarı değişirse anında uygula
+        if (_bioPlayer.volume != AudioEngine.bioVolume) {
+          await _bioPlayer.setVolume(AudioEngine.bioVolume);
+        }
       }
 
       // 1. TEMPO VE PITCH (Evrensel PC/Mobil)
@@ -175,13 +179,12 @@ class MyAudioHandler extends BaseAudioHandler {
             if (!siberBassBooster.enabled) {
               await siberBassBooster.setEnabled(true);
             }
-              
+
             // 🎯 SİBER MOBİL KALKAN: Telefon hoparlörlerinin çatlamasını (clipping) önlemek için Bass limiti
             double safeBass = AudioEngine.manualBass;
             if (safeBass > 1.4) safeBass = 1.4; // Telefondaki patlamaları önler
-            
-            await siberBassBooster
-                .setTargetGain((safeBass - 1.0) * 1000.0);
+
+            await siberBassBooster.setTargetGain((safeBass - 1.0) * 1000.0);
           } else {
             if (siberBassBooster.enabled) {
               await siberBassBooster.setEnabled(false);
@@ -278,12 +281,15 @@ class MyAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> play() async {
-    if ((_player.audioSource == null || _player.processingState == ProcessingState.idle) && _playlist.isNotEmpty) {
+    if ((_player.audioSource == null ||
+            _player.processingState == ProcessingState.idle) &&
+        _playlist.isNotEmpty) {
       int idx = _currentIndex >= 0 ? _currentIndex : 0;
       await skipToQueueItem(idx);
     }
-    
-    if (_player.audioSource != null && _player.processingState != ProcessingState.idle) {
+
+    if (_player.audioSource != null &&
+        _player.processingState != ProcessingState.idle) {
       await _player.play();
     }
   }
@@ -362,20 +368,25 @@ class MyAudioHandler extends BaseAudioHandler {
         final res = await bridge.getStreamUrl(videoId);
 
         if (_currentIndex != index) {
-          print('⏭️ Hız: Kullanıcı başka şarkıya atladı, eski akış çözme işlemi iptal edildi.');
+          print(
+              '⏭️ Hız: Kullanıcı başka şarkıya atladı, eski akış çözme işlemi iptal edildi.');
           return;
         }
 
         if (res['status'] == 'basarili' && res['stream_url'] != null) {
           resolvedUrl = res['stream_url'];
-          
+
           if (resolvedUrl == 'proxy_will_handle_it') {
             resolvedUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
           }
-          
+
           if (res['is_file'] == true) {
             await _player.setAudioSource(AudioSource.file(resolvedUrl));
-            _lastBass = -1.0; _lastTreble = -1.0; _lastVocal = -1.0; _lastTempo = -1.0; _lastVolume = -1.0;
+            _lastBass = -1.0;
+            _lastTreble = -1.0;
+            _lastVocal = -1.0;
+            _lastTempo = -1.0;
+            _lastVolume = -1.0;
             applySiberDSP();
             await _player.play();
             return;
@@ -383,7 +394,8 @@ class MyAudioHandler extends BaseAudioHandler {
           // 🚀 SİBER HAMLE: Yerel proxy'i (Otonom Motor) direkt kullanıyoruz! (Render'a gitmiyoruz)
           print('🎯 Otonom Motor Yönlendirmesi: $resolvedUrl');
         } else {
-          print('❌ Hata: Akış çözülemedi, siber kalkan ile oynatma durduruldu!');
+          print(
+              '❌ Hata: Akış çözülemedi, siber kalkan ile oynatma durduruldu!');
           playbackState.add(playbackState.value.copyWith(
             playing: false,
             processingState: AudioProcessingState.idle,
@@ -392,13 +404,17 @@ class MyAudioHandler extends BaseAudioHandler {
         }
       }
 
-      if (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://')) {
-        await _player.setAudioSource(AudioSource.uri(
+      if (resolvedUrl.startsWith('http://') ||
+          resolvedUrl.startsWith('https://')) {
+        await _player
+            .setAudioSource(AudioSource.uri(
           Uri.parse(resolvedUrl),
-        )).timeout(
+        ))
+            .timeout(
           const Duration(seconds: 60),
           onTimeout: () {
-            throw TimeoutException('Akış yüklenemedi veya dosya bağlantısı koptu.');
+            throw TimeoutException(
+                'Akış yüklenemedi veya dosya bağlantısı koptu.');
           },
         ).catchError((error) {
           print('🔥 DETAYLI SİBER HATA (LÜTFEN BANA BUNU AT): $error');

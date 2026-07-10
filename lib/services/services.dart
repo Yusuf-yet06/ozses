@@ -100,6 +100,27 @@ final List<String> invidiousInstances = [
     return [];
   }
 
+  // 🎯 SİBER HAMLE: Otonom Radyo Motoru (YouTube Music Up Next)
+  Future<List<dynamic>> getRadio(String videoId) async {
+    try {
+      print('📻 Siber Radyo İstek Gönderiliyor: $videoId');
+      final response = await http.get(
+        Uri.parse('https://ozses.onrender.com/radio?id=$videoId'),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == 'basarili' && data['oneriler'] != null) {
+          return data['oneriler'] as List<dynamic>;
+        }
+      }
+      print('⚠️ Siber Radyo Yanıt Hatası: ${response.statusCode}');
+    } catch (e) {
+      print('Siber Radyo Hatası: $e');
+    }
+    return [];
+  }
+
   static final Map<String, String> _downloadStatuses = {};
   static final Map<String, String?> _downloadPaths = {};
   static final Map<String, Map<String, dynamic>> _downloadMbInfos = {};
@@ -162,22 +183,45 @@ final List<String> invidiousInstances = [
           _pendingResolutions.remove(videoId);
         }
 
-        // 🚀 SİBER HAMLE: HttpClient ile 403 yediğimiz için YoutubeExplode'un 
-        // kendi stream motorunu direkt olarak proxy'e bağlıyoruz! (Sınırsız akış)
+        // 🚀 SİBER HAMLE: HttpClient ile 403 yediğimiz için ve YoutubeExplode 
+        // 403 döndüren kırık linkler verdiği için ilk olarak KENDİ SİBER KARARGAHIMIZI (Render) deniyoruz!
         try {
           var yt = YoutubeExplode();
           Uri? finalStreamUrl;
           bool usedYoutubeExplode = false;
           dynamic ytStreamInfo;
+          bool isRenderStream = false;
           
           try {
-            var manifest = await yt.videos.streamsClient.getManifest(videoId);
-            var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
-            ytStreamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
-            finalStreamUrl = ytStreamInfo.url;
-            usedYoutubeExplode = true;
-          } catch (ytEx) {
-            print('⚠️ YoutubeExplode Rate Limit: $ytEx');
+            print('🚀 İlk Hedef: Kendi Sunucumuz (Render Backend) kontrol ediliyor...');
+            final renderUrl = Uri.parse('https://ozses.onrender.com/stream?id=$videoId');
+            
+            // Ping atıp sunucunun 502 (Uyuyan sunucu) veya 500 (Hata) dönüp dönmediğine bakıyoruz
+            final pingResponse = await http.get(renderUrl).timeout(const Duration(seconds: 40));
+            
+            if (pingResponse.statusCode == 200 || pingResponse.statusCode == 206) {
+              finalStreamUrl = renderUrl;
+              isRenderStream = true;
+              print('✅ Kendi Sunucumuz (Render) Kullanılıyor: $finalStreamUrl');
+            } else {
+              print('⚠️ Render Sunucusu Hata Döndürdü (Kod: ${pingResponse.statusCode}), YoutubeExplode denenecek...');
+              throw Exception('Render HTTP ${pingResponse.statusCode}');
+            }
+          } catch (e) {
+            print('⚠️ Render Sunucusu Yanıt Vermedi veya Hatalı: $e');
+            
+            try {
+              var manifest = await yt.videos.streamsClient.getManifest(videoId);
+              var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+              ytStreamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
+              finalStreamUrl = ytStreamInfo.url;
+              usedYoutubeExplode = true;
+            } catch (ytEx) {
+              print('⚠️ YoutubeExplode Hatası: $ytEx');
+            }
+          }
+          
+          if (finalStreamUrl == null || (!isRenderStream && !usedYoutubeExplode)) {
             print('🔄 SİBER KALKAN: Piped Yedek (Fallback) Devrede...');
             
             final List<String> pipedInstances = [
@@ -245,70 +289,90 @@ final List<String> invidiousInstances = [
           
           if (finalStreamUrl == null) {
             print('⚠️ Tüm Invidious sunucuları başarısız! COBALT API Devrede...');
-            try {
-              final cobaltResponse = await http.post(
-                Uri.parse('https://api.cobalt.tools/'),
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Origin': 'https://cobalt.tools',
-                  'Referer': 'https://cobalt.tools/',
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                },
-                body: jsonEncode({
-                  'url': 'https://www.youtube.com/watch?v=$videoId',
-                  'downloadMode': 'audio'
-                }),
-              ).timeout(const Duration(seconds: 15));
-              
-              if (cobaltResponse.statusCode == 200) {
-                final data = jsonDecode(cobaltResponse.body);
-                if (data['url'] != null) {
-                  finalStreamUrl = Uri.parse(data['url'].toString());
-                  print('✅ Cobalt Fallback Başarılı: $finalStreamUrl');
+            
+            final List<String> cobaltInstances = [
+              'https://co.wuk.sh',
+              'https://cobalt.q0.o.aurora.tech',
+              'https://cobalt.kwiatekmateusz.pl',
+              'https://cobalt.siren.party',
+              'https://api.cobalt.tools'
+            ];
+
+            for (var instance in cobaltInstances) {
+              try {
+                // Cobalt V7 veya V8 uyumluluğu için önce V8 (kök URL) deniyoruz
+                final cobaltResponse = await http.post(
+                  Uri.parse(instance == 'https://co.wuk.sh' ? '$instance/api/json' : '$instance/'),
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Origin': instance,
+                    'Referer': '$instance/',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                  },
+                  body: jsonEncode({
+                    'url': 'https://www.youtube.com/watch?v=$videoId',
+                    'aFormat': 'mp3',
+                    'isAudioOnly': true,
+                    'downloadMode': 'audio'
+                  }),
+                ).timeout(const Duration(seconds: 12));
+                
+                if (cobaltResponse.statusCode == 200) {
+                  final data = jsonDecode(cobaltResponse.body);
+                  if (data['url'] != null) {
+                    finalStreamUrl = Uri.parse(data['url'].toString());
+                    print('✅ Cobalt Fallback Başarılı: $finalStreamUrl ($instance)');
+                    break; // Başarılıysa döngüden çık
+                  }
+                } else {
+                  print('⚠️ Cobalt API ($instance) Hata: ${cobaltResponse.body}');
                 }
-              } else {
-                print('⚠️ Cobalt API Hata Kodu Döndürdü: ${cobaltResponse.statusCode} - ${cobaltResponse.body}');
+              } catch (e) {
+                print('⚠️ Cobalt Sunucusu Hatası ($instance): $e');
               }
+            }
+          }
+
+          if (finalStreamUrl == null) {
+            print('⚠️ Cobalt başarısız! KENDİ SİBER KARARGAHIMIZ (RENDER BACKEND) DEVREDE...');
+            try {
+              // Kendi Render sunucumuz
+              final renderUrl = Uri.parse('https://ozses.onrender.com/stream?id=$videoId');
+              // Sadece HEAD isteği atarak URL'nin çalışıp çalışmadığını kontrol edebiliriz
+              // Ama Render direkt stream döndürdüğü için streamUrl olarak kaydediyoruz.
+              finalStreamUrl = renderUrl;
+              print('✅ Kendi Sunucumuz (Render) Fallback Başarılı: $finalStreamUrl');
             } catch (e) {
-              print('⚠️ Cobalt Sunucusu Hatası: $e');
+              print('⚠️ Kendi Sunucumuz Hatası: $e');
             }
           }
           
           if (finalStreamUrl == null) {
-            throw Exception('Tüm akış motorları (YoutubeExplode + Piped + Invidious + Cobalt) çöktü!');
+            throw Exception('Tüm akış motorları (YoutubeExplode + Piped + Invidious + Cobalt + Render) çöktü!');
           }
           
           Stream<List<int>> dataStream;
           
-          if (usedYoutubeExplode) {
-             dataStream = yt.videos.streamsClient.get(ytStreamInfo);
-             request.response.headers.contentType = ContentType('audio', 'mp4');
-             request.response.headers.add('Accept-Ranges', 'bytes');
-             if (ytStreamInfo.size.totalBytes > 0) {
-               request.response.contentLength = ytStreamInfo.size.totalBytes;
-             }
-             var rangeHeader = request.headers.value('range');
-             if (rangeHeader != null && rangeHeader.startsWith('bytes=0-')) {
-               request.response.statusCode = HttpStatus.partialContent;
-               request.response.headers.add('Content-Range', 'bytes 0-${ytStreamInfo.size.totalBytes - 1}/${ytStreamInfo.size.totalBytes}');
-             } else {
-               request.response.statusCode = HttpStatus.ok;
-             }
-          } else {
-             var client = http.Client();
-             var streamRequest = http.Request('GET', finalStreamUrl);
-             var streamResponse = await client.send(streamRequest);
-             dataStream = streamResponse.stream;
-             
-             request.response.statusCode = streamResponse.statusCode;
-             streamResponse.headers.forEach((key, value) {
-               if (key.toLowerCase() != 'transfer-encoding') {
-                 request.response.headers.set(key, value);
-               }
-             });
+          // 🎯 SİBER KALKAN: Range Header (Parçalı İndirme) Desteği
+          var client = http.Client();
+          var streamRequest = http.Request('GET', finalStreamUrl!);
+
+          var rangeHeader = request.headers.value('range');
+          if (rangeHeader != null) {
+            streamRequest.headers['range'] = rangeHeader;
+            print('🎯 Proxy: ExoPlayer Parçalı İstek Attı: $rangeHeader');
           }
-          
+
+          var streamResponse = await client.send(streamRequest);
+          dataStream = streamResponse.stream;
+
+          request.response.statusCode = streamResponse.statusCode;
+          streamResponse.headers.forEach((key, value) {
+            if (key.toLowerCase() != 'transfer-encoding') {
+              request.response.headers.set(key, value);
+            }
+          });
           // 🚀 ÇİFT ÇEKİRDEK (Dual-Core): Depoya kaydet
           IOSink? fileSink;
           try {
