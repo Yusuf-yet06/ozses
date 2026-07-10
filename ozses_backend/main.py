@@ -28,8 +28,9 @@ ydl_opts = {
     }
 }
 
-if os.path.exists('cookies.txt'):
-    ydl_opts['cookiefile'] = 'cookies.txt'
+cookie_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt')
+if os.path.exists(cookie_path):
+    ydl_opts['cookiefile'] = cookie_path
 
 @app.get("/")
 def read_root():
