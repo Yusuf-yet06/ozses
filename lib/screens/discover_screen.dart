@@ -767,16 +767,49 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     if (searchQueries.isEmpty) searchQueries.add('Türkçe müzik trendleri');
 
-              _activeCategory == 'Size Özel Mix') &&
-          _nextPageToken.isNotEmpty) {
-        _loadMoreTrends();
-      } else if (_isSearching && !_isLoadingMore && _hasMoreSearch) {
-        _loadMoreSearch();
+    List<dynamic> combinedResults = [];
+    bool hasAuthError = false;
+    
+    final queriesToRun = searchQueries.take(3).toList();
+    try {
+      for (var query in queriesToRun) {
+        try {
+          final res = await _bridge.searchMusic(query, limit: 10);
+          combinedResults.addAll(res);
+          await Future.delayed(const Duration(milliseconds: 1500)); // SİBER DEBOUNCE (Jitter)
+        } catch (e) {
+          if (e == 'auth_required') hasAuthError = true;
+          print('Arama hatası ($query): $e');
+        }
       }
+    } catch (e) {
+      if (e == 'auth_required') {
+        hasAuthError = true;
+      } else {
+        print('Arama hatası: $e');
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        if (hasAuthError) {
+          _isOfflineMode = true; // 🎯 Siber Kalkan: Çevrimdışı modda olduğumuzu anladık
+        } else {
+          _isOfflineMode = false;
+          _trendList = combinedResults;
+          _currentCache.trendList = _trendList;
+        }
+        _isLoading = false;
+        _showSkeletonTimeout = false;
+        _skeletonTimer?.cancel();
+      });
+      _saveTrendsCache();
+      
+      // SİBER HIZLANDIRICI: Sonraki mix'leri sırayla yükle!
+      _fetchGenresSequentially();
     }
   }
 
-  // 🎯 SİBER HAMLE: Geçmişi Yükle ve Kaydet
   Future<void> _loadSearchHistory() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
