@@ -373,6 +373,13 @@ final List<String> invidiousInstances = [
               request.response.headers.set(key, value);
             }
           });
+          
+          if (streamResponse.statusCode != 200 && streamResponse.statusCode != 206) {
+            print('❌ HATA: Hedef sunucu ${streamResponse.statusCode} döndürdü. Yönlendirme iptal ediliyor.');
+            try { await request.response.close(); } catch (_) {}
+            return;
+          }
+
           // 🚀 ÇİFT ÇEKİRDEK (Dual-Core): Depoya kaydet
           IOSink? fileSink;
           try {

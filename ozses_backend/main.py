@@ -22,9 +22,9 @@ ydl_opts = {
     'no_warnings': True,
     'extract_flat': False,
     'socket_timeout': 10,
-    # YouTube'un Datacenter (Render) İP engellemesini aşmak için Android İstemcisi kılığına giriyoruz
+    # YouTube'un Datacenter (Render) İP engellemesini aşmak için iOS ve Android İstemcisi kılığına giriyoruz
     'extractor_args': {
-        'youtube': ['player_client=android,web']
+        'youtube': ['player_client=ios,android,tv,web']
     }
 }
 
