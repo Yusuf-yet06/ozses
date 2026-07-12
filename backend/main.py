@@ -154,3 +154,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/search")
+async def search(q: str = Query(..., description="Arama sorgusu")):
+    try:
+        ydl_opts = stealth_proxy._get_ydl_opts(search_mode=True)
+        ydl_opts['playlistend'] = 20
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            result = await asyncio.to_thread(ydl.extract_info, f"ytsearch20:{q}", download=False)
+            entries = result.get('entries', []) if result else []
+            oneriler = []
+            for e in entries:
+                if not e: continue
+                oneriler.append({
+                    'videoId': e.get('id', ''),
+                    'title': e.get('title', ''),
+                    'artist': e.get('uploader', e.get('channel', '')),
+                    'thumbnail': e.get('thumbnail', f"https://i.ytimg.com/vi/{e.get('id', '')}/hqdefault.jpg"),
+                    'duration': e.get('duration', 0),
+                })
+            return {"status": "basarili", "oneriler": oneriler}
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
+
+@app.get("/radio")
+async def radio(id: str = Query(..., description="YouTube video ID")):
+    try:
+        ydl_opts = stealth_proxy._get_ydl_opts(search_mode=True)
+        ydl_opts['playlistend'] = 25
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            result = await asyncio.to_thread(ydl.extract_info, f"https://www.youtube.com/watch?v={id}&list=RD{id}", download=False)
+            entries = result.get('entries', []) if result else []
+            oneriler = []
+            for e in entries:
+                if not e or e.get('id') == id: continue
+                oneriler.append({
+                    'videoId': e.get('id', ''),
+                    'title': e.get('title', ''),
+                    'artist': e.get('uploader', e.get('channel', '')),
+                    'thumbnail': e.get('thumbnail', f"https://i.ytimg.com/vi/{e.get('id', '')}/hqdefault.jpg"),
+                    'duration': e.get('duration', 0),
+                })
+            return {"status": "basarili", "oneriler": oneriler}
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
+
