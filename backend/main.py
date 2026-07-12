@@ -22,6 +22,7 @@ app.add_middleware(
 YDL_BASE_OPTS = {
     'quiet': True,
     'no_warnings': True,
+    'cookiefile': 'cookies.txt', # Siber Kalkan: Gerçek İnsan Kimliği Aktif!
     'extractor_args': {
         'youtube': {
             'client': ['ios', 'tv', 'web_embedded'],
