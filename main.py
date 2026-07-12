@@ -1,16 +1,16 @@
-from fastapi import FastAPI, Request, HTTPException, Response, BackgroundTasks
-from fastapi.responses import StreamingResponse, RedirectResponse, FileResponse
+from fastapi import FastAPI, Request, HTTPException, Response, BackgroundTasks # type: ignore
+from fastapi.responses import StreamingResponse, RedirectResponse, FileResponse # type: ignore
 import tempfile
 import os
 import yt_dlp
-import httpx
+import httpx # type: ignore
 import logging
 import re
 import uuid
 import time
 import glob
 import asyncio
-from ytmusicapi import YTMusic
+from ytmusicapi import YTMusic # pyright: ignore[reportMissingImports]
 
 app = FastAPI()
 ytmusic = YTMusic()
@@ -21,15 +21,12 @@ ydl_opts = {
     'noplaylist': True,
     'no_warnings': True,
     'extract_flat': False,
-    'socket_timeout': 10,
-    # YouTube'un Datacenter (Render) İP engellemesini aşmak için Android İstemcisi kılığına giriyoruz
-    'extractor_args': {
-        'youtube': ['player_client=android,web']
-    }
+    'socket_timeout': 10
 }
 
-if os.path.exists('cookies.txt'):
-    ydl_opts['cookiefile'] = 'cookies.txt'
+cookie_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt')
+if os.path.exists(cookie_path):
+    ydl_opts['cookiefile'] = cookie_path
 
 @app.get("/")
 def read_root():
@@ -48,6 +45,27 @@ async def search_music(q: str):
                 "thumbnail": r.get("thumbnails", [{}])[-1].get("url", "") if r.get("thumbnails") else "",
                 "duration": r.get("duration_seconds", 0)
             })
+        return {"status": "basarili", "oneriler": formatted}
+    except Exception as e:
+        return {"status": "hata", "mesaj": str(e)}
+
+@app.get("/radio")
+async def get_radio(id: str):
+    try:
+        # YouTube Music'in akıllı "Watch Playlist" (Radyo) algoritmasını kullanıyoruz.
+        # Bu sayede Rap açınca Pop gelmez, tam uyumlu şarkılar gelir.
+        watch_playlist = ytmusic.get_watch_playlist(videoId=id, limit=20)
+        tracks = watch_playlist.get("tracks", [])
+        formatted = []
+        for r in tracks:
+            if r.get("videoId") and r.get("videoId") != id: # Kendisini tekrar listeye almamak için
+                formatted.append({
+                    "id": r.get("videoId"),
+                    "title": r.get("title"),
+                    "channel": ", ".join([a.get("name", "") for a in r.get("artists", [])]),
+                    "thumbnail": r.get("thumbnails", [{}])[-1].get("url", "") if r.get("thumbnails") else "",
+                    "duration": r.get("length") # length genelde string formatındadır, frontend'de idare edebiliriz.
+                })
         return {"status": "basarili", "oneriler": formatted}
     except Exception as e:
         return {"status": "hata", "mesaj": str(e)}
@@ -130,7 +148,7 @@ async def stream_audio(id: str, request: Request, background_tasks: BackgroundTa
                 try:
                     download_opts = ydl_opts.copy()
                     download_opts['outtmpl'] = file_path
-                    with yt_dlp.YoutubeDL(download_opts) as ydl:
+                    with yt_dlp.YoutubeDL(download_opts) as ydl: # pyright: ignore[reportArgumentType]
                         ydl.download([url])
                 finally:
                     if os.path.exists(lock_path):
