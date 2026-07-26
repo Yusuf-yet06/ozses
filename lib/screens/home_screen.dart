@@ -36,7 +36,9 @@ import '../widgets/neon_search_bar.dart';
 import '../widgets/mini_eq_visualizer.dart'; // 🎯 SİBER HAMLE: Yeni Ritim Widget'ı
 import '../widgets/full_screen_player.dart'; // 🎯 SİBER HAMLE: Tam Ekran Oynatıcı Mührü
 import '../services/settings_service.dart'; // 🎯 SİBER KARARGAH PANELİ BAĞLANTISI
-import '../services/audio_engine.dart'; // 🎯 SİBER GÖRSEL AYARLAR İÇİN
+import '../services/audio_engine.dart';
+import '../widgets/siber_studio_panel.dart';
+import '../widgets/siber_ad_widget.dart'; // 🎯 SİBER GÖRSEL AYARLAR İÇİN
 import 'profile_screen.dart'; // 🎯 SİBER PROFİL BAĞLANTISI
 import 'discover_screen.dart'; // 🎯 YOUTUBE MUSIC SİBER KLONU BAĞLANTISI
 import 'listening_mode_screen.dart'; // 🎯 SİBER DİNLEME MODU BAĞLANTISI
@@ -506,6 +508,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 title: '');
             _playlist.add(newSong);
           }
+          
+          // 🎯 SİBER KALKAN: Küresel arşivi kalıcı hafızaya mühürle ki uygulama kapanınca uçmasın!
+          await saveGlobalLibrarySongs(_playlist);
 
           if (mounted) setState(() {});
 
@@ -993,6 +998,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                const SiberAdWidget(),
+                if (_currentSongName != 'Müzik Seçilmedi')
+                  const SizedBox(height: 85)
+                else
+                  const SizedBox(height: 15),
               ],
             ),
           ),
@@ -1178,48 +1188,48 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-            child: Theme(
-              data:
-                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                iconColor: themeColor,
-                collapsedIconColor: Colors.white70,
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                      color: themeColor.withValues(alpha: 0.15),
-                      shape: BoxShape.circle),
-                  child: Icon(Icons.radar, color: themeColor, size: 20),
-                ),
-                title: const Text(
-                  'KEŞFET',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 1.2,
-                  ),
-                ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12.0, vertical: 8.0),
-                    child: Column(
-                      children: [
-                        _buildNeonButton(
+                  Row(
+                    children: [
+                      Icon(Icons.radar, color: themeColor, size: 24),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'GENEL KEŞFET',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: _buildNeonButton(
                           icon: Icons.travel_explore,
-                          label: 'ŞAHSİ KEŞFET',
+                          label: 'ŞAHSİ',
                           themeColor: Colors.purpleAccent,
                           onPressed: () => _launchPersonalDiscover(themeColor),
                         ),
-                        _buildNeonButton(
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildNeonButton(
                           icon: Icons.new_releases,
-                          label: 'GENEL KEŞFET',
+                          label: 'GENEL',
                           themeColor: Colors.cyanAccent,
                           onPressed: () => _scanNewRecruits(themeColor),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1301,7 +1311,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: 'SİBER TEMA MERKEZİ',
                           themeColor: Colors.pinkAccent,
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tema Merkezi yakında aktifleşecek!')));
+                            Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tema Merkezi yakında aktifleşecek!')));
                           },
                         ),
                         _buildNeonButton(
@@ -1309,7 +1320,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: 'ARŞİV YEDEKLEME',
                           themeColor: Colors.lightBlueAccent,
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Arşiv Yedekleme ve Dışa Aktarma modülü başlatılıyor...')));
+                            Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Arşiv Yedekleme ve Dışa Aktarma modülü başlatılıyor...')));
                           },
                         ),
                         _buildNeonButton(
@@ -3152,102 +3164,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.60,
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.85),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            border: Border(top: BorderSide(color: themeColor.withValues(alpha: 0.5), width: 2)),
-            boxShadow: [
-              BoxShadow(color: themeColor.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 5)
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Column(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 20),
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.graphic_eq_rounded, color: themeColor, size: 28),
-                      const SizedBox(width: 10),
-                      Text('SİBER SES STÜDYOSU',
-                          style: TextStyle(
-                              color: themeColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5)),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  
-                  // Gelişmiş Efekt Kartları
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        _buildStudioCard(
-                          title: '3D Siber Akustik',
-                          subtitle: 'Mekansal ses derinliği ve geniş sahne efekti.',
-                          icon: Icons.threed_rotation,
-                          color: Colors.cyanAccent,
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('3D Akustik Motoru başlatılıyor... (Yakında)')));
-                          }
-                        ),
-                        const SizedBox(height: 15),
-                        _buildStudioCard(
-                          title: 'Deep Bass Boost',
-                          subtitle: 'Sub-bass frekanslarını otonom olarak güçlendirir.',
-                          icon: Icons.speaker,
-                          color: Colors.orangeAccent,
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Siber Bass Motoru devrede! (Yakında)')));
-                          }
-                        ),
-                        const SizedBox(height: 15),
-                        _buildStudioCard(
-                          title: 'Vokal Ayrıştırıcı',
-                          subtitle: 'Yapay zeka ile sadece vokalleri (karaoke) öne çıkarır.',
-                          icon: Icons.mic_external_on,
-                          color: Colors.purpleAccent,
-                          onTap: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yapay Zeka Vokal Analizi yapılıyor... (Yakında)')));
-                          }
-                        ),
-                        const SizedBox(height: 15),
-                        _buildStudioCard(
-                          title: 'Manuel Ekolayzer',
-                          subtitle: 'Frekansları kendi zevkine göre hassas ayarla.',
-                          icon: Icons.tune_rounded,
-                          color: themeColor,
-                          onTap: () {
-                            Navigator.pop(context);
-                            // Ekolayzer paneli açılabilir
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Manuel EQ Paneli açılıyor...')));
-                          }
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+        return SiberStudioPanel(themeColor: themeColor);
       },
     );
   }

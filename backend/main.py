@@ -1,193 +1,180 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel
-from typing import List, Optional
-import uuid
-from datetime import datetime
-import asyncio
-import random
+"""
+ÖZSES V7 - Siber Karargah Backend
+Render.com üzerinde çalışır.
+Endpoints: /search, /stream, /radio
+"""
+
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+import httpx
 import yt_dlp
-import time
+import json
+import random
 
-ROOT_DIR = Path(__file__).parent
-
-# Create the main app without a prefix
-app = FastAPI()
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Fallback user agents in case fake_useragent is missing
-FALLBACK_USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2.1 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-]
-
-class StealthYouTubeProxy:
-    def __init__(self):
-        self.user_agents = FALLBACK_USER_AGENTS
-    
-    def _get_random_user_agent(self):
-        """Get random user agent for rotation"""
-        return random.choice(self.user_agents)
-    
-    async def _human_delay(self):
-        """Simulate human-like delay between requests"""
-        delay = random.uniform(0.1, 0.5)  # 100-500ms
-        await asyncio.sleep(delay)
-    
-    def _get_ydl_opts(self, search_mode=False):
-        """Get yt-dlp options with stealth configuration"""
-        opts = {
-            'quiet': True,
-            'no_warnings': True,
-            'extract_flat': search_mode,
-            'format': 'bestaudio/best',
-            'nocheckcertificate': True,
-            'extractor_retries': 3,
-            'socket_timeout': 30,
-            'cookiefile': 'cookies.txt' if os.path.exists('cookies.txt') else None,
-            'extractor_args': {
-                'youtube': {
-                    'client': ['ios', 'tv', 'web_embedded'],
-                    'player_skip': ['webpage', 'configs']
-                }
-            },
-            'http_headers': {
-                'User-Agent': self._get_random_user_agent(),
-                'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-            }
-        }
-        return opts
-    
-    async def get_stream_url(self, video_id: str):
-        """Get audio stream URL with quality selection"""
-        try:
-            await self._human_delay()
-            
-            ydl_opts = self._get_ydl_opts()
-            ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/best'
-            
-            url = f"https://www.youtube.com/watch?v={video_id}"
-            
-            logger.info(f"Getting stream URL for: {video_id}")
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = await asyncio.to_thread(ydl.extract_info, url, download=False)
-                
-                if not info:
-                    raise HTTPException(status_code=404, detail="Video not found")
-                
-                # Get the best audio format
-                stream_url = info.get('url')
-                if not stream_url:
-                    formats = info.get('formats', [])
-                    audio_formats = [f for f in formats if f.get('vcodec') == 'none' and f.get('url')]
-                    if audio_formats:
-                        best_audio = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
-                        stream_url = best_audio['url']
-                
-                if not stream_url:
-                    raise HTTPException(status_code=404, detail="Stream URL not found")
-                
-                return {
-                    "status": "basarili",
-                    "stream_url": stream_url,
-                    "title": info.get('title', ''),
-                }
-                
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Stream extraction error: {str(e)}")
-            # Retry on bot detection
-            if "403" in str(e) or "429" in str(e) or "Sign in" in str(e):
-                logger.warning("Bot detection triggered, retrying with different UA...")
-                await asyncio.sleep(random.uniform(1, 3))
-                # Sadece 1 kere retry atalım
-                ydl_opts = self._get_ydl_opts()
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = await asyncio.to_thread(ydl.extract_info, url, download=False)
-                    stream_url = info.get('url')
-                    if stream_url:
-                        return {"status": "basarili", "stream_url": stream_url}
-            raise HTTPException(status_code=500, detail=f"Stream extraction failed: {str(e)}")
-
-# Initialize stealth proxy
-stealth_proxy = StealthYouTubeProxy()
-
-@app.get("/")
-async def root():
-    return {
-        "message": "Özses Siber Karargah Proxy API",
-        "status": "online"
-    }
-
-# GET endpoint for backward compatibility with existing flutter app
-@app.get("/stream")
-async def get_stream_get(id: str = Query(..., description="YouTube video ID")):
-    return await stealth_proxy.get_stream_url(id)
-
-# POST endpoint for new integration
-class StreamRequest(BaseModel):
-    video_id: str
-
-@app.post("/stream")
-async def get_stream_post(request: StreamRequest):
-    return await stealth_proxy.get_stream_url(request.video_id)
+app = FastAPI(title="Özses Siber Karargah")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# yt-dlp ortak ayarlar (bot gibi görünme)
+YDL_BASE_OPTS = {
+    'quiet': True,
+    'no_warnings': True,
+    'extractor_args': {'youtube': {'skip': ['hls', 'dash']}},
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 Chrome/114.0.0.0 Mobile Safari/537.36',
+        'Accept-Language': 'tr-TR,tr;q=0.9,en;q=0.8',
+    }
+}
+
+
+@app.get("/")
+def root():
+    return {"status": "online", "service": "Özses Siber Karargah"}
+
+
 @app.get("/search")
-async def search(q: str = Query(..., description="Arama sorgusu")):
+def search(q: str = Query(..., description="Arama sorgusu")):
+    """YouTube arama → şarkı listesi döndür"""
     try:
-        ydl_opts = stealth_proxy._get_ydl_opts(search_mode=True)
-        ydl_opts['playlistend'] = 20
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'format': 'bestaudio/best',
+            'extract_flat': True,
+            'playlistend': 20,
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            result = await asyncio.to_thread(ydl.extract_info, f"ytsearch20:{q}", download=False)
+            result = ydl.extract_info(f"ytsearch20:{q}", download=False)
             entries = result.get('entries', []) if result else []
+
             oneriler = []
             for e in entries:
-                if not e: continue
+                if not e:
+                    continue
                 oneriler.append({
                     'videoId': e.get('id', ''),
                     'title': e.get('title', ''),
                     'artist': e.get('uploader', e.get('channel', '')),
                     'thumbnail': e.get('thumbnail', f"https://i.ytimg.com/vi/{e.get('id', '')}/hqdefault.jpg"),
                     'duration': e.get('duration', 0),
+                    'viewCount': e.get('view_count', 0),
                 })
+
             return {"status": "basarili", "oneriler": oneriler}
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
+
+
+@app.get("/stream")
+def stream(id: str = Query(..., description="YouTube video ID")):
+    """Video ID'den en iyi ses stream URL'sini döndür"""
+    try:
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(
+                f"https://www.youtube.com/watch?v={id}",
+                download=False
+            )
+            if not info:
+                raise HTTPException(status_code=404, detail="Video bulunamadı")
+
+            stream_url = info.get('url')
+            if not stream_url:
+                # format listesinden bul
+                formats = info.get('formats', [])
+                audio_formats = [f for f in formats if f.get('vcodec') == 'none' and f.get('url')]
+                if audio_formats:
+                    # En yüksek bitrate'i seç
+                    best = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
+                    stream_url = best['url']
+
+            if not stream_url:
+                raise HTTPException(status_code=404, detail="Stream URL bulunamadı")
+
+            return {
+                "status": "basarili",
+                "stream_url": stream_url,
+                "title": info.get('title', ''),
+                "duration": info.get('duration', 0),
+                "ext": info.get('ext', 'm4a'),
+            }
+    except HTTPException:
+        raise
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
+
+
+@app.get("/play/{id}")
+async def play(id: str):
+    """Web istemcileri için doğrudan sesi proxy (CORS bypass) üzerinden aktarır."""
+    try:
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(
+                f"https://www.youtube.com/watch?v={id}",
+                download=False
+            )
+            if not info:
+                raise HTTPException(status_code=404, detail="Video bulunamadı")
+
+            stream_url = info.get('url')
+            if not stream_url:
+                formats = info.get('formats', [])
+                audio_formats = [f for f in formats if f.get('vcodec') == 'none' and f.get('url')]
+                if audio_formats:
+                    best = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
+                    stream_url = best['url']
+
+            if not stream_url:
+                raise HTTPException(status_code=404, detail="Stream URL bulunamadı")
+
+        # Asenkron HTTP istemcisi (httpx) ile doğrudan yönlendirme (StreamingResponse)
+        client = httpx.AsyncClient()
+        req = client.build_request("GET", stream_url)
+        r = await client.send(req, stream=True)
+        
+        return StreamingResponse(
+            r.aiter_raw(),
+            media_type="audio/mp4",
+            background=r.aclose
+        )
+    except HTTPException:
+        raise
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
+
 
 @app.get("/radio")
-async def radio(id: str = Query(..., description="YouTube video ID")):
+def radio(id: str = Query(..., description="YouTube video ID (başlangıç şarkısı)")):
+    """Verilen şarkıya benzer şarkılar döndür (YouTube Mix)"""
     try:
-        ydl_opts = stealth_proxy._get_ydl_opts(search_mode=True)
-        ydl_opts['playlistend'] = 25
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'extract_flat': True,
+            'playlistend': 25,
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            result = await asyncio.to_thread(ydl.extract_info, f"https://www.youtube.com/watch?v={id}&list=RD{id}", download=False)
+            result = ydl.extract_info(
+                f"https://www.youtube.com/watch?v={id}&list=RD{id}",
+                download=False
+            )
             entries = result.get('entries', []) if result else []
+
             oneriler = []
             for e in entries:
-                if not e or e.get('id') == id: continue
+                if not e or e.get('id') == id:
+                    continue
                 oneriler.append({
                     'videoId': e.get('id', ''),
                     'title': e.get('title', ''),
@@ -195,7 +182,7 @@ async def radio(id: str = Query(..., description="YouTube video ID")):
                     'thumbnail': e.get('thumbnail', f"https://i.ytimg.com/vi/{e.get('id', '')}/hqdefault.jpg"),
                     'duration': e.get('duration', 0),
                 })
+
             return {"status": "basarili", "oneriler": oneriler}
     except Exception as ex:
         raise HTTPException(status_code=500, detail=str(ex))
-

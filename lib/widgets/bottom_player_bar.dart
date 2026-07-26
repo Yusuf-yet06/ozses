@@ -51,6 +51,9 @@ class BottomPlayerBar extends StatelessWidget {
     required MiniEqVisualizer trailingAccessory,
   });
 
+  // 🛡️ SİBER KALKAN: Çift Tıklama ve Çoklu Ekran Koruyucu (Uygulama geneli)
+  static bool _isSheetOpen = false;
+
   @override
   Widget build(BuildContext context) {
     // 🛡️ SİBER KALKAN: Çizim Motoru (Slider) için Güvenli Matematik
@@ -74,7 +77,18 @@ class BottomPlayerBar extends StatelessWidget {
         children: [
           // 📡 ŞARKI İSMİ BURADA MÜHÜRLENİYOR
           GestureDetector(
-            onTap: onExpand, // 🎯 Çubuğa tıklayınca tam ekrana geç
+            onTap: () {
+              if (_isSheetOpen) {
+                print('🛡️ SİBER KALKAN: Çift tıklama engellendi! Ekran zaten açık.');
+                return;
+              }
+              _isSheetOpen = true;
+              onExpand();
+              // 1.5 saniye sonra kilidi aç (BottomSheet'in kapanması veya yüklenmesi için yeterli)
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                _isSheetOpen = false;
+              });
+            }, // 🎯 Çubuğa tıklayınca tam ekrana geç
             behavior: HitTestBehavior.opaque,
             child: Row(
               children: [

@@ -16,9 +16,9 @@ class YoutubeApiService {
     }
 
     try {
-      // Sadece müzikleri bulması için 'official audio' takısı ekliyoruz
+      // Sadece müzikleri bulması için ayarlamalar yapıldı
       final uri = Uri.parse(
-          "$_baseUrl/search?part=snippet&q=${Uri.encodeComponent('$query official audio')}&type=video&maxResults=15&key=$_apiKey");
+          "$_baseUrl/search?part=snippet&q=${Uri.encodeComponent(query)}&type=video&maxResults=15&key=$_apiKey");
 
       final response = await http.get(uri);
 

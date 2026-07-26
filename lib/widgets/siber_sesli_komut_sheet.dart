@@ -108,6 +108,7 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
           }
         },
         localeId: 'tr_TR',
+        listenMode: ListenMode.search,
         listenFor: const Duration(seconds: 8),
         pauseFor: const Duration(seconds: 3),
         partialResults: true,

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:firebase_core/firebase_core.dart'; // 🎯 SİBER HAMLE: Güvenlik Motoru
+import 'package:purchases_flutter/purchases_flutter.dart'; // 🎯 SİBER HAMLE: RevenueCat Ödeme Altyapısı
 import 'screens/home_screen.dart';
 import 'services/audio_handler.dart';
 import 'services/siber_theme_service.dart';
@@ -12,6 +13,8 @@ import 'widgets/global_ambient_background.dart';
 import 'firebase_options.dart'; // Yeni oluşan siber dosyayı ekledik
 import 'services/ytdlp_service.dart';
 import 'services/services.dart';
+import 'services/ad_manager.dart';
+import 'services/offline_cache_service.dart';
 
 // Küresel erişim için mühürlendi
 late MyAudioHandler audioHandler;
@@ -25,6 +28,14 @@ Future<void> main() async {
   // ⚡ Siber Proxy'yi Başlat
   OzsesBridge.initProxy();
   
+  // 🔥 SİBER HAMLE: Çevrimdışı Belleği Başlat
+  try {
+    await OfflineCacheService().init();
+    print('🚀 Siber Durum: Çevrimdışı Bellek Aktif!');
+  } catch (e) {
+    print('❌ Siber Hata: Çevrimdışı Bellek Başlatılamadı: ');
+  }
+  
   // 🔥 SİBER HAMLE: Firebase Güvenlik Mührünü Başlat
   try {
     if (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isMacOS || Platform.isWindows) {
@@ -35,6 +46,27 @@ Future<void> main() async {
     }
   } catch (e) {
     print('❌ Siber Hata: Firebase kurulamadı (native ayarlar yapılmamış olabilir): $e');
+  }
+
+  // 💰 SİBER HAMLE: RevenueCat Ödeme Motorunu Başlat
+  try {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      await Purchases.setLogLevel(LogLevel.debug);
+      
+      // ⚠️ DİKKAT: Buraya kendi RevenueCat Public API Key'lerini yazmalısın!
+      PurchasesConfiguration configuration;
+      if (Platform.isAndroid) {
+        // Play Store Key
+        configuration = PurchasesConfiguration("goog_SipKkOxxxxxxxxx"); 
+      } else {
+        // App Store Key
+        configuration = PurchasesConfiguration("appl_JjXxXxxxxxxxxx"); 
+      }
+      await Purchases.configure(configuration);
+      print('🚀 Siber Durum: RevenueCat (Ödeme Altyapısı) devrede!');
+    }
+  } catch (e) {
+    print('❌ Siber Hata: RevenueCat başlatılamadı: $e');
   }
 
   // 🛡 Windows Sinerjisi: Ses motoru uyanmadan önce kısa bir nefes aldırıyoruz
@@ -57,8 +89,17 @@ Future<void> main() async {
   }
 
   // 🔮 Siber Tema Motorunu Başlat
-  await SiberThemeService.instance.init();
+  try {
+    await SiberThemeService.instance.init();
+  } catch (e) {
+    print('❌ Siber Hata: Siber Tema Motoru çöktü: ');
+  }
 
+  try {
+    AdManager.initialize();
+  } catch (e) {
+    print('❌ Siber Hata: AdManager çöktü: ');
+  }
   runApp(const OzsesMusicApp());
 }
 

@@ -5,12 +5,15 @@ import 'dart:convert'; // 🎯 SİBER HAMLE: json işlemleri için
 import '../services/services.dart';
 import '../services/weather_service.dart';
 import '../services/audio_handler.dart';
+import '../services/ai_commander.dart';
 import '../widgets/auto_playlist_sheet.dart'; // 🎯 SİBER HAMLE: Yapay Zeka Alt Çekmecesi
-import 'package:audio_service/audio_service.dart'; // 🎯 ÇEVRİMİÇİ MÜZİĞİ OYNATMAK İÇİN
+import 'package:audio_service/audio_service.dart';
+import '../widgets/siber_ad_widget.dart'; // 🎯 ÇEVRİMİÇİ MÜZİĞİ OYNATMAK İÇİN
 import '../main.dart'; // 🎯 AUDIOHANDLER KÖPRÜSÜ
 import 'package:shared_preferences/shared_preferences.dart'; // 🎯 Arama Geçmişi Mührü
 import '../widgets/bottom_player_bar.dart'; // 🎯 KEŞFET MİNİ OYNATICISI
 import '../widgets/mini_eq_visualizer.dart';
+import '../services/offline_cache_service.dart'; // 🎯 SİBER ÇEVRİMDİŞİ HAFIZASI
 import '../widgets/full_screen_player.dart'; // 🎯 TAM EKRAN OYNATICI (SİBER MÜHÜR)
 import 'dart:async'; // 🎯 Otonom Dinleyiciler İçin
 import '../services/history_service.dart'; // 🎯 SİBER HAMLE: Geçmiş Analizi İçin
@@ -47,6 +50,7 @@ class DiscoverCache {
 }
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
+  final AICommander _aiCommander = AICommander();
   // 🎯 SİBER KALKAN: Keşfet Kalıcılık Hafızası (Sen çıksan bile silinmez)
   static final DiscoverCache _generalCache = DiscoverCache();
   static final DiscoverCache _personalCache = DiscoverCache();
@@ -122,6 +126,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   final List<String> _categories = [
+    'Siber Çevrimdışı',
     'Trendler',
     'Türkçe Rap',
     'Melankolik',
@@ -251,6 +256,113 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _pos =
             position; // 🎯 SİBER HAMLE: Sadece arka planda günceller, UI'ı StreamBuilder çizer.
       }
+    });
+  }
+
+  // 🎯 SİBER HAMLE: Sesli Arama Tetikleyicisi
+  void _startVoiceSearch() async {
+    String currentLanguage = 'tr_TR';
+    String liveText = '';
+
+    void startMic(StateSetter setModalState) {
+      _aiCommander.startListening((text, isFinal) {
+        if (text.isNotEmpty) {
+          setModalState(() {
+            liveText = text;
+          });
+          if (isFinal) {
+            if (Navigator.canPop(context)) Navigator.pop(context); // Çekmeceyi kapat
+            setState(() {
+              _searchController.text = text;
+            });
+            _performSearch(text); // Otomatik aramayı başlat
+          }
+        }
+      }, localeId: currentLanguage);
+    }
+
+    // Çekmeceyi aç
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      builder: (context) {
+        bool isMicStarted = false;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            if (!isMicStarted) {
+              isMicStarted = true;
+              Future.microtask(() => startMic(setModalState));
+            }
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E2C),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                border: Border.all(color: widget.themeColor.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Dil Seçici
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Türkçe'),
+                        selected: currentLanguage == 'tr_TR',
+                        selectedColor: widget.themeColor.withValues(alpha: 0.5),
+                        onSelected: (bool selected) {
+                          if (selected) {
+                            setModalState(() {
+                              currentLanguage = 'tr_TR';
+                              liveText = '';
+                            });
+                            startMic(setModalState); // Dili değiştirince yeniden başlat
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 10),
+                      ChoiceChip(
+                        label: const Text('English'),
+                        selected: currentLanguage == 'en_US',
+                        selectedColor: widget.themeColor.withValues(alpha: 0.5),
+                        onSelected: (bool selected) {
+                          if (selected) {
+                            setModalState(() {
+                              currentLanguage = 'en_US';
+                              liveText = '';
+                            });
+                            startMic(setModalState); // Dili değiştirince yeniden başlat
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Icon(Icons.mic, size: 50, color: widget.themeColor),
+                  const SizedBox(height: 20),
+                  Text(
+                    liveText.isNotEmpty
+                        ? liveText
+                        : (currentLanguage == 'tr_TR' ? 'Sizi dinliyorum...' : 'Listening...'),
+                    style: TextStyle(
+                      color: liveText.isNotEmpty ? widget.themeColor : Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontStyle: liveText.isNotEmpty ? FontStyle.italic : FontStyle.normal,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      _aiCommander.stopListening();
     });
   }
 
@@ -413,64 +525,217 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   // 🎯 2. Metamorfoz Modu (Duygusal Dönüşüm)
-  void _showMetamorphosisDialog() {
-    String startMood = 'Hüzünlü';
-    String endMood = 'Enerjik';
-    
-    showDialog(
+    void _showMetamorphosisDialog() {
+    final List<String> startMoods = [
+      'Depresif',
+      'Agresif',
+      'Yorgun',
+      'Stresli',
+      'Kalbi Kırık',
+      'Nostaljik',
+      'Hissiz',
+      'Odaklanmamış'
+    ];
+
+    final List<String> targetMoods = [
+      'Enerji Patlaması',
+      'Derin Huzur',
+      'Lazer Odak',
+      'Yenilmez',
+      'Pozitif Vibe',
+      'Rahatlamış',
+      'Gece Yolculuğu',
+      'Motivasyon Zirvesi'
+    ];
+
+    final Map<String, String> targetQueries = {
+      'Enerji Patlaması': 'Türkçe hareketli pop hitler',
+      'Derin Huzur': 'Acoustic chill relax mix',
+      'Lazer Odak': 'Lofi focus study mix',
+      'Yenilmez': 'Phonk workout gym motivation',
+      'Pozitif Vibe': 'Mutlu şarkılar türkçe pop',
+      'Rahatlamış': 'Chillout lounge background music',
+      'Gece Yolculuğu': 'Gece arabada dinlenecek şarkılar slow',
+      'Motivasyon Zirvesi': 'Epic motivational music mix',
+    };
+
+    int startIdx = 0;
+    int endIdx = 0;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setStateSB) {
-          return AlertDialog(
-            backgroundColor: const Color(0xFF0A0C16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: widget.themeColor)),
-            title: Row(
-              children: [
-                Icon(Icons.auto_awesome, color: widget.themeColor),
-                const SizedBox(width: 8),
-                const Text('Metamorfoz Rotası', style: TextStyle(color: Colors.white, fontSize: 18)),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Mevcut ruh halinden, ulaşmak istediğin ruh haline seni 10 şarkılık kesintisiz bir siber listeyle taşıyacağız.', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  initialValue: startMood,
-                  dropdownColor: Colors.black,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(labelText: 'Şu Anki Modun', labelStyle: TextStyle(color: widget.themeColor)),
-                  items: ['Hüzünlü', 'Yorgun', 'Sakin', 'Gergin'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (v) => setStateSB(() => startMood = v!),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateSB) {
+            return Container(
+              height: 400,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A0C16),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
-                const SizedBox(height: 10),
-                Icon(Icons.arrow_downward, color: widget.themeColor),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  initialValue: endMood,
-                  dropdownColor: Colors.black,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(labelText: 'Hedeflenen Mod', labelStyle: TextStyle(color: widget.themeColor)),
-                  items: ['Enerjik', 'Odaklanmış', 'Mutlu', 'Savaşçı'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (v) => setStateSB(() => endMood = v!),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('İptal', style: TextStyle(color: Colors.white54))),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: widget.themeColor),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _performSearch('$startMood to $endMood metamorphosis music mix official audio');
-                },
-                child: const Text('Dönüşümü Başlat', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                border: Border.all(color: widget.themeColor.withOpacity(0.5), width: 1),
+                boxShadow: [
+                  BoxShadow(color: widget.themeColor.withOpacity(0.2), blurRadius: 20, spreadRadius: 5)
+                ],
               ),
-            ],
-          );
-        }
-      ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.auto_awesome, color: widget.themeColor),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Siber Metamorfoz',
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Şu anki ruh halinden, ulaşmak istediğin boyuta...',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Çarklar (Wheels)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        // Başlangıç Çarkı
+                        Expanded(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              ListWheelScrollView.useDelegate(
+                                itemExtent: 40,
+                                physics: const FixedExtentScrollPhysics(),
+                                onSelectedItemChanged: (idx) {
+                                  setStateSB(() {
+                                    startIdx = idx;
+                                  });
+                                },
+                                childDelegate: ListWheelChildBuilderDelegate(
+                                  childCount: startMoods.length,
+                                  builder: (context, index) {
+                                    final isSelected = index == startIdx;
+                                    return Center(
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: const Duration(milliseconds: 200),
+                                        style: TextStyle(
+                                          fontSize: isSelected ? 18 : 14,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          color: isSelected ? widget.themeColor : Colors.white38,
+                                        ),
+                                        child: Text(startMoods[index]),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        Icon(Icons.arrow_forward_ios, color: widget.themeColor.withOpacity(0.5), size: 20),
+                        
+                        // Hedef Çarkı
+                        Expanded(
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              ListWheelScrollView.useDelegate(
+                                itemExtent: 40,
+                                physics: const FixedExtentScrollPhysics(),
+                                onSelectedItemChanged: (idx) {
+                                  setStateSB(() {
+                                    endIdx = idx;
+                                  });
+                                },
+                                childDelegate: ListWheelChildBuilderDelegate(
+                                  childCount: targetMoods.length,
+                                  builder: (context, index) {
+                                    final isSelected = index == endIdx;
+                                    return Center(
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: const Duration(milliseconds: 200),
+                                        style: TextStyle(
+                                          fontSize: isSelected ? 18 : 14,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          color: isSelected ? Colors.white : Colors.white38,
+                                        ),
+                                        child: Text(targetMoods[index]),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.themeColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                          elevation: 8,
+                          shadowColor: widget.themeColor.withOpacity(0.5),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          final query = targetQueries[targetMoods[endIdx]] ?? 'Mix';
+                          _performSearch(query);
+                        },
+                        child: const Text(
+                          'Dönüşümü Başlat',
+                          style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -543,7 +808,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     // Geçmişten rastgele 2 şarkı indir
     if (_searchHistory.isNotEmpty) {
       Future.delayed(const Duration(seconds: 2), () {
-        _performSearch('${_searchHistory.first} official audio');
+        _performSearch(_searchHistory.first);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('⚡ Arka Planda Mühürleme Başladı!'),
           backgroundColor: Colors.green,
@@ -647,8 +912,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       setState(() => _isLoading = true);
       _showSkeletonTimeout = false;
       _skeletonTimer?.cancel();
-      // 🎯 Max 5 saniye skeleton sonra timeout mesajı göster
-      _skeletonTimer = Timer(const Duration(seconds: 5), () {
+      // 🎯 Max 15 saniye skeleton sonra timeout mesajı göster
+      _skeletonTimer = Timer(const Duration(seconds: 15), () {
         if (mounted && _isLoading) {
           setState(() => _showSkeletonTimeout = true);
         }
@@ -675,7 +940,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _skeletonTimer?.cancel();
       });
       _saveTrendsCache(); // 🎯 Yeni veriyi hafızaya mühürle
-      _fetchGenresSequentially(); // 🎯 Alt listeleri ağı boğmadan sırayla çek
     }
   }
 
@@ -804,262 +1068,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _skeletonTimer?.cancel();
       });
       _saveTrendsCache();
-      
-      // SİBER HIZLANDIRICI: Sonraki mix'leri sırayla yükle!
-      _fetchGenresSequentially();
-    }
-  }
-
-  Future<void> _loadSearchHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (mounted) {
-      setState(() {
-        _searchHistory = prefs.getStringList('siber_discover_history') ?? [];
-      });
-    }
-  }
-
-  Future<void> _saveToHistory(String query) async {
-    if (query.trim().isEmpty) return;
-    final prefs = await SharedPreferences.getInstance();
-    _searchHistory.remove(query);
-    _searchHistory.insert(0, query);
-    if (_searchHistory.length > 15) _searchHistory.removeLast();
-    await prefs.setStringList('siber_discover_history', _searchHistory);
-    if (mounted) setState(() {});
-  }
-
-  // 🎯 SİBER HAMLE: Geçmişten Tekil (Manuel) Arama Silme
-  Future<void> _deleteFromHistory(String query) async {
-    final prefs = await SharedPreferences.getInstance();
-    _searchHistory.remove(query);
-    await prefs.setStringList('siber_discover_history', _searchHistory);
-    if (mounted) setState(() {});
-  }
-
-  // 🎯 SİBER HAMLE: Tüm Arama Geçmişini (Toplu) Sök At
-  Future<void> _clearSearchHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    _searchHistory.clear();
-    await prefs.setStringList('siber_discover_history', _searchHistory);
-    if (mounted) setState(() {});
-  }
-
-  // 🎯 SİBER HAMLE: Ekranı ve Hafızayı (Cache) Tamamen Sıfırlayıp Yeni Mühimmat Çekme Motoru
-  Future<void> _refreshData() async {
-    setState(() {
-      _isLoading = true;
-      _isSearching = false;
-      _searchController.clear();
-      _currentCache.lastSearchQuery = '';
-      _trendList.clear();
-      _genreLists.clear();
-      _nextPageToken = '';
-      _currentCache.trendList.clear();
-      _currentCache.genreLists.clear();
-      _activeCategory = widget.isPersonalMode ? 'Size Özel Mix' : 'Trendler';
-      _searchPage = 1;
-      _hasMoreSearch = true;
-    });
-
-    if (widget.isPersonalMode) {
-      await _fetchPersonalRecommendations();
-    } else {
-      await _fetchTrends();
-    }
-  }
-
-  // 🎯 Ana Trendleri (mostPopular) Çek
-  Future<void> _fetchTrends({bool silent = false}) async {
-    if (!silent) {
-      setState(() => _isLoading = true);
-      _showSkeletonTimeout = false;
-      _skeletonTimer?.cancel();
-      // 🎯 Max 5 saniye skeleton sonra timeout mesajı göster
-      _skeletonTimer = Timer(const Duration(seconds: 5), () {
-        if (mounted && _isLoading) {
-          setState(() => _showSkeletonTimeout = true);
-        }
-      });
-    }
-    final res = await _bridge.fetchKesfet();
-    if (mounted) {
-      if (res.isEmpty || res['status'] == 'hata') {
-        setState(() {
-          _isLoading = false;
-          _isOfflineMode = true; // 🎯 Siber Kalkan: Çevrimdışı modda olduğumuzu anladık
-        });
-
-        return;
-      }
-      setState(() {
-        _isOfflineMode = false;
-        _trendList = res['oneriler'] ?? [];
-        _currentCache.trendList = _trendList;
-        _nextPageToken = res['nextPageToken'] ?? '';
-        _currentCache.nextPageToken = _nextPageToken;
-        _isLoading = false;
-        _showSkeletonTimeout = false;
-        _skeletonTimer?.cancel();
-      });
-      _saveTrendsCache(); // 🎯 Yeni veriyi hafızaya mühürle
-      _fetchGenresSequentially(); // 🎯 Alt listeleri ağı boğmadan sırayla çek
-    }
-  }
-
-  // 🎯 SİBER HAMLE: Şahsi Keşfet Öneri Motoru (Yapay Zeka + İstihbarat)
-  Future<void> _fetchPersonalRecommendations({bool silent = false}) async {
-    if (!silent) setState(() => _isLoading = true);
-    final prefs = await SharedPreferences.getInstance();
-    final favGenres = prefs.getStringList('siber_personal_genres') ?? [];
-    final favArtistsRaw = prefs.getString('siber_personal_artists') ?? '';
-    final favArtists = favArtistsRaw
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    List<String> searchQueries = [];
-
-    // 1. Sanatçılardan sorgu üret
-    if (favArtists.isNotEmpty) {
-      searchQueries.add('${favArtists.first} mix');
-      if (favArtists.length > 1) {
-        searchQueries.add('${favArtists[1]} şarkıları');
-      }
-    }
-
-    // 2. Türlerden sorgu üret
-    if (favGenres.isNotEmpty) {
-      searchQueries.add('${favGenres.first} popüler');
-    }
-
-    // 3. Geçmiş Dinleme Analizi (İstihbarat) ve Siber DJ Mood Hesaplaması
-    try {
-      final historyList = await HistoryService.getHistory();
-      
-      // 🌤️ SİBER HAMLE: HAVA DURUMU VE ZAMAN BAĞLAMI
-      final now = DateTime.now();
-      String timeContext = 'Gündüz';
-      if (now.hour >= 18 || now.hour < 5) {
-        timeContext = 'Gece';
-      } else if (now.hour >= 5 && now.hour < 11) timeContext = 'Sabah';
-      
-      final weather = await WeatherService.getCurrentWeather();
-      String weatherMood = WeatherService.getAtmosphereMood(weather);
-      print('Siber Bağlam: $timeContext, Hava Modu: $weatherMood');
-      
-      // Eğer hava modu özel ise, doğrudan onu arat
-      if (weatherMood != 'Genel') {
-        searchQueries.add('$weatherMood müzikleri');
-      }
-      
-      if (historyList.isNotEmpty) {
-        historyList.sort((a, b) => b.playCount.compareTo(a.playCount));
-        
-        // --- 🎯 SİBER HAMLE: MOOD HESAPLAMA ---
-        Map<String, int> moodTags = {'Enerji': 0, 'Sokak': 0, 'Melankoli': 0, 'Odak': 0, 'Gizem': 0};
-        for (var h in historyList) {
-          final t = h.name.toLowerCase();
-          if (t.contains('rap') || t.contains('drill') || t.contains('hip') || t.contains('ezhel') || t.contains('sokak')) {
-            moodTags['Sokak'] = moodTags['Sokak']! + h.playCount;
-          } else if (t.contains('slow') || t.contains('akustik') || t.contains('aşk') || t.contains('sezen') || t.contains('müslüm') || t.contains('arabesk')) moodTags['Melankoli'] = moodTags['Melankoli']! + h.playCount;
-          else if (t.contains('mix') || t.contains('club') || t.contains('remix') || t.contains('pop') || t.contains('hareketli')) moodTags['Enerji'] = moodTags['Enerji']! + h.playCount;
-          else if (t.contains('lofi') || t.contains('chill') || t.contains('study') || t.contains('odak')) moodTags['Odak'] = moodTags['Odak']! + h.playCount;
-          else moodTags['Gizem'] = moodTags['Gizem']! + h.playCount;
-        }
-
-        String dMood = 'Gizem';
-        int maxCount = -1;
-        moodTags.forEach((k, v) {
-          if (v > maxCount) {
-            maxCount = v;
-            dMood = k;
-          }
-        });
-        
-        _dominantMood = dMood;
-        _generateAiMixes(dMood);
-        // --------------------------------------
-
-        final topSong = historyList.first.name
-            .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
-            .split('-')
-            .first
-            .trim();
-        if (topSong.isNotEmpty && topSong.length > 2) {
-          searchQueries.add('$topSong mix');
-        }
-      }
-    } catch (e) {}
-
-    if (searchQueries.isEmpty) searchQueries.add('Türkçe müzik trendleri');
-
-    List<dynamic> combinedResults = [];
-    bool hasAuthError = false;
-    
-    // Hızlı açılması için maksimum 3 farklı istihbarat aramasını paralel yapıyoruz (SİBER HIZLANDIRICI)
-    final queriesToRun = searchQueries.take(3).toList();
-    try {
-      for (var query in queriesToRun) {
-        try {
-          final res = await _bridge.searchMusic(query, limit: 10);
-          combinedResults.addAll(res);
-          await Future.delayed(const Duration(milliseconds: 1500)); // SİBER DEBOUNCE (Jitter)
-        } catch (e) {
-          if (e == 'auth_required') hasAuthError = true;
-          print('Arama hatası ($query): $e');
-        }
-      }
-    } catch (e) {
-      if (e == 'auth_required') {
-        hasAuthError = true;
-      } else {
-        print('Arama hatası: $e');
-      }
-    }
-
-    if (hasAuthError) {
-      _showGuestModeDialog();
-      await _fetchTrends(silent: silent);
-      return;
-    }
-
-    combinedResults.shuffle();
-
-    // Aynı şarkıların tekrar çıkmasını engelle (Filtre Zırhı)
-    final seen = <String>{};
-    final uniqueResults = combinedResults.where((item) {
-      final id = item['video_id'] ?? item['id'];
-      if (id == null || seen.contains(id)) return false;
-      seen.add(id);
-      return true;
-    }).toList();
-
-    if (uniqueResults.isEmpty) {
-      // 🛡️ Siber Kalkan: Eğer Şahsi Keşfet motoru (API veya Ağ hatası yüzünden) boş dönerse, boş ekran göstermek yerine Trendleri (Genel Keşfet) yükle!
-      print('Siber Uyarı: Şahsi Keşfet sonuçları boş döndü. Otonom olarak Trendlere (Genel) geçiş yapılıyor...');
-      await _fetchTrends(silent: silent);
-      return;
-    }
-
-    if (mounted) {
-      setState(() {
-        _trendList = uniqueResults;
-        _currentCache.trendList = _trendList;
-
-        // 🎯 KATEGORİLERİ KİŞİYE ÖZEL İNŞA ET!
-        _categories.clear();
-        _categories.add('Size Özel Mix');
-        _categories.addAll(favGenres);
-        if (favArtists.isNotEmpty) _categories.addAll(favArtists.take(2));
-
-        _activeCategory = 'Size Özel Mix';
-        _currentCache.activeCategory = _activeCategory;
-        _isLoading = false;
-      });
-      _saveTrendsCache(); // 🎯 Kişisel sonuçları da cache'le
-      _fetchGenresSequentially(); // 🎯 Alt listeleri ağı boğmadan sırayla çek
     }
   }
 
@@ -1325,12 +1333,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       artUri: cImgUrl != null ? Uri.parse(cImgUrl) : null,
     );
 
-    // Sadece ilk şarkıyı kuyruğa koy ve çalmaya başla
-    await audioHandler.updateQueue([firstItem]);
-    await audioHandler.skipToQueueItem(0);
-    audioHandler.play();
+    // Sadece ilk şarkıyı kuyruğa koy ve çalmaya başla (Asenkron)
+    audioHandler.updateQueue([firstItem]).then((_) {
+      audioHandler.skipToQueueItem(0).then((_) {
+        audioHandler.play();
+      });
+    });
 
-    // 2. Arka planda YT Music Radyosunu (Benzer Şarkıları) çek ve kuyruğa ekle
+    // 2. Arka planda YT Music Radyosunu (Benzer Şarkıları) beklemeden çek ve kuyruğa ekle
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('📻 Otonom Radyo Devrede: $cTitle tarzı şarkılar aranıyor...'),
       backgroundColor: widget.themeColor,
@@ -1470,7 +1480,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('SİBER KEŞFET',
+        title: Text(widget.isPersonalMode ? 'ŞAHSİ KEŞFET' : 'GENEL KEŞFET',
             style: TextStyle(
                 color: widget.themeColor,
                 fontWeight: FontWeight.bold,
@@ -1580,7 +1590,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         backgroundColor: widget.themeColor.withValues(alpha: 0.8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
-                      onPressed: () => _performSearch('$_atmosphereMood şarkılar official audio'),
+                      onPressed: () => _performSearch('$_atmosphereMood şarkılar'),
                       child: const Text('Moda Gir', style: TextStyle(color: Colors.white)),
                     ),
                   ],
@@ -1640,8 +1650,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             },
                           ),
                         IconButton(
+                          icon: Icon(Icons.mic, color: widget.themeColor),
+                          onPressed: _startVoiceSearch,
+                        ),
+                        IconButton(
                           icon: Icon(Icons.filter_list, color: widget.themeColor),
-                          onPressed: () => _showSearchFilters(),
+                          onPressed: _showSearchFilters,
                         ),
                       ],
                     )),
@@ -1712,6 +1726,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 final isActive = cat == _activeCategory;
                 return GestureDetector(
                   onTap: () {
+                    if (cat == 'Siber Çevrimdışı') {
+                      _showOfflineCacheDrawer();
+                      return;
+                    }
                     setState(() {
                       _activeCategory = cat;
                       _currentCache.activeCategory = cat;
@@ -1775,8 +1793,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     : _searchController.text.isNotEmpty && _liveSuggestions.isNotEmpty && !_isSearching
                         ? _buildSuggestionsList()
                         : _isSearching
-                            ? _buildVerticalList(_searchResults, isScrollable: true)
-                            : _buildYouTubeMusicHome(),
+                                ? _buildVerticalList(_searchResults, isScrollable: true)
+                                : _buildYouTubeMusicHome(),
 
                 // 🎯 SİBER MİNİ OYNATICI (Sadece şarkı çalarken ortaya çıkar)
                 if (_currentSongName != 'Müzik Seçilmedi')
@@ -1894,6 +1912,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ],
             ),
           ),
+                const SiberAdWidget(),
+                if (_currentSongName != 'Müzik Seçilmedi')
+                  const SizedBox(height: 85)
+                else
+                  const SizedBox(height: 15),
               ],
             ),
           ),
@@ -2028,6 +2051,65 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   // 🎯 SİBER HAMLE: Sana Özel Otonom Mixler (Kompakt Spotify Tarzı Izgara - 6'lı Grid)
+  
+  // 🎯 SİBER HAMLE: Mood Chips (Apple Music / YT Music stili hap butonlar)
+  Widget _buildMoodChips() {
+    final List<String> moods = ['Sokak', 'Melankoli', 'Enerji', 'Odak', 'Gizem'];
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: moods.length,
+        itemBuilder: (context, index) {
+          final mood = moods[index];
+          final isSelected = _dominantMood == mood;
+          
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _dominantMood = mood;
+                _generateAiMixes(mood);
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? LinearGradient(
+                        colors: [widget.themeColor, widget.themeColor.withOpacity(0.6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isSelected ? null : Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? Colors.transparent : Colors.white24,
+                  width: 1,
+                ),
+                boxShadow: isSelected
+                    ? [BoxShadow(color: widget.themeColor.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 2))]
+                    : [],
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                mood,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildAutoMixCarousel() {
     final List<Map<String, dynamic>> mixes = _aiMixes.isEmpty ? [
       {'name': 'Siber Analiz', 'query': 'Türkçe trend', 'color': Colors.grey, 'icon': Icons.search}
@@ -2152,8 +2234,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               : "🔥 Şu An Türkiye'de Trend"),
               
           // 🎯 SİBER HAMLE: Sana Özel Mixler (Şahsi Keşfet'te Görünür)
-          if (widget.isPersonalMode || _activeCategory == 'Size Özel Mix')
+          if (widget.isPersonalMode || _activeCategory == 'Size Özel Mix') ...[
+            _buildMoodChips(),
+            const SizedBox(height: 16),
             _buildAutoMixCarousel(),
+          ],
             
           _buildHorizontalCarousel(_trendList),
 
@@ -2358,9 +2443,35 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             subtitle: Text(item['channel'] ?? item['kanal'] ?? '',
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
                 maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: IconButton(
-              icon: Icon(Icons.more_vert, color: widget.themeColor),
-              onPressed: () => _showActionSheet(item),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.cloud_download_outlined, color: Colors.cyanAccent),
+                  tooltip: 'Siber Çevrimdışı',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Siber İndirme Başlıyor...'), backgroundColor: Colors.cyan),
+                    );
+                    OfflineCacheService().downloadStream(
+                      item['videoId'] ?? item['id'] ?? '',
+                      item['title'] ?? item['baslik'] ?? 'Bilinmeyen',
+                      item['channel'] ?? item['kanal'] ?? 'Victus V7',
+                      onProgress: (rec, tot) {}
+                    ).then((_) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('✅ Çevrimdışı Belleğe Mühürlendi!'), backgroundColor: Colors.green),
+                        );
+                      }
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.more_vert, color: widget.themeColor),
+                  onPressed: () => _showActionSheet(item),
+                ),
+              ],
             ),
             onTap: () => _playDirectly(item, contextList: items),
             onLongPress: () => _showActionSheet(item),
@@ -2396,6 +2507,159 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               child: const Text('Anladım', style: TextStyle(color: Colors.white54)),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // 🎯 SİBER HAMLE: Çevrimdışı İndirilenleri Gösterme Motoru
+  void _showOfflineCacheDrawer() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            final cachedSongs = OfflineCacheService().cachedSongs;
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: widget.themeColor.withOpacity(0.15),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.white30,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Siber Çevrimdışı Bellek',
+                          style: TextStyle(
+                            color: Colors.cyanAccent,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: cachedSongs.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'Çevrimdışı bellek boş.\nKeşfetten şarkıları buluta tıklayarak indirebilirsin!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white54, fontSize: 16),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: cachedSongs.length,
+                                itemBuilder: (context, index) {
+                                  final song = cachedSongs[index];
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+                                    ),
+                                    child: ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      leading: Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.4),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(Icons.offline_pin, color: Colors.cyanAccent, size: 28),
+                                      ),
+                                      title: Text(
+                                        song.title ?? song.name ?? 'Bilinmeyen',
+                                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Text(
+                                        song.artist ?? 'Victus V7',
+                                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      trailing: PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert, color: Colors.white70),
+                                        color: Colors.black87,
+                                        onSelected: (value) async {
+                                          if (value == 'archive') {
+                                            if (song.videoId != null) {
+                                              await OfflineCacheService().exportToArchive(song.videoId!);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('✅ Ana kütüphaneye başarıyla aktarıldı!'), backgroundColor: Colors.green),
+                                              );
+                                            }
+                                          } else if (value == 'delete') {
+                                            if (song.videoId != null) {
+                                              await OfflineCacheService().removeCachedSong(song.videoId!);
+                                              setModalState(() {}); // BottomSheet içini yenile
+                                              setState(() {}); // Ana ekranı yenile
+                                            }
+                                          }
+                                        },
+                                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                          const PopupMenuItem<String>(
+                                            value: 'archive',
+                                            child: ListTile(
+                                              leading: Icon(Icons.archive, color: Colors.greenAccent),
+                                              title: Text('Arşive Aktar', style: TextStyle(color: Colors.white)),
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                          const PopupMenuItem<String>(
+                                            value: 'delete',
+                                            child: ListTile(
+                                              leading: Icon(Icons.delete, color: Colors.redAccent),
+                                              title: Text('Siber Bellekten Sil', style: TextStyle(color: Colors.white)),
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      onTap: () async {
+                                        final mediaItems = cachedSongs.map((s) => MediaItem(
+                                          id: s.path ?? '',
+                                          album: 'Siber Çevrimdışı',
+                                          title: s.title ?? 'Bilinmeyen',
+                                          artist: s.artist ?? 'Victus V7',
+                                          duration: const Duration(seconds: 0),
+                                        )).toList();
+                                        await audioHandler.updateQueue(mediaItems);
+                                        await audioHandler.skipToQueueItem(index);
+                                        await audioHandler.play();
+                                        Navigator.pop(context); // Çalınca çekmeceyi kapat
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );

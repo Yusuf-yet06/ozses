@@ -100,23 +100,28 @@ final List<String> invidiousInstances = [
     return [];
   }
 
-  // 🎯 SİBER HAMLE: Otonom Radyo Motoru (YouTube Music Up Next)
+  // 🚀 SİBER HAMLE: Otonom Radyo Motoru (YouTube Music Up Next)
   Future<List<dynamic>> getRadio(String videoId) async {
     try {
-      print('📻 Siber Radyo İstek Gönderiliyor: $videoId');
-      final response = await http.get(
-        Uri.parse('https://ozses.onrender.com/radio?id=$videoId'),
-      ).timeout(const Duration(seconds: 15));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['status'] == 'basarili' && data['oneriler'] != null) {
-          return data['oneriler'] as List<dynamic>;
+      print('📻 Siber Radyo İstek Gönderiliyor (YEREL OTONOM): $videoId');
+      var yt = YoutubeExplode();
+      var v = await yt.videos.get(videoId);
+      var related = await yt.videos.getRelatedVideos(v).timeout(const Duration(seconds: 15));
+      var items = [];
+      if (related != null) {
+        for (var video in related.take(15)) {
+          items.add({
+            'id': video.id.value,
+            'title': video.title,
+            'channel': video.author,
+            'thumbnail': video.thumbnails.highResUrl,
+          });
         }
       }
-      print('⚠️ Siber Radyo Yanıt Hatası: ${response.statusCode}');
+      yt.close();
+      return items;
     } catch (e) {
-      print('Siber Radyo Hatası: $e');
+      print('🚀 Siber Radyo Hatası: $e');
     }
     return [];
   }
@@ -183,189 +188,143 @@ final List<String> invidiousInstances = [
           _pendingResolutions.remove(videoId);
         }
 
-        // 🚀 SİBER HAMLE: HttpClient ile 403 yediğimiz için ve YoutubeExplode 
-        // 403 döndüren kırık linkler verdiği için ilk olarak KENDİ SİBER KARARGAHIMIZI (Render) deniyoruz!
+        // 🚀 SİBER HAMLE: Merkezsiz Akış Çözücü
         try {
           var yt = YoutubeExplode();
-          Uri? finalStreamUrl;
-          bool usedYoutubeExplode = false;
-          dynamic ytStreamInfo;
-          bool isRenderStream = false;
+          Uri? ytStreamUrl;
           
+          var client = http.Client();
+          var rangeHeader = request.headers.value('range');
+          http.StreamedResponse? streamResponse;
+
+          Future<http.StreamedResponse?> tryFetchStream(Uri url) async {
+             try {
+                var streamRequest = http.Request('GET', url);
+                if (rangeHeader != null) {
+                  streamRequest.headers['range'] = rangeHeader;
+                }
+                var resp = await client.send(streamRequest).timeout(const Duration(seconds: 8));
+                if (resp.statusCode == 200 || resp.statusCode == 206) {
+                   return resp;
+                } else {
+                   print('⚠️ Sunucu ${resp.statusCode} döndürdü: $url');
+                }
+             } catch (e) {
+                print('⚠️ Akış isteği başarısız (Timeout veya Bağlantı): $e');
+             }
+             return null;
+          }
+
+          // 🎯 1. SIRADA: YoutubeExplode (Yerel Motor - IP Ban yemez)
+          print('🎯 Proxy: YoutubeExplode (Yerel Motor) Devrede...');
           try {
-            print('🚀 İlk Hedef: Kendi Sunucumuz (Render Backend) kontrol ediliyor...');
-            final renderUrl = Uri.parse('https://ozses.onrender.com/stream?id=$videoId');
+            var ytClients = [YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.android, YoutubeApiClient.tv];
+            var manifest = await yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 10));
+            var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+            var ytStreamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
+            ytStreamUrl = ytStreamInfo.url;
             
-            // Ping atıp sunucunun 502 (Uyuyan sunucu) veya 500 (Hata) dönüp dönmediğine bakıyoruz
-            final pingResponse = await http.get(renderUrl).timeout(const Duration(seconds: 40));
-            
-            if (pingResponse.statusCode == 200 || pingResponse.statusCode == 206) {
-              finalStreamUrl = renderUrl;
-              isRenderStream = true;
-              print('✅ Kendi Sunucumuz (Render) Kullanılıyor: $finalStreamUrl');
-            } else {
-              print('⚠️ Render Sunucusu Hata Döndürdü (Kod: ${pingResponse.statusCode}), YoutubeExplode denenecek...');
-              throw Exception('Render HTTP ${pingResponse.statusCode}');
+            if (ytStreamUrl != null) {
+               streamResponse = await tryFetchStream(ytStreamUrl);
             }
-          } catch (e) {
-            print('⚠️ Render Sunucusu Yanıt Vermedi veya Hatalı: $e');
-            
+          } catch (ytEx) {
+            print('⚠️ YoutubeExplode Hatası veya Zaman Aşımı: $ytEx');
+          }
+
+          // 🥈 2. SIRADA: Emergent Ghost Stream API (Hayalet Proxy)
+          if (streamResponse == null) {
             try {
-              var manifest = await yt.videos.streamsClient.getManifest(videoId);
-              var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
-              ytStreamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
-              finalStreamUrl = ytStreamInfo.url;
-              usedYoutubeExplode = true;
-            } catch (ytEx) {
-              print('⚠️ YoutubeExplode Hatası: $ytEx');
+              print('🎯 Proxy: YoutubeExplode başarısız, Emergent Ghost Stream API deneniyor...');
+              final ghostRes = await http.post(
+                Uri.parse('https://ghost-stream-api.preview.emergentagent.com/api/stream'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({"video_id": videoId, "quality": "high"})
+              ).timeout(const Duration(seconds: 20));
+              
+              if (ghostRes.statusCode == 200) {
+                final data = jsonDecode(ghostRes.body);
+                if (data['stream_url'] != null) {
+                  Uri ghostUrl = Uri.parse(data['stream_url'].toString());
+                  print('✅ Emergent Ghost Stream URL alındı, deneniyor...');
+                  streamResponse = await tryFetchStream(ghostUrl);
+                }
+              }
+            } catch (ghostEx) {
+              print('⚠️ Ghost Stream API Hatası: $ghostEx');
             }
           }
           
-          if (finalStreamUrl == null || (!isRenderStream && !usedYoutubeExplode)) {
-            print('🔄 SİBER KALKAN: Piped Yedek (Fallback) Devrede...');
-            
+          // 🥉 3. SIRADA: Piped API (Güçlü Yedek)
+          if (streamResponse == null) {
             final List<String> pipedInstances = [
               'https://pipedapi.kavin.rocks',
+              'https://pipedapi.smnz.de',
               'https://pipedapi.moomoo.me',
-              'https://pipedapi.syncpundit.io',
-              'https://api.piped.projectsegfau.lt',
-              'https://pipedapi.smnz.de'
+              'https://api.piped.projectsegfau.lt'
             ];
-            
             for (var instance in pipedInstances) {
               try {
-                final response = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 12));
-                if (response.statusCode == 200) {
-                  final data = jsonDecode(response.body);
-                  if (data['audioStreams'] != null && (data['audioStreams'] as List).isNotEmpty) {
-                    var audioStreams = data['audioStreams'] as List;
-                    var bestStream = audioStreams.firstWhere(
-                      (s) => s['format'] == 'M4A',
-                      orElse: () => audioStreams.first,
-                    );
-                    finalStreamUrl = Uri.parse(bestStream['url'].toString());
-                    print('✅ Piped Fallback Başarılı: $instance');
-                    break;
+                print('🎯 Proxy: Piped API deneniyor ($instance)...');
+                final res = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 5));
+                if (res.statusCode == 200) {
+                  final data = jsonDecode(res.body);
+                  final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
+                  if (audioStreams.isNotEmpty) {
+                    // En yüksek bitrate'i bulalım veya ilkini alalım
+                    Uri pipedUrl = Uri.parse(audioStreams.first['url'].toString());
+                    print('✅ Piped Audio URL bulundu, deneniyor...');
+                    streamResponse = await tryFetchStream(pipedUrl);
+                    if (streamResponse != null) break;
                   }
                 }
               } catch (e) {
-                print('⚠️ Piped Sunucusu Hatası ($instance): $e');
+                print('⚠️ Piped Akış Hatası ($instance): $e');
               }
             }
           }
-          
-          if (finalStreamUrl == null) {
-            print('⚠️ Tüm Piped sunucuları başarısız! INVIDIOUS API Devrede...');
-            
+
+          // 🏅 4. SIRADA: Invidious API (Son Zırh)
+          if (streamResponse == null) {
             final List<String> invidiousInstances = [
-              'https://inv.tux.pizza',
-              'https://invidious.asir.dev',
-              'https://invidious.io.lol',
-              'https://invidious.slipfox.xyz',
-              'https://inv.bp.projectsegfau.lt'
+              'vid.puffyan.us',
+              'invidious.jing.rocks',
+              'invidious.nerdvpn.de',
+              'inv.tux.pizza'
             ];
             
             for (var instance in invidiousInstances) {
               try {
-                final response = await http.get(Uri.parse('$instance/api/v1/videos/$videoId')).timeout(const Duration(seconds: 10));
-                if (response.statusCode == 200) {
-                  final data = jsonDecode(response.body);
-                  if (data['formatStreams'] != null && (data['formatStreams'] as List).isNotEmpty) {
-                    var formatStreams = data['formatStreams'] as List;
-                    var bestAudio = formatStreams.firstWhere(
-                      (s) => s['type'] != null && s['type'].toString().contains('audio'),
-                      orElse: () => formatStreams.first,
-                    );
-                    finalStreamUrl = Uri.parse(bestAudio['url'].toString());
-                    print('✅ Invidious Fallback Başarılı: $instance');
-                    break;
-                  }
-                }
-              } catch (e) {
-                print('⚠️ Invidious Sunucusu Hatası ($instance): $e');
-              }
-            }
-          }
-          
-          if (finalStreamUrl == null) {
-            print('⚠️ Tüm Invidious sunucuları başarısız! COBALT API Devrede...');
-            
-            final List<String> cobaltInstances = [
-              'https://co.wuk.sh',
-              'https://cobalt.q0.o.aurora.tech',
-              'https://cobalt.kwiatekmateusz.pl',
-              'https://cobalt.siren.party',
-              'https://api.cobalt.tools'
-            ];
-
-            for (var instance in cobaltInstances) {
-              try {
-                // Cobalt V7 veya V8 uyumluluğu için önce V8 (kök URL) deniyoruz
-                final cobaltResponse = await http.post(
-                  Uri.parse(instance == 'https://co.wuk.sh' ? '$instance/api/json' : '$instance/'),
-                  headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Origin': instance,
-                    'Referer': '$instance/',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                  },
-                  body: jsonEncode({
-                    'url': 'https://www.youtube.com/watch?v=$videoId',
-                    'aFormat': 'mp3',
-                    'isAudioOnly': true,
-                    'downloadMode': 'audio'
-                  }),
-                ).timeout(const Duration(seconds: 12));
+                print('🎯 Proxy: Invidious deneniyor ($instance)...');
+                final invRes = await http.get(
+                  Uri.parse('https://$instance/api/v1/videos/$videoId'),
+                ).timeout(const Duration(seconds: 5));
                 
-                if (cobaltResponse.statusCode == 200) {
-                  final data = jsonDecode(cobaltResponse.body);
-                  if (data['url'] != null) {
-                    finalStreamUrl = Uri.parse(data['url'].toString());
-                    print('✅ Cobalt Fallback Başarılı: $finalStreamUrl ($instance)');
-                    break; // Başarılıysa döngüden çık
+                if (invRes.statusCode == 200) {
+                  final data = jsonDecode(invRes.body);
+                  final streams = data['formatStreams'] as List<dynamic>? ?? [];
+                  for (var stream in streams) {
+                    if (stream['type'] != null && stream['type'].toString().contains('audio')) {
+                       Uri invUrl = Uri.parse(stream['url'].toString());
+                       print('✅ Invidious Audio URL bulundu, deneniyor...');
+                       streamResponse = await tryFetchStream(invUrl);
+                       if (streamResponse != null) break;
+                    }
                   }
-                } else {
-                  print('⚠️ Cobalt API ($instance) Hata: ${cobaltResponse.body}');
+                  if (streamResponse != null) break;
                 }
               } catch (e) {
-                print('⚠️ Cobalt Sunucusu Hatası ($instance): $e');
+                print('⚠️ Invidious Hatası ($instance): $e');
               }
             }
           }
 
-          if (finalStreamUrl == null) {
-            print('⚠️ Cobalt başarısız! KENDİ SİBER KARARGAHIMIZ (RENDER BACKEND) DEVREDE...');
-            try {
-              // Kendi Render sunucumuz
-              final renderUrl = Uri.parse('https://ozses.onrender.com/stream?id=$videoId');
-              // Sadece HEAD isteği atarak URL'nin çalışıp çalışmadığını kontrol edebiliriz
-              // Ama Render direkt stream döndürdüğü için streamUrl olarak kaydediyoruz.
-              finalStreamUrl = renderUrl;
-              print('✅ Kendi Sunucumuz (Render) Fallback Başarılı: $finalStreamUrl');
-            } catch (e) {
-              print('⚠️ Kendi Sunucumuz Hatası: $e');
-            }
+          if (streamResponse == null) {
+             print('❌ HATA: Tüm akış motorları (YoutubeExplode + Ghost) 403 verdi veya çöktü!');
+             try { await request.response.close(); } catch (_) {}
+             return;
           }
           
-          if (finalStreamUrl == null) {
-            throw Exception('Tüm akış motorları (YoutubeExplode + Piped + Invidious + Cobalt + Render) çöktü!');
-          }
-          
-          Stream<List<int>> dataStream;
-          
-          // 🎯 SİBER KALKAN: Range Header (Parçalı İndirme) Desteği
-          var client = http.Client();
-          var streamRequest = http.Request('GET', finalStreamUrl!);
-
-          var rangeHeader = request.headers.value('range');
-          if (rangeHeader != null) {
-            streamRequest.headers['range'] = rangeHeader;
-            print('🎯 Proxy: ExoPlayer Parçalı İstek Attı: $rangeHeader');
-          }
-
-          var streamResponse = await client.send(streamRequest);
-          dataStream = streamResponse.stream;
+          Stream<List<int>> dataStream = streamResponse.stream;
 
           request.response.statusCode = streamResponse.statusCode;
           streamResponse.headers.forEach((key, value) {
@@ -373,12 +332,6 @@ final List<String> invidiousInstances = [
               request.response.headers.set(key, value);
             }
           });
-          
-          if (streamResponse.statusCode != 200 && streamResponse.statusCode != 206) {
-            print('❌ HATA: Hedef sunucu ${streamResponse.statusCode} döndürdü. Yönlendirme iptal ediliyor.');
-            try { await request.response.close(); } catch (_) {}
-            return;
-          }
 
           // 🚀 ÇİFT ÇEKİRDEK (Dual-Core): Depoya kaydet
           IOSink? fileSink;
@@ -519,6 +472,10 @@ final List<String> invidiousInstances = [
         }
         
         String targetUrl = streamInfo['stream_url'];
+        if (targetUrl == 'proxy_will_handle_it') {
+           targetUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
+        }
+
         String ext = 'm4a'; // Piped ve YT genellikle m4a döndürür
         
         String filePath = '$musicDirPath/$safeTitle.$ext';

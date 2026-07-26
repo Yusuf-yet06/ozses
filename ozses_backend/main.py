@@ -1,165 +1,188 @@
-from fastapi import FastAPI, Request, HTTPException, Response, BackgroundTasks # type: ignore
-from fastapi.responses import StreamingResponse, RedirectResponse, FileResponse # type: ignore
-import tempfile
-import os
+"""
+ÖZSES V7 - Siber Karargah Backend
+Render.com üzerinde çalışır.
+Endpoints: /search, /stream, /radio
+"""
+
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+import httpx
 import yt_dlp
-import httpx # type: ignore
-import logging
-import re
-import uuid
-import time
-import glob
-import asyncio
-from ytmusicapi import YTMusic # pyright: ignore[reportMissingImports]
+import json
+import random
 
-app = FastAPI()
-ytmusic = YTMusic()
-logging.basicConfig(level=logging.INFO)
+app = FastAPI(title="Özses Siber Karargah")
 
-ydl_opts = {
-    'format': '140/m4a/bestaudio/best',
-    'noplaylist': True,
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# yt-dlp ortak ayarlar (bot gibi görünme)
+YDL_BASE_OPTS = {
+    'quiet': True,
     'no_warnings': True,
-    'extract_flat': False,
-    'socket_timeout': 10
+    'extractor_args': {'youtube': {'skip': ['hls', 'dash']}},
+    'http_headers': {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 Chrome/114.0.0.0 Mobile Safari/537.36',
+        'Accept-Language': 'tr-TR,tr;q=0.9,en;q=0.8',
+    }
 }
 
-cookie_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cookies.txt')
-if os.path.exists(cookie_path):
-    ydl_opts['cookiefile'] = cookie_path
 
 @app.get("/")
-def read_root():
-    return {"status": "OZSES API is running"}
+def root():
+    return {"status": "online", "service": "Özses Siber Karargah"}
+
 
 @app.get("/search")
-async def search_music(q: str):
+def search(q: str = Query(..., description="Arama sorgusu")):
+    """YouTube arama → şarkı listesi döndür"""
     try:
-        results = ytmusic.search(q, filter="songs", limit=15)
-        formatted = []
-        for r in results:
-            formatted.append({
-                "id": r.get("videoId"),
-                "title": r.get("title"),
-                "channel": ", ".join([a.get("name", "") for a in r.get("artists", [])]),
-                "thumbnail": r.get("thumbnails", [{}])[-1].get("url", "") if r.get("thumbnails") else "",
-                "duration": r.get("duration_seconds", 0)
-            })
-        return {"status": "basarili", "oneriler": formatted}
-    except Exception as e:
-        return {"status": "hata", "mesaj": str(e)}
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'format': 'bestaudio/best',
+            'extract_flat': True,
+            'playlistend': 20,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            result = ydl.extract_info(f"ytsearch20:{q}", download=False)
+            entries = result.get('entries', []) if result else []
 
-@app.get("/radio")
-async def get_radio(id: str):
-    try:
-        # YouTube Music'in akıllı "Watch Playlist" (Radyo) algoritmasını kullanıyoruz.
-        # Bu sayede Rap açınca Pop gelmez, tam uyumlu şarkılar gelir.
-        watch_playlist = ytmusic.get_watch_playlist(videoId=id, limit=20)
-        tracks = watch_playlist.get("tracks", [])
-        formatted = []
-        for r in tracks:
-            if r.get("videoId") and r.get("videoId") != id: # Kendisini tekrar listeye almamak için
-                formatted.append({
-                    "id": r.get("videoId"),
-                    "title": r.get("title"),
-                    "channel": ", ".join([a.get("name", "") for a in r.get("artists", [])]),
-                    "thumbnail": r.get("thumbnails", [{}])[-1].get("url", "") if r.get("thumbnails") else "",
-                    "duration": r.get("length") # length genelde string formatındadır, frontend'de idare edebiliriz.
+            oneriler = []
+            for e in entries:
+                if not e:
+                    continue
+                oneriler.append({
+                    'videoId': e.get('id', ''),
+                    'title': e.get('title', ''),
+                    'artist': e.get('uploader', e.get('channel', '')),
+                    'thumbnail': e.get('thumbnail', f"https://i.ytimg.com/vi/{e.get('id', '')}/hqdefault.jpg"),
+                    'duration': e.get('duration', 0),
+                    'viewCount': e.get('view_count', 0),
                 })
-        return {"status": "basarili", "oneriler": formatted}
-    except Exception as e:
-        return {"status": "hata", "mesaj": str(e)}
 
-def cleanup_old_files(temp_dir):
-    try:
-        now = time.time()
-        for f in glob.glob(os.path.join(temp_dir, "*.m4a")):
-            if os.stat(f).st_mtime < now - 3600: # 1 saatten eski
-                os.remove(f)
-    except:
-        pass
+            return {"status": "basarili", "oneriler": oneriler}
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
 
-def send_bytes_range_requests(file_path: str, request: Request):
-    file_size = os.stat(file_path).st_size
-    range_header = request.headers.get("range", "")
-    
-    if not range_header.startswith("bytes="):
-        return FileResponse(file_path, media_type="audio/mp4")
-    
-    try:
-        ranges = range_header.replace("bytes=", "").split("-")
-        start = int(ranges[0]) if ranges[0] else 0
-        end = int(ranges[1]) if len(ranges) > 1 and ranges[1] else file_size - 1
-    except ValueError:
-        return FileResponse(file_path, media_type="audio/mp4")
-        
-    start = max(0, min(start, file_size - 1))
-    end = max(0, min(end, file_size - 1))
-    chunk_length = end - start + 1
-    
-    def file_iterator():
-        with open(file_path, "rb") as f:
-            f.seek(start)
-            bytes_left = chunk_length
-            while bytes_left > 0:
-                chunk = f.read(min(bytes_left, 65536))
-                if not chunk:
-                    break
-                bytes_left -= len(chunk)
-                yield chunk
-
-    headers = {
-        "Content-Range": f"bytes {start}-{end}/{file_size}",
-        "Accept-Ranges": "bytes",
-        "Content-Length": str(chunk_length),
-        "Content-Type": "audio/mp4",
-    }
-    
-    return StreamingResponse(file_iterator(), status_code=206, headers=headers)
 
 @app.get("/stream")
-async def stream_audio(id: str, request: Request, background_tasks: BackgroundTasks):
-    if not re.match(r'^[a-zA-Z0-9_-]{11}$', id):
-        raise HTTPException(status_code=400, detail="Invalid video ID")
-
+def stream(id: str = Query(..., description="YouTube video ID")):
+    """Video ID'den en iyi ses stream URL'sini döndür"""
     try:
-        url = f"https://www.youtube.com/watch?v={id}"
-        temp_dir = tempfile.gettempdir()
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(
+                f"https://www.youtube.com/watch?v={id}",
+                download=False
+            )
+            if not info:
+                raise HTTPException(status_code=404, detail="Video bulunamadı")
+
+            stream_url = info.get('url')
+            if not stream_url:
+                # format listesinden bul
+                formats = info.get('formats', [])
+                audio_formats = [f for f in formats if f.get('vcodec') == 'none' and f.get('url')]
+                if audio_formats:
+                    # En yüksek bitrate'i seç
+                    best = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
+                    stream_url = best['url']
+
+            if not stream_url:
+                raise HTTPException(status_code=404, detail="Stream URL bulunamadı")
+
+            return {
+                "status": "basarili",
+                "stream_url": stream_url,
+                "title": info.get('title', ''),
+                "duration": info.get('duration', 0),
+                "ext": info.get('ext', 'm4a'),
+            }
+    except HTTPException:
+        raise
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
+
+
+@app.get("/play/{id}")
+async def play(id: str):
+    """Web istemcileri için doğrudan sesi proxy (CORS bypass) üzerinden aktarır."""
+    try:
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(
+                f"https://www.youtube.com/watch?v={id}",
+                download=False
+            )
+            if not info:
+                raise HTTPException(status_code=404, detail="Video bulunamadı")
+
+            stream_url = info.get('url')
+            if not stream_url:
+                formats = info.get('formats', [])
+                audio_formats = [f for f in formats if f.get('vcodec') == 'none' and f.get('url')]
+                if audio_formats:
+                    best = max(audio_formats, key=lambda f: f.get('abr', 0) or 0)
+                    stream_url = best['url']
+
+            if not stream_url:
+                raise HTTPException(status_code=404, detail="Stream URL bulunamadı")
+
+        # Asenkron HTTP istemcisi (httpx) ile doğrudan yönlendirme (StreamingResponse)
+        client = httpx.AsyncClient()
+        req = client.build_request("GET", stream_url)
+        r = await client.send(req, stream=True)
         
-        # Dosya adı sabit olmalı ki Range istekleri aynı dosyayı bulabilsin!
-        file_path = os.path.join(temp_dir, f"{id}.m4a")
-        lock_path = file_path + ".lock"
+        return StreamingResponse(
+            r.aiter_raw(),
+            media_type="audio/mp4",
+            background=r.aclose
+        )
+    except HTTPException:
+        raise
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))
 
-        # Dosya silme görevini arka planda eski dosyalar için çalıştırıyoruz
-        background_tasks.add_task(cleanup_old_files, temp_dir)
 
-        # Eğer dosya iniyorsa veya inmemişse
-        if not os.path.exists(file_path) or os.path.getsize(file_path) < 10000:
-            if os.path.exists(lock_path):
-                # Başka bir istek dosyayı indiriyor, bitmesini bekle
-                wait_time = 0
-                while os.path.exists(lock_path) and wait_time < 30:
-                    await asyncio.sleep(0.5)
-                    wait_time += 0.5
-            else:
-                # Kilidi oluştur ve indir
-                with open(lock_path, 'w') as f:
-                    f.write("locked")
-                try:
-                    download_opts = ydl_opts.copy()
-                    download_opts['outtmpl'] = file_path
-                    with yt_dlp.YoutubeDL(download_opts) as ydl: # pyright: ignore[reportArgumentType]
-                        ydl.download([url])
-                finally:
-                    if os.path.exists(lock_path):
-                        os.remove(lock_path)
+@app.get("/radio")
+def radio(id: str = Query(..., description="YouTube video ID (başlangıç şarkısı)")):
+    """Verilen şarkıya benzer şarkılar döndür (YouTube Mix)"""
+    try:
+        ydl_opts = {
+            **YDL_BASE_OPTS,
+            'extract_flat': True,
+            'playlistend': 25,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            result = ydl.extract_info(
+                f"https://www.youtube.com/watch?v={id}&list=RD{id}",
+                download=False
+            )
+            entries = result.get('entries', []) if result else []
 
-        if not os.path.exists(file_path):
-             raise HTTPException(status_code=404, detail="Stream indirme hatasi")
-        
-        # M4A/MP4 için Range desteği şarttır, yoksa ExoPlayer (0) Source Error verir.
-        return send_bytes_range_requests(file_path, request)
+            oneriler = []
+            for e in entries:
+                if not e or e.get('id') == id:
+                    continue
+                oneriler.append({
+                    'videoId': e.get('id', ''),
+                    'title': e.get('title', ''),
+                    'artist': e.get('uploader', e.get('channel', '')),
+                    'thumbnail': e.get('thumbnail', f"https://i.ytimg.com/vi/{e.get('id', '')}/hqdefault.jpg"),
+                    'duration': e.get('duration', 0),
+                })
 
-    except Exception as e:
-        logging.error(f"Error streaming {id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            return {"status": "basarili", "oneriler": oneriler}
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=str(ex))

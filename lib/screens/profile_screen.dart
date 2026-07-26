@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
+import 'siber_wrapped_screen.dart'; // 🚀 Siber Özet Ekranı
+import '../widgets/siber_premium_sheet.dart'; // 👑 Premium Ekranı
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'dart:async';
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../services/settings_service.dart';
+import '../services/services.dart';
+import '../services/auth_service.dart'; // 🎯 Auth Motoru
+import '../services/subscription_manager.dart';
+import '../screens/siber_payment_screen.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
@@ -159,8 +170,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _totalListenHours = totalHours;
         _hoursForNextRank = hoursForNextRank;
         _rankProgress = rankProgress;
-        _avatarUrl =
-            "https://robohash.org/${name.replaceAll(' ', '_')}?set=${_getAvatarSetByRank(rank)}";
+        
+        final avatar = prefs.getString('siber_avatar_url');
+        if (avatar != null && avatar.isNotEmpty) {
+          _avatarUrl = avatar;
+        } else {
+          _avatarUrl = "https://robohash.org/${name.replaceAll(' ', '_')}?set=${_getAvatarSetByRank(rank)}";
+        }
+        
         _lastSync = lastSyncTime;
         _topArtists = sortedArtists.take(3).toList();
         _moodStats = weeklyMoodCounts;
@@ -443,18 +460,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           if (emailController.text.isNotEmpty &&
                               passwordController.text.isNotEmpty &&
                               (isLoginMode ||
                                   usernameController.text.isNotEmpty)) {
-                            Navigator.pop(context); // Paneli kapat
-                            _showOTPDialog(
-                                emailController.text.trim(),
-                                isLoginMode
-                                    ? 'Siber Ajan'
-                                    : usernameController.text.trim(),
-                                isLoginMode); // 🎯 Kod doğrulama paneline geç!
+                            final email = emailController.text.trim();
+                            final pass = passwordController.text;
+                            final username = usernameController.text.trim();
+
+                            try {
+                              if (isLoginMode) {
+                                await AuthService().signInWithEmailAndPassword(email, pass);
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  _loadProfileData(); // Arayüzü güncelle
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: const Text('Siber Ağa Başarıyla Bağlanıldı!'),
+                                    backgroundColor: _auraColor,
+                                  ));
+                                }
+                              } else {
+                                await AuthService().registerWithEmailAndPassword(username, email, pass);
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: const Text('Kayıt tamam! E-postana bir doğrulama linki gönderdik. Onayladıktan sonra giriş yapabilirsin!'),
+                                    backgroundColor: _auraColor,
+                                    duration: const Duration(seconds: 4),
+                                  ));
+                                }
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                String errorMsg = 'Siber Hata Oluştu.';
+                                if (e.toString().contains('email_not_verified')) {
+                                  errorMsg = 'E-postanı henüz doğrulamamışsın! Lütfen mail kutunu kontrol et.';
+                                } else if (e.toString().contains('email-already-in-use')) {
+                                  errorMsg = 'Bu e-posta zaten sistemde kayıtlı!';
+                                } else if (e.toString().contains('user-not-found') || e.toString().contains('wrong-password') || e.toString().contains('invalid-credential')) {
+                                  errorMsg = 'E-posta veya şifre hatalı!';
+                                } else if (e.toString().contains('weak-password')) {
+                                  errorMsg = 'Şifren çok zayıf, daha güçlü bir şifre belirle!';
+                                }
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: Text(errorMsg),
+                                  backgroundColor: Colors.redAccent,
+                                ));
+                              }
+                            }
                           } else {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(const SnackBar(
@@ -468,6 +522,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             isLoginMode ? 'GİRİŞ YAP' : 'KAYIT OL & MÜHÜRLE',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 15)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider(color: Colors.white24)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('VEYA', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        ),
+                        Expanded(child: Divider(color: Colors.white24)),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // Google Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 30),
+                        label: const Text('Google ile Bağlan', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent.shade700,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () async {
+                          final scaffoldMessenger = ScaffoldMessenger.of(context);
+                          Navigator.pop(context);
+                          try {
+                            final success = await AuthService().signInWithGoogle();
+                            if (success) {
+                              _loadProfileData();
+                              if (mounted) {
+                                scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Siber ağa başarıyla bağlanıldı (Google).'), backgroundColor: Colors.green));
+                              }
+                            }
+                          } catch (e) {
+                            scaffoldMessenger.showSnackBar(SnackBar(content: Text('Bağlantı hatası: Google Play Hizmetleri erişimi reddetti (SHA-1 Hatası)'), backgroundColor: Colors.red));
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // Apple Button (Passive)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.apple, color: Colors.white, size: 28),
+                        label: const Text('Apple ile Bağlan (Çok Yakında)', style: TextStyle(color: Colors.white70)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.white24, width: 1),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Apple bağlantısı şu anda yapım aşamasında. Çok yakında!'), backgroundColor: Colors.orange)
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -721,7 +835,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         setState(() => urlController.text = newUrl);
                       }
                     },
-                  )
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white10,
+                        foregroundColor: Colors.white),
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text('Galeriden Seç'),
+                    onPressed: () async {
+                      FilePickerResult? result = await FilePicker.pickFiles(
+                        type: FileType.image,
+                      );
+                      if (result != null && result.files.single.path != null) {
+                        if (mounted) {
+                          setState(() => urlController.text = result.files.single.path!);
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1162,19 +1294,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: Icon(Icons.bar_chart_rounded, color: _auraColor),
             tooltip: 'Dinleme İstatistikleri',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                isScrollControlled: true,
-                builder: (context) => SiberIstatistikSheet(themeColor: _auraColor),
-              );
+            onPressed: () async {
+              final subManager = SubscriptionManager();
+              if (!await subManager.canViewStatsReport()) {
+                if (mounted) {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => SiberPaymentScreen(themeColor: _auraColor)));
+                }
+                return;
+              }
+              await subManager.updateStatsReportDate();
+
+              if (mounted) {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (context) => SiberIstatistikSheet(themeColor: _auraColor),
+                );
+              }
             },
           ),
           IconButton(
             icon: Icon(Icons.palette_rounded, color: _auraColor),
             tooltip: 'Tema Rengi Değiştir',
             onPressed: () {
+              if (!SubscriptionManager().canChangeAuraTheme()) {
+                if (mounted) {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => SiberPaymentScreen(themeColor: _auraColor)));
+                }
+                return;
+              }
+
               showModalBottomSheet(
                 context: context,
                 backgroundColor: Colors.transparent,
@@ -1244,7 +1394,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: CircleAvatar(
                                 radius: 55,
                                 backgroundColor: Colors.white10,
-                                backgroundImage: NetworkImage(_avatarUrl),
+                                backgroundImage: _avatarUrl.startsWith('http') 
+                                    ? NetworkImage(_avatarUrl) as ImageProvider
+                                    : FileImage(File(_avatarUrl)),
                               ),
                             ),
                             Container(
@@ -1486,6 +1638,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.person_search,
                   color: _auraColor,
                   onTap: _showPersonalSurveyDialog,
+                ),
+
+                const SizedBox(height: 15),
+
+                // 👑 SİBER KARARGAH (PREMIUM)
+                _buildProfileButton(
+                  title: 'SİBER KARARGAH (PREMİUM)',
+                  subtitle: 'Özel Ayrıcalıklar ve Siber Ligler',
+                  icon: Icons.workspace_premium,
+                  color: Colors.amber,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (context) => SiberPremiumSheet(themeColor: _auraColor),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 15),
+
+                // 🚀 YILLIK SİBER ÖZETİN
+                _buildProfileButton(
+                  title: 'YILLIK SİBER ÖZETİN (YENİ!)',
+                  subtitle: 'Spotify Wrapped tarzı yıllık müzik karnen hazır!',
+                  icon: Icons.auto_awesome,
+                  color: Colors.purpleAccent,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SiberWrappedScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 15),
@@ -2069,7 +2257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showOTPDialog(String trim, String s, bool isLoginMode) {}
+  // _showOTPDialog kaldırıldı, Firebase Auth entegre edildi.
 }
 
 // 🎯 SİBER HAMLE: Otonom Pasta Grafiği (Custom Painter)

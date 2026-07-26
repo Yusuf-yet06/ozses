@@ -12,33 +12,68 @@ class AICommander {
 
   // 🎯 SİBER HAMLE: Ses motorunu ve Otonom motoru uyandır
   Future<void> initCommander() async {
+    // Açılışta mikrofon izni istememek için _speech.initialize()'i kaldırdık!
+    // Artık _isReady = false olarak başlıyor, mikrofon butonuna basıldığında tetiklenecek.
+    
+    // Otonom beynin ayakta olup olmadığını kontrol et
+    await SiberKopru.beyneBaglan();
+  }
+  
+  // SİBER HAMLE: Sadece dinleme istendiğinde motoru uyanık hale getirir (Gizlilik kalkanı)
+  Future<bool> ensureSpeechInitialized() async {
+    if (_isReady) return true;
     _isReady = await _speech.initialize(
       onStatus: (status) => print('🎙️ Siber Ses Durumu: $status'),
       onError: (error) => print('❌ Siber Ses Hatası: $error'),
     );
-
-    // Otonom beynin ayakta olup olmadığını kontrol et
-    await SiberKopru.beyneBaglan();
+    return _isReady;
   }
 
   // 🎯 SİBER HAMLE: Mikrofondan komut dinlemeye başla
-  void startListening(Function(String) onResult) async {
-    if (!_isReady) {
+  // 🎯 SİBER HAMLE: Mikrofondan komut dinlemeye başla, dinamik dil seçeneği eklendi
+  void startListening(Function(String, bool) onResult, {String localeId = 'tr_TR'}) async {
+    bool ready = await ensureSpeechInitialized();
+    if (!ready) {
       print('⚠️ Siber Kulak hazır değil! Mikrofon iznini kontrol et.');
       return;
     }
     if (_speech.isListening) {
-      _speech.stop();
-      return;
+      await _speech.stop();
     }
+    
+    // Dil uyumluluk kalkanı
+    var locales = await _speech.locales();
+    String targetLocale = localeId;
+    if (locales.isNotEmpty) {
+      var match = locales.where((l) => l.localeId == localeId).toList();
+      if (match.isEmpty) {
+        // Tam eşleşme yoksa dil kodunun başına göre ara (tr_TR -> tr)
+        var prefix = localeId.split('_').first.split('-').first;
+        match = locales.where((l) => l.localeId.startsWith(prefix)).toList();
+      }
+      if (match.isNotEmpty) {
+        targetLocale = match.first.localeId;
+        print('🎯 Seçilen Siber Dil: ');
+      }
+    }
+
     await _speech.listen(
       onResult: (result) {
-        if (result.finalResult) {
-          onResult(result.recognizedWords);
-        }
+        onResult(result.recognizedWords, result.finalResult);
       },
-      localeId: 'tr_TR', // Gardaşımın dilini mühürledik
+      localeId: targetLocale,
+      partialResults: true,
+      listenMode: stt.ListenMode.search, // Arama kelimeleri (şarkı isimleri) için optimize et
+      pauseFor: const Duration(seconds: 3),
+      listenFor: const Duration(seconds: 10),
     );
+  }
+
+  // Dinlemeyi zorla durdurmak için
+  void stopListening() {
+    if (_speech.isListening) {
+      _speech.stop();
+    }
   }
 
   // 🎯 SİBER HAMLE: Komutu Siber Beyin'e gönder ve uygula

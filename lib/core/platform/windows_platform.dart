@@ -1,6 +1,7 @@
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'siber_platform.dart';
 import '../../services/ytdlp_service.dart';
@@ -9,40 +10,133 @@ class WindowsPlatform implements SiberPlatform {
   @override
   bool get supportsHardwareDSP => false;
 
+  final YoutubeExplode _yt = YoutubeExplode();
+  final _AsyncMutex _ytMutex = _AsyncMutex();
+
   @override
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken}) async {
     print('--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (Masaüstü) ---');
-    var yt = YoutubeExplode();
-    var searchResults = await yt.search.search('en çok dinlenen popüler şarkılar official audio');
-    var items = [];
-    for (var video in searchResults) {
-      items.add({
-        'id': video.id.value,
-        'title': video.title,
-        'channel': video.author,
-        'thumbnail': video.thumbnails.highResUrl,
+    try {
+      return await _ytMutex.run(() async {
+        final List<String> popQueries = [
+          'en çok dinlenen popüler türkçe şarkılar',
+          'yeni çıkan hit şarkılar',
+          'trend türkçe pop şarkılar',
+          'popüler rap şarkıları türkçe',
+          'viral şarkılar türkiye',
+          'trend arabesk remix',
+          'akustik hit parçalar',
+          'spotify top 50 türkiye'
+        ];
+        popQueries.shuffle();
+        String query = popQueries.first;
+        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
+        var items = [];
+        for (var video in searchResults) {
+          items.add({
+            'id': video.id.value,
+            'title': video.title,
+            'channel': video.author,
+            'thumbnail': video.thumbnails.highResUrl,
+          });
+        }
+        if (items.isNotEmpty) {
+          return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+        }
+        return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
       });
+    } catch (e) {
+      print('🚀 Siber Yerel Keşfet Hatası (Masaüstü): $e');
+      print('🔄 SİBER KALKAN: Piped Keşfet Fallback Devrede...');
+      final List<String> pipedInstances = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.moomoo.me',
+        'https://api.piped.projectsegfau.lt'
+      ];
+      for (var instance in pipedInstances) {
+        try {
+          final res = await http.get(Uri.parse('$instance/search?q=popüler+türkçe+şarkılar&filter=all')).timeout(const Duration(seconds: 10));
+          if (res.statusCode == 200) {
+             final data = jsonDecode(res.body);
+             var items = [];
+             for (var item in data['items']) {
+               if (item['type'] == 'stream') {
+                 items.add({
+                    'id': item['url'].replaceAll('/watch?v=', ''),
+                    'title': item['title'],
+                    'channel': item['uploaderName'],
+                    'thumbnail': item['thumbnail']
+                 });
+               }
+             }
+             if (items.isNotEmpty) {
+               return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+             }
+          }
+        } catch (ex) {
+          print('⚠️ Piped Keşfet Hatası ($instance): $ex');
+        }
+      }
     }
-    yt.close();
-    return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+    return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
   }
 
   @override
   Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1}) async {
     print('--- SİBER ARAMA BAŞLATILIYOR (Masaüstü) ---');
-    var yt = YoutubeExplode();
-    var searchResults = await yt.search.search('$query official audio');
-    var items = [];
-    for (var video in searchResults.take(limit)) {
-      items.add({
-        'id': video.id.value,
-        'title': video.title,
-        'channel': video.author,
-        'thumbnail': video.thumbnails.highResUrl,
+    try {
+      return await _ytMutex.run(() async {
+        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
+        var items = [];
+        for (var video in searchResults.take(limit)) {
+          items.add({
+            'id': video.id.value,
+            'title': video.title,
+            'channel': video.author,
+            'thumbnail': video.thumbnails.highResUrl,
+          });
+        }
+        return items;
       });
+    } catch (e) {
+      print('Siber Arama Hatası: $e');
+      print('🔄 SİBER KALKAN: Piped Arama Fallback Devrede (Masaüstü)...');
+      final List<String> pipedInstances = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.smnz.de',
+        'https://pipedapi.adminforge.de',
+        'https://pipedapi.moomoo.me',
+        'https://api.piped.projectsegfau.lt'
+      ];
+      
+      for (var instance in pipedInstances) {
+        try {
+          print('🎯 Deneniyor: $instance');
+          final res = await http.get(Uri.parse('$instance/search?q=${Uri.encodeComponent(query)}&filter=all')).timeout(const Duration(seconds: 4));
+          if (res.statusCode == 200) {
+             final data = jsonDecode(res.body);
+             var items = [];
+             for (var item in data['items']) {
+               if (item['type'] == 'stream') {
+                 items.add({
+                    'id': item['url'].replaceAll('/watch?v=', ''),
+                    'title': item['title'],
+                    'channel': item['uploaderName'],
+                    'thumbnail': item['thumbnail']
+                 });
+               }
+             }
+             if (items.isNotEmpty) {
+               print('✅ Piped Arama Başarılı ($instance)');
+               return items;
+             }
+          }
+        } catch (ex) {
+          print('⚠️ Piped Arama Hatası ($instance): $ex');
+        }
+      }
     }
-    yt.close();
-    return items;
+    return [];
   }
 
   @override
@@ -78,17 +172,35 @@ class WindowsPlatform implements SiberPlatform {
         print('yt-dlp akış alma hatası: ${process.stderr}');
         
         // Fallback: YoutubeExplode
-        var yt = YoutubeExplode();
-        var manifest = await yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 10));
+        var manifest = await _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 10));
         var audioStreams = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.container.name == 'm4a');
         if (audioStreams.isEmpty) audioStreams = manifest.audioOnly;
         var streamInfo = audioStreams.withHighestBitrate();
-        yt.close();
         return {'status': 'basarili', 'stream_url': streamInfo.url.toString()};
       }
     } catch (e) {
-      print('Windows Desktop Stream URL Hatası: $e');
-      return {'status': 'hata', 'mesaj': e.toString()};
+        print('Windows Desktop Stream URL Hatası: $e');
+        print('⚠️ YoutubeExplode da patladı! Piped Fallback devrede...');
+        final List<String> pipedInstances = [
+          'https://pipedapi.kavin.rocks',
+          'https://pipedapi.moomoo.me',
+          'https://api.piped.projectsegfau.lt'
+        ];
+        for (var instance in pipedInstances) {
+          try {
+            final pipedRes = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 10));
+            if (pipedRes.statusCode == 200) {
+              final data = jsonDecode(pipedRes.body);
+              if (data['audioStreams'] != null && data['audioStreams'].isNotEmpty) {
+                String bestUrl = data['audioStreams'][0]['url'];
+                return {'status': 'basarili', 'stream_url': bestUrl};
+              }
+            }
+          } catch (ex) {
+            print('⚠️ Piped Stream Hatası ($instance): $ex');
+          }
+        }
+        return {'status': 'hata', 'mesaj': e.toString()};
     }
   }
 
@@ -122,5 +234,15 @@ class WindowsPlatform implements SiberPlatform {
       }
     }
     return foundFiles;
+  }
+}
+
+class _AsyncMutex {
+  Future<void> _last = Future.value();
+
+  Future<T> run<T>(Future<T> Function() fn) {
+    final next = _last.then((_) => fn());
+    _last = next.whenComplete(() => Future.delayed(const Duration(milliseconds: 1000))).then((_) => null).catchError((_) => null);
+    return next;
   }
 }

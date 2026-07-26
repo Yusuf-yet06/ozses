@@ -41,11 +41,11 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) 
         ? null 
-        : '661550093863-ftcq2gpij6q2hg4bakigt92tqv1fvcu9.apps.googleusercontent.com', 
+        : '533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com', 
   );
 
   /// Otonom Google Giriş Motoru
-  Future<User?> signInWithGoogle() async {
+  Future<bool> signInWithGoogle() async {
     // 🛡️ Masaüstü kayıt tamamlanana kadar bekle
     await _desktopReady.future;
     try {
@@ -53,34 +53,41 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         // Kullanıcı giriş işlemini iptal etti
-        return null;
+        return false;
       }
 
-      // 2. Google üzerinden kimlik doğrulama detaylarını al
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      String name = googleUser.displayName ?? 'Siber Ajan';
+      String email = googleUser.email;
+      String? photoUrl = googleUser.photoUrl;
 
-      // 3. Firebase kimlik bilgilerini oluştur
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // 4. Firebase Auth ile giriş yap
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        // 🎯 SİBER KALKAN: Kullanıcı verilerini yerel hafızaya mühürle
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('siber_is_linked', true);
-        await prefs.setString('siber_username', user.displayName ?? 'Siber Ajan');
-        await prefs.setString('siber_email', user.email ?? '');
-        if (user.photoURL != null) {
-          await prefs.setString('siber_avatar_url', user.photoURL!);
+      // 2. Firebase kimlik doğrulamasını dene (SHA-1 eksikse çökebilir)
+      try {
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        final User? user = userCredential.user;
+        if (user != null) {
+          name = user.displayName ?? name;
+          email = user.email ?? email;
+          photoUrl = user.photoURL ?? photoUrl;
         }
+      } catch (e) {
+        print('⚠️ Siber Uyarı (Firebase): Firebase bağlantısı kurulamadı (Büyük ihtimalle SHA-1 eksik). Yerel olarak Google hesabı bağlanıyor: $e');
       }
 
-      return user;
+      // 🎯 SİBER KALKAN: Kullanıcı verilerini yerel hafızaya mühürle (Firebase çökse bile çalışır!)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('siber_is_linked', true);
+      await prefs.setString('siber_username', name);
+      await prefs.setString('siber_email', email);
+      if (photoUrl != null) {
+        await prefs.setString('siber_avatar_url', photoUrl);
+      }
+
+      return true;
     } catch (e) {
       print('❌ Siber Hata (Google Girişi): $e');
       rethrow; // 🛡️ Hata detayını UI'a gönder
@@ -144,13 +151,16 @@ class AuthService {
       if (user != null) {
         // Kullanıcı adını Firebase profiline kaydet
         await user.updateDisplayName(username);
-        await user.reload(); // Değişikliklerin anında yansıması için
+        
+        // 🎯 SİBER HAMLE: E-posta doğrulama linki gönder!
+        if (!user.emailVerified) {
+          await user.sendEmailVerification();
+        }
 
-        // Yerel hafızaya mühürle
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('siber_is_linked', true);
-        await prefs.setString('siber_username', username);
-        await prefs.setString('siber_email', user.email ?? '');
+        await user.reload(); // Değişikliklerin anında yansıması için
+        
+        // Güvenlik: E-posta doğrulanana kadar oturumu kapat!
+        await _auth.signOut();
       }
 
       return user;
@@ -170,6 +180,12 @@ class AuthService {
       final User? user = userCredential.user;
 
       if (user != null) {
+        // 🎯 SİBER KALKAN: Doğrulanmamış E-postaları Engelle!
+        if (!user.emailVerified) {
+          await _auth.signOut();
+          throw Exception('email_not_verified');
+        }
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('siber_is_linked', true);
         await prefs.setString('siber_username', user.displayName ?? 'Siber Ajan');

@@ -11,6 +11,7 @@ import '../services/id3_service.dart';
 import '../services/lyrics_service.dart';
 import '../widgets/bottom_player_bar.dart';
 import '../services/services.dart'; // 🎯 SİBER KÖPRÜ
+import '../services/subscription_manager.dart';
 import '../utils/song_media_utils.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart'; // 🎯 Dosya okuma/yazma için gerekli mühür
@@ -781,7 +782,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                             1),
                                                                   )
                                                                 : null,
-                                                            child: isActive ? Text(
+                                                            child: isActive ? (SubscriptionManager().canUseAdvancedKaraoke() ? Text(
                                                               line.text,
                                                               textAlign:
                                                                   TextAlign
@@ -802,6 +803,15 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                             ).animate(onPlay: (controller) => controller.repeat(reverse: true))
                                                              .shimmer(duration: 1500.ms, color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5))
                                                              .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.05, 1.05), duration: 800.ms)
+                                                            : Text(
+                                                              line.text,
+                                                              textAlign: TextAlign.center,
+                                                              style: TextStyle(
+                                                                color: (_dynamicColor ?? widget.themeColor),
+                                                                fontSize: 28,
+                                                                fontWeight: FontWeight.w800,
+                                                              ),
+                                                            ))
                                                             : Text(
                                                               line.text,
                                                               textAlign:
@@ -901,11 +911,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                     ),
 
                     // 🎯 SİBER AKSİYON ÇUBUĞU (EQ, KARAOKE, ZAMANLAYICI)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // EKOLAYZER BUTONU
-                        IconButton(
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // EKOLAYZER BUTONU
+                          IconButton(
                           icon: Icon(Icons.equalizer, color: (_dynamicColor ?? widget.themeColor), size: 30),
                           onPressed: () {
                             showModalBottomSheet(
@@ -1010,6 +1022,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                           },
                         ),
                       ],
+                    ),
                     ),
 
                 // 🎛️ MÜZİK KONTROL PANELİ VE SLIDER

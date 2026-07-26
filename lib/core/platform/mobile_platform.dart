@@ -18,9 +18,9 @@ class MobilePlatform implements SiberPlatform {
 
   @override
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken}) async {
-    print('--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (RENDER BACKEND) ---');
+    print('--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (YEREL OTONOM) ---');
     final List<String> discoveryTerms = [
-      'türkçe pop en çok dinlenenler official audio',
+      'türkçe pop en çok dinlenenler',
       'haftanın trend şarkıları',
       'yeni çıkan şarkılar 2026',
       'hit şarkılar karışık Türkçe',
@@ -32,38 +32,209 @@ class MobilePlatform implements SiberPlatform {
     String query = discoveryTerms.first;
     
     try {
-      final response = await http.get(
-        Uri.parse('https://ozses.onrender.com/search?q=${Uri.encodeComponent(query)}')
-      ).timeout(const Duration(seconds: 45)); // Render uyanması (cold start) için 45 sn
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['status'] == 'basarili' && data['oneriler'] != null) {
-          return {'status': 'basarili', 'oneriler': data['oneriler'], 'nextPageToken': ''};
+      return await _ytMutex.run(() async {
+        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
+        var items = [];
+        for (var video in searchResults.take(15)) {
+          items.add({
+            'id': video.id.value,
+            'title': video.title,
+            'channel': video.author,
+            'thumbnail': video.thumbnails.highResUrl,
+          });
+        }
+        if (items.isNotEmpty) {
+          return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+        }
+        return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
+      });
+    } catch (e) {
+      print('🚀 Siber Yerel Keşfet Hatası: $e');
+      print('🔄 SİBER KALKAN: Piped Keşfet Fallback Devrede...');
+      final List<String> pipedInstances = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.moomoo.me',
+        'https://api.piped.projectsegfau.lt'
+      ];
+      for (var instance in pipedInstances) {
+        try {
+          final res = await http.get(Uri.parse('$instance/search?q=${Uri.encodeComponent(query)}&filter=all')).timeout(const Duration(seconds: 10));
+          if (res.statusCode == 200) {
+             try {
+               final data = jsonDecode(res.body);
+               var items = [];
+               for (var item in data['items'] ?? []) {
+               if (item['type'] == 'stream') {
+                 items.add({
+                    'id': item['url'].replaceAll('/watch?v=', ''),
+                    'title': item['title'],
+                    'channel': item['uploaderName'],
+                    'thumbnail': item['thumbnail']
+                 });
+               }
+             }
+             if (items.isNotEmpty) {
+               return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+             }
+             } catch (decodeEx) {
+               print('⚠️ Piped JSON Parse Hatası ($instance): HTML döndü.');
+             }
+          }
+        } catch (ex) {
+          print('⚠️ Piped Keşfet Hatası ($instance): $ex');
         }
       }
-    } catch (e) {
-      print('❌ Siber Backend Keşfet Hatası: $e');
+      
+      // 🛡️ 3. ZIRH: Invidious Keşfet (Eğer YouTube ve Piped çöktüyse)
+      print('🔄 SİBER KALKAN: Invidious Keşfet Fallback Devrede...');
+      final List<String> invidiousInstances = [
+        'vid.puffyan.us',
+        'invidious.jing.rocks',
+        'invidious.nerdvpn.de',
+        'inv.tux.pizza'
+      ];
+      for (var instance in invidiousInstances) {
+        try {
+          print('🎯 Invidious Keşfet Deneniyor: $instance');
+          final res = await http.get(Uri.parse('https://$instance/api/v1/search?q=${Uri.encodeComponent(query)}')).timeout(const Duration(seconds: 10));
+          if (res.statusCode == 200) {
+             try {
+               final List<dynamic> data = jsonDecode(res.body);
+               var items = [];
+               for (var item in data) {
+               if (item['type'] == 'video' && item['videoId'] != null) {
+                 String tUrl = '';
+                 if (item['videoThumbnails'] != null && (item['videoThumbnails'] as List).isNotEmpty) {
+                   tUrl = item['videoThumbnails'][0]['url'] ?? '';
+                 }
+                 items.add({
+                    'id': item['videoId'],
+                    'title': item['title'],
+                    'channel': item['author'],
+                    'thumbnail': tUrl
+                 });
+               }
+             }
+             if (items.isNotEmpty) {
+               print('✅ Invidious Keşfet Başarılı ($instance)');
+               return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+             }
+             } catch (decodeEx) {
+               print('⚠️ Invidious JSON Parse Hatası ($instance)');
+             }
+          }
+        } catch (ex) {
+          print('⚠️ Invidious Keşfet Hatası ($instance): $ex');
+        }
+      }
+
     }
     return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
   }
 
   @override
   Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1}) async {
-    print('--- SİBER ARAMA BAŞLATILIYOR (RENDER BACKEND) ---');
+    print('--- SİBER ARAMA BAŞLATILIYOR (YEREL OTONOM) ---');
     try {
-      final response = await http.get(
-        Uri.parse('https://ozses.onrender.com/search?q=${Uri.encodeComponent(query)}')
-      ).timeout(const Duration(seconds: 45)); // Render uyanması (cold start) için 45 sn
+      return await _ytMutex.run(() async {
+        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
+        var items = [];
+        for (var video in searchResults.take(limit)) {
+          items.add({
+            'id': video.id.value,
+            'title': video.title,
+            'channel': video.author,
+            'thumbnail': video.thumbnails.highResUrl,
+          });
+        }
+        return items;
+      });
+    } catch (e) {
+      print('🚀 Siber Yerel Arama Hatası: $e');
+      print('🔄 SİBER KALKAN: Piped Arama Fallback Devrede...');
+      final List<String> pipedInstances = [
+        'https://pipedapi.kavin.rocks',
+        'https://pipedapi.smnz.de',
+        'https://pipedapi.adminforge.de',
+        'https://pipedapi.moomoo.me',
+        'https://api.piped.projectsegfau.lt'
+      ];
       
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['status'] == 'basarili' && data['oneriler'] != null) {
-          return data['oneriler'];
+      for (var instance in pipedInstances) {
+        try {
+          print('🎯 Deneniyor: $instance');
+          final res = await http.get(Uri.parse('$instance/search?q=${Uri.encodeComponent(query)}&filter=all')).timeout(const Duration(seconds: 4));
+          if (res.statusCode == 200) {
+             try {
+               final data = jsonDecode(res.body);
+               var items = [];
+               for (var item in data['items'] ?? []) {
+               if (item['type'] == 'stream') {
+                 items.add({
+                    'id': item['url'].replaceAll('/watch?v=', ''),
+                    'title': item['title'],
+                    'channel': item['uploaderName'],
+                    'thumbnail': item['thumbnail']
+                 });
+               }
+             }
+             if (items.isNotEmpty) {
+               print('✅ Piped Arama Başarılı ($instance)');
+               return items;
+             }
+             } catch (decodeEx) {
+               print('⚠️ Piped JSON Parse Hatası ($instance)');
+             }
+          }
+        } catch (ex) {
+          print('⚠️ Piped Arama Hatası ($instance): $ex');
         }
       }
-    } catch (e) {
-      print('❌ Siber Backend Arama Hatası: $e');
+      
+      // 🛡️ 3. ZIRH: Invidious Arama (Eğer YouTube ve Piped tamamen çöktüyse)
+      print('🔄 SİBER KALKAN: Invidious Arama Fallback Devrede...');
+      final List<String> invidiousInstances = [
+        'vid.puffyan.us',
+        'invidious.jing.rocks',
+        'invidious.nerdvpn.de',
+        'inv.tux.pizza'
+      ];
+      
+      for (var instance in invidiousInstances) {
+        try {
+          print('🎯 Invidious Deneniyor: $instance');
+          final res = await http.get(Uri.parse('https://$instance/api/v1/search?q=${Uri.encodeComponent(query)}')).timeout(const Duration(seconds: 5));
+          if (res.statusCode == 200) {
+             try {
+               final List<dynamic> data = jsonDecode(res.body);
+               var items = [];
+               for (var item in data) {
+               if (item['type'] == 'video' && item['videoId'] != null) {
+                 String tUrl = '';
+                 if (item['videoThumbnails'] != null && (item['videoThumbnails'] as List).isNotEmpty) {
+                   tUrl = item['videoThumbnails'][0]['url'] ?? '';
+                 }
+                 items.add({
+                    'id': item['videoId'],
+                    'title': item['title'],
+                    'channel': item['author'],
+                    'thumbnail': tUrl
+                 });
+               }
+             }
+             if (items.isNotEmpty) {
+               print('✅ Invidious Arama Başarılı ($instance)');
+               return items;
+             }
+             } catch (decodeEx) {
+               print('⚠️ Invidious JSON Parse Hatası ($instance)');
+             }
+          }
+        } catch (ex) {
+          print('⚠️ Invidious Arama Hatası ($instance): $ex');
+        }
+      }
+
     }
     return [];
   }
@@ -109,10 +280,15 @@ class MobilePlatform implements SiberPlatform {
   @override
   Future<String> getDownloadPath() async {
     if (Platform.isAndroid) {
-      // 🎯 SİBER KALKAN: Güvenli İndirme Yolu (Android Scoped Storage)
+      // 🛡️ SİBER KALKAN: Güvenli İndirme Yolu (Android Scoped Storage)
+      final extDir = await getExternalStorageDirectory();
+      if (extDir != null) {
+        return extDir.path;
+      }
       return '/storage/emulated/0/Download';
     } else if (Platform.isIOS) {
-      return '';
+      final appDocDir = await getApplicationDocumentsDirectory();
+      return appDocDir.path;
     }
     return '';
   }
@@ -129,6 +305,11 @@ class MobilePlatform implements SiberPlatform {
         Directory('/storage/emulated/0/Download'),
         Directory('/storage/emulated/0/Music')
       ];
+
+      final extDir = await getExternalStorageDirectory();
+      if (extDir != null) {
+        targetDirs.add(extDir);
+      }
 
       List<String> foundFiles = [];
       for (var dir in targetDirs) {
@@ -154,7 +335,7 @@ class _AsyncMutex {
 
   Future<T> run<T>(Future<T> Function() fn) {
     final next = _last.then((_) => fn());
-    _last = next.whenComplete(() => Future.delayed(const Duration(milliseconds: 1000))).catchError((_) {});
+    _last = next.whenComplete(() => Future.delayed(const Duration(milliseconds: 1000))).then((_) => null).catchError((_) => null);
     return next;
   }
 }

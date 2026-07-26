@@ -4,10 +4,9 @@ import 'siber_platform.dart';
 
 SiberPlatform getPlatform() => WebPlatform();
 
-// CORS SORUNUNU KOKTEN COZEN MIMARI (yt-dlp powered):
-// Tarayici dis API-lere degil, kendi localhost proxy-sine (siber_proxy.py) cagri yapar.
-// siber_proxy.py yt-dlp kullanarak CORS olmadan YouTube-a erisir.
-const String _PROXY_BASE = 'http://localhost:8081/api/proxy';
+// Web ortamında yerel sunucu (localhost) çalışmaz.
+// Bunun yerine bulut üzerine (Render, Heroku vb.) kurduğumuz Siber Karargah Backend API'sine çağrı yaparız.
+const String _PROXY_BASE = 'https://ozses-1.onrender.com';
 
 class WebPlatform implements SiberPlatform {
   @override
@@ -18,8 +17,8 @@ class WebPlatform implements SiberPlatform {
     print('--- SIBER KESFET RADARI BASLATIYOR (yt-dlp proxy) ---');
     try {
       final response = await http
-          .get(Uri.parse('/kesfet'))
-          .timeout(const Duration(seconds: 20));
+          .get(Uri.parse('$_PROXY_BASE/search?q=hit+sarkilar'))
+          .timeout(const Duration(seconds: 60));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
@@ -39,8 +38,8 @@ class WebPlatform implements SiberPlatform {
     final encodedQuery = Uri.encodeComponent(query);
     try {
       final response = await http
-          .get(Uri.parse('/search?q='))
-          .timeout(const Duration(seconds: 20));
+          .get(Uri.parse('$_PROXY_BASE/search?q=$encodedQuery'))
+          .timeout(const Duration(seconds: 60));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final items = data['oneriler'] as List<dynamic>? ?? [];
@@ -57,7 +56,7 @@ class WebPlatform implements SiberPlatform {
     final encodedQuery = Uri.encodeComponent(query);
     try {
       final response = await http
-          .get(Uri.parse('/suggest?q=$encodedQuery'))
+          .get(Uri.parse('$_PROXY_BASE/suggest?q=$encodedQuery'))
           .timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -74,14 +73,14 @@ class WebPlatform implements SiberPlatform {
   @override
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
     try {
-      final response = await http
-          .get(Uri.parse('/stream?id='))
-          .timeout(const Duration(seconds: 20));
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
+      // Web ortamı için backend üzerindeki /play endpointini (stream proxy) ver
+      // Böylece CORS bypass edilmiş olur.
+      return {
+        'status': 'basarili',
+        'stream_url': '$_PROXY_BASE/play/$videoId'
+      };
     } catch (e) {
-      print('Siber Stream Proxy Hatasi: ');
+      print('Siber Stream Proxy Hatasi: $e');
     }
     throw Exception('Stream URL alinamadi');
   }

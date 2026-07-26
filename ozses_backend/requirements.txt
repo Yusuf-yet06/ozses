@@ -1,5 +1,4 @@
-﻿fastapi==0.111.0
-uvicorn==0.30.1
-yt-dlp>=2026.7.4
-httpx==0.27.0
-ytmusicapi
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+yt-dlp==2025.1.26
+httpx>=0.24.0
