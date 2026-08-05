@@ -122,7 +122,7 @@ class _DesktopCinematicViewState extends State<DesktopCinematicView> with Single
                                 image: DecorationImage(
                                   image: hasImage
                                       ? NetworkImage(artUri)
-                                      : const AssetImage('assets/images/default_cover.png') as ImageProvider,
+                                      : const AssetImage('assets/images/logo.jpg') as ImageProvider,
                                   fit: BoxFit.cover,
                                 ),
                               ),
