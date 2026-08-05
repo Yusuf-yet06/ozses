@@ -32,22 +32,20 @@ class MobilePlatform implements SiberPlatform {
     String query = discoveryTerms.first;
     
     try {
-      return await _ytMutex.run(() async {
-        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
-        var items = [];
-        for (var video in searchResults.take(15)) {
-          items.add({
-            'id': video.id.value,
-            'title': video.title,
-            'channel': video.author,
-            'thumbnail': video.thumbnails.highResUrl,
-          });
-        }
-        if (items.isNotEmpty) {
-          return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
-        }
-        return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
-      });
+      var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
+      var items = [];
+      for (var video in searchResults.take(15)) {
+        items.add({
+          'id': video.id.value,
+          'title': video.title,
+          'channel': video.author,
+          'thumbnail': video.thumbnails.highResUrl,
+        });
+      }
+      if (items.isNotEmpty) {
+        return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+      }
+      return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
     } catch (e) {
       print('🚀 Siber Yerel Keşfet Hatası: $e');
       print('🔄 SİBER KALKAN: Piped Keşfet Fallback Devrede...');
@@ -270,11 +268,96 @@ class MobilePlatform implements SiberPlatform {
       print('Çift Çekirdek Okuma Hatası: $e');
     }
 
-    // SİBER HIZLANDIRICI: Eğer kalıcı dosya yoksa, vakit kaybetmeden direkt proxy'e devret!
-    // Piped ve Cobalt sunucularını beklemek 3-8 saniye gecikme yaratıyordu.
-    // Artık Proxy (services.dart) içerisinde YoutubeExplode ile saniyesinde çekip çalıyoruz.
-    return {'status': 'basarili', 'stream_url': 'proxy_will_handle_it', 'is_file': false};
+    // 🛡️ SİBER KALKAN V3: EŞZAMANLI YARIŞ (CONCURRENT RESOLVER)
+    // Tüm akış motorları aynı anda yarışır, ilk URL bulan kazanır. Bu sayede süre 60 saniyeden 2 saniyeye düşer!
+    print('🎯 SİBER ÇÖZÜCÜ (Mobil): Eşzamanlı yarış başlıyor -> $videoId');
     
+    List<Future<Map<String, dynamic>>> resolvers = [];
+
+    // 1. YoutubeExplode (Yerel)
+    resolvers.add(() async {
+      try {
+        var ytClients = [YoutubeApiClient.ios, YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.tv];
+        var manifest = await _yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 8));
+        var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+        if (audioStreamList.isEmpty) {
+          audioStreamList = manifest.audioOnly.toList();
+        }
+        var ytStreamInfo = audioStreamList.isNotEmpty
+            ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
+            : manifest.audioOnly.withHighestBitrate();
+        print('✅ SİBER YARIŞ KAZANANI: YoutubeExplode');
+        return {'status': 'basarili', 'stream_url': ytStreamInfo.url.toString(), 'is_file': false};
+      } catch (e) {
+        throw Exception('YoutubeExplode başarısız');
+      }
+    }());
+
+    // 2. Piped API
+    final pipedInstances = [
+      'https://pipedapi.kavin.rocks', 
+      'https://api.piped.projectsegfau.lt',
+      'https://pipedapi.smnz.de'
+    ];
+    for (var instance in pipedInstances) {
+      resolvers.add(() async {
+        try {
+          final pipedRes = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 6));
+          if (pipedRes.statusCode == 200) {
+            final data = jsonDecode(pipedRes.body);
+            final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
+            if (audioStreams.isNotEmpty) {
+              print('✅ SİBER YARIŞ KAZANANI: Piped ($instance)');
+              return {'status': 'basarili', 'stream_url': audioStreams.first['url'].toString(), 'is_file': false};
+            }
+          }
+        } catch (_) {}
+        throw Exception('Piped başarısız');
+      }());
+    }
+
+    // 3. Vercel Backend
+    resolvers.add(() async {
+      try {
+        final vercelRes = await http.get(Uri.parse('https://ozses-832f9y4py-ozses.vercel.app/stream?id=$videoId')).timeout(const Duration(seconds: 6));
+        if (vercelRes.statusCode == 200) {
+          final data = jsonDecode(vercelRes.body);
+          if (data['stream_url'] != null) {
+            print('✅ SİBER YARIŞ KAZANANI: Vercel Backend');
+            return {'status': 'basarili', 'stream_url': data['stream_url'].toString(), 'is_file': false};
+          }
+        }
+      } catch (_) {}
+      throw Exception('Vercel başarısız');
+    }());
+
+    // 4. Invidious API
+    final invidiousInstances = ['vid.puffyan.us', 'invidious.jing.rocks'];
+    for (var instance in invidiousInstances) {
+      resolvers.add(() async {
+        try {
+          final invRes = await http.get(Uri.parse('https://$instance/api/v1/videos/$videoId')).timeout(const Duration(seconds: 6));
+          if (invRes.statusCode == 200) {
+            final data = jsonDecode(invRes.body);
+            final streams = data['formatStreams'] as List<dynamic>? ?? [];
+            for (var s in streams) {
+              if (s['type'] != null && s['type'].toString().contains('audio')) {
+                print('✅ SİBER YARIŞ KAZANANI: Invidious ($instance)');
+                return {'status': 'basarili', 'stream_url': s['url'].toString(), 'is_file': false};
+              }
+            }
+          }
+        } catch (_) {}
+        throw Exception('Invidious başarısız');
+      }());
+    }
+
+    try {
+      return await firstSuccessful(resolvers);
+    } catch (e) {
+      print('🛑 SİBER ÇÖZÜCÜ: TÜM MOTORLAR ÇÖKTÜ! HİÇBİR URL BULUNAMADI.');
+      return {'status': 'hata', 'mesaj': 'Tüm akış motorları çöktü'};
+    }
   }
 
   @override

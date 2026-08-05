@@ -76,7 +76,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: ListView(
+      body: SafeArea(
+        top: false,
+        child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         children: [
           // 1. NEON GLASS ANALİZ KARTI (Canlı Titreşim)
@@ -156,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
         ],
-      ),
+      )),
     );
   }
 

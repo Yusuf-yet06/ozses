@@ -17,41 +17,39 @@ class WindowsPlatform implements SiberPlatform {
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken}) async {
     print('--- ÖZSES KEŞFET RADARI BAŞLATILIYOR (Masaüstü) ---');
     try {
-      return await _ytMutex.run(() async {
-        final List<String> popQueries = [
-          'en çok dinlenen popüler türkçe şarkılar',
-          'yeni çıkan hit şarkılar',
-          'trend türkçe pop şarkılar',
-          'popüler rap şarkıları türkçe',
-          'viral şarkılar türkiye',
-          'trend arabesk remix',
-          'akustik hit parçalar',
-          'spotify top 50 türkiye'
-        ];
-        popQueries.shuffle();
-        String query = popQueries.first;
-        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
-        var items = [];
-        for (var video in searchResults) {
-          items.add({
-            'id': video.id.value,
-            'title': video.title,
-            'channel': video.author,
-            'thumbnail': video.thumbnails.highResUrl,
-          });
-        }
-        if (items.isNotEmpty) {
-          return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
-        }
-        return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
-      });
+      final List<String> popQueries = [
+        'en çok dinlenen popüler türkçe şarkılar',
+        'yeni çıkan hit şarkılar',
+        'trend türkçe pop şarkılar',
+        'popüler rap şarkıları türkçe',
+        'viral şarkılar türkiye',
+        'trend arabesk remix',
+        'akustik hit parçalar',
+        'spotify top 50 türkiye'
+      ];
+      popQueries.shuffle();
+      String query = popQueries.first;
+      var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 15));
+      var items = [];
+      for (var video in searchResults.take(15)) {
+        items.add({
+          'id': video.id.value,
+          'title': video.title,
+          'channel': video.author,
+          'thumbnail': video.thumbnails.highResUrl,
+        });
+      }
+      if (items.isNotEmpty) {
+        return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
+      }
+      return {'status': 'hata', 'oneriler': [], 'nextPageToken': ''};
     } catch (e) {
       print('🚀 Siber Yerel Keşfet Hatası (Masaüstü): $e');
       print('🔄 SİBER KALKAN: Piped Keşfet Fallback Devrede...');
       final List<String> pipedInstances = [
         'https://pipedapi.kavin.rocks',
-        'https://pipedapi.moomoo.me',
-        'https://api.piped.projectsegfau.lt'
+        'https://api.piped.projectsegfau.lt',
+        'https://pipedapi.smnz.de'
       ];
       for (var instance in pipedInstances) {
         try {
@@ -67,6 +65,7 @@ class WindowsPlatform implements SiberPlatform {
                     'channel': item['uploaderName'],
                     'thumbnail': item['thumbnail']
                  });
+                 if (items.length >= 15) break;
                }
              }
              if (items.isNotEmpty) {
@@ -157,50 +156,113 @@ class WindowsPlatform implements SiberPlatform {
 
   @override
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
-    try {
-      // SİBER KALKAN: Native yt-dlp ile Windows üzerinde akış çöz
-      String exePath = await YtDlpService().getExecutablePath();
-      var process = await Process.run(exePath, [
-        '-g', 
-        '-f', 'bestaudio[ext=m4a]/bestaudio', 
-        'https://www.youtube.com/watch?v=$videoId'
-      ]);
-      
-      if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
-        return {'status': 'basarili', 'stream_url': process.stdout.toString().trim()};
-      } else {
-        print('yt-dlp akış alma hatası: ${process.stderr}');
-        
-        // Fallback: YoutubeExplode
-        var manifest = await _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 10));
-        var audioStreams = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.container.name == 'm4a');
-        if (audioStreams.isEmpty) audioStreams = manifest.audioOnly;
-        var streamInfo = audioStreams.withHighestBitrate();
-        return {'status': 'basarili', 'stream_url': streamInfo.url.toString()};
+    print('🎯 SİBER ÇÖZÜCÜ (Masaüstü): Eşzamanlı yarış başlıyor -> $videoId');
+    
+    List<Future<Map<String, dynamic>>> resolvers = [];
+
+    // 1. YoutubeExplode (Yerel)
+    resolvers.add(() async {
+      try {
+        var ytClients = [YoutubeApiClient.ios, YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.tv];
+        var manifest = await _yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 15));
+        var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+        if (audioStreamList.isEmpty) {
+          audioStreamList = manifest.audioOnly.toList();
+        }
+        var ytStreamInfo = audioStreamList.isNotEmpty
+            ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
+            : manifest.audioOnly.withHighestBitrate();
+        print('✅ SİBER YARIŞ KAZANANI (Masaüstü): YoutubeExplode');
+        return {'status': 'basarili', 'stream_url': ytStreamInfo.url.toString(), 'is_file': false};
+      } catch (e) {
+        throw Exception('YoutubeExplode başarısız');
       }
-    } catch (e) {
-        print('Windows Desktop Stream URL Hatası: $e');
-        print('⚠️ YoutubeExplode da patladı! Piped Fallback devrede...');
-        final List<String> pipedInstances = [
-          'https://pipedapi.kavin.rocks',
-          'https://pipedapi.moomoo.me',
-          'https://api.piped.projectsegfau.lt'
-        ];
-        for (var instance in pipedInstances) {
-          try {
-            final pipedRes = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 10));
-            if (pipedRes.statusCode == 200) {
-              final data = jsonDecode(pipedRes.body);
-              if (data['audioStreams'] != null && data['audioStreams'].isNotEmpty) {
-                String bestUrl = data['audioStreams'][0]['url'];
-                return {'status': 'basarili', 'stream_url': bestUrl};
-              }
+    }());
+
+    // 2. yt-dlp (Harici İşlem)
+    resolvers.add(() async {
+      try {
+        String exePath = await YtDlpService().getExecutablePath();
+        var process = await Process.run(exePath, [
+          '-g', 
+          '-f', 'bestaudio[ext=m4a]/bestaudio', 
+          'https://www.youtube.com/watch?v=$videoId'
+        ]).timeout(const Duration(seconds: 30));
+        
+        if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
+          print('✅ SİBER YARIŞ KAZANANI (Masaüstü): yt-dlp');
+          return {'status': 'basarili', 'stream_url': process.stdout.toString().trim(), 'is_file': false};
+        }
+        throw Exception('yt-dlp başarısız');
+      } catch (_) {
+        throw Exception('yt-dlp başarısız');
+      }
+    }());
+
+    // 3. Piped API
+    final pipedInstances = [
+      'https://pipedapi.kavin.rocks', 
+      'https://api.piped.projectsegfau.lt',
+      'https://pipedapi.smnz.de'
+    ];
+    for (var instance in pipedInstances) {
+      resolvers.add(() async {
+        try {
+          final pipedRes = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 15));
+          if (pipedRes.statusCode == 200) {
+            final data = jsonDecode(pipedRes.body);
+            final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
+            if (audioStreams.isNotEmpty) {
+              print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance)');
+              return {'status': 'basarili', 'stream_url': audioStreams.first['url'].toString(), 'is_file': false};
             }
-          } catch (ex) {
-            print('⚠️ Piped Stream Hatası ($instance): $ex');
+          }
+        } catch (_) {}
+        throw Exception('Piped başarısız');
+      }());
+    }
+
+    // 4. Vercel Backend
+    resolvers.add(() async {
+      try {
+        final vercelRes = await http.get(Uri.parse('https://ozses-832f9y4py-ozses.vercel.app/stream?id=$videoId')).timeout(const Duration(seconds: 15));
+        if (vercelRes.statusCode == 200) {
+          final data = jsonDecode(vercelRes.body);
+          if (data['stream_url'] != null) {
+            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Vercel Backend');
+            return {'status': 'basarili', 'stream_url': data['stream_url'].toString(), 'is_file': false};
           }
         }
-        return {'status': 'hata', 'mesaj': e.toString()};
+      } catch (_) {}
+      throw Exception('Vercel başarısız');
+    }());
+
+    // 5. Invidious API
+    final invidiousInstances = ['vid.puffyan.us', 'invidious.jing.rocks'];
+    for (var instance in invidiousInstances) {
+      resolvers.add(() async {
+        try {
+          final invRes = await http.get(Uri.parse('https://$instance/api/v1/videos/$videoId')).timeout(const Duration(seconds: 15));
+          if (invRes.statusCode == 200) {
+            final data = jsonDecode(invRes.body);
+            final streams = data['formatStreams'] as List<dynamic>? ?? [];
+            for (var s in streams) {
+              if (s['type'] != null && s['type'].toString().contains('audio')) {
+                print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Invidious ($instance)');
+                return {'status': 'basarili', 'stream_url': s['url'].toString(), 'is_file': false};
+              }
+            }
+          }
+        } catch (_) {}
+        throw Exception('Invidious başarısız');
+      }());
+    }
+
+    try {
+      return await firstSuccessful(resolvers);
+    } catch (e) {
+      print('🛑 SİBER ÇÖZÜCÜ (Masaüstü): TÜM MOTORLAR ÇÖKTÜ! HİÇBİR URL BULUNAMADI.');
+      return {'status': 'hata', 'mesaj': 'Tüm akış motorları çöktü'};
     }
   }
 
@@ -245,4 +307,23 @@ class _AsyncMutex {
     _last = next.whenComplete(() => Future.delayed(const Duration(milliseconds: 1000))).then((_) => null).catchError((_) => null);
     return next;
   }
+}
+
+Future<T> firstSuccessful<T>(Iterable<Future<T>> futures) {
+  final completer = Completer<T>();
+  int remaining = futures.length;
+  List<Object> errors = [];
+  if (remaining == 0) return Future.error('No futures provided');
+  for (var future in futures) {
+    future.then((value) {
+      if (!completer.isCompleted) completer.complete(value);
+    }).catchError((error) {
+      errors.add(error);
+      remaining--;
+      if (remaining == 0 && !completer.isCompleted) {
+        completer.completeError(Exception('All futures failed'));
+      }
+    });
+  }
+  return completer.future;
 }

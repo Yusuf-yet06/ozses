@@ -66,7 +66,9 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
         title: const Text('SİSTEM ZAMANLAYICI', style: TextStyle(fontSize: 14)),
         backgroundColor: Colors.black,
       ),
-      body: Padding(
+      body: SafeArea(
+        top: false,
+        child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
@@ -185,7 +187,7 @@ class _TimerSettingsScreenState extends State<TimerSettingsScreen> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 

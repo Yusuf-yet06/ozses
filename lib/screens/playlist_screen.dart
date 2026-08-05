@@ -33,7 +33,8 @@ class OzsesPlaylistScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView.builder(
+      body: SafeArea(
+        child: ListView.builder(
         itemCount: recordings.length,
         itemBuilder: (context, index) {
           return Card(
@@ -87,3 +88,4 @@ class OzsesPlaylistScreen extends StatelessWidget {
     );
   }
 }
+

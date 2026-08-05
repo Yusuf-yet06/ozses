@@ -1,11 +1,12 @@
 import 'dart:io'; // Platform kontrolü için ŞART!
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter/foundation.dart'; // 🌐 WEB KALKANI İÇİN
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:firebase_core/firebase_core.dart'; // 🎯 SİBER HAMLE: Güvenlik Motoru
 import 'package:purchases_flutter/purchases_flutter.dart'; // 🎯 SİBER HAMLE: RevenueCat Ödeme Altyapısı
-import 'screens/home_screen.dart';
+import 'responsive/responsive_layout.dart';
 import 'services/audio_handler.dart';
 import 'services/siber_theme_service.dart';
 import 'widgets/global_ambient_background.dart';
@@ -21,6 +22,11 @@ late MyAudioHandler audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
   
   // ⚡ Gömülü yt-dlp Kalkanı Başlat
   YtDlpService().init();
@@ -124,7 +130,7 @@ class OzsesMusicApp extends StatelessWidget {
               brightness: Brightness.dark,
             ),
           ),
-          home: const HomeScreen(),
+          home: const ResponsiveLayout(),
         );
       },
     );

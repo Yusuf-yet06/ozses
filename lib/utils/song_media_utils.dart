@@ -23,9 +23,20 @@ String? extractVideoIdFromPath(String? path) {
   return match?.group(1);
 }
 
+Uri? safeParseUri(String? url) {
+  if (url == null || url.trim().isEmpty) return null;
+  String cleanUrl = url.trim();
+  if (cleanUrl.startsWith('//')) {
+    cleanUrl = 'https:$cleanUrl';
+  } else if (!cleanUrl.startsWith('http')) {
+    return null;
+  }
+  return Uri.tryParse(cleanUrl);
+}
+
 Uri? artUriForSong(SongModel song) {
   if (song.artUrl != null && song.artUrl!.isNotEmpty) {
-    return Uri.tryParse(song.artUrl!);
+    return safeParseUri(song.artUrl);
   }
   final vid = song.videoId ?? extractVideoIdFromPath(song.path);
   if (vid != null && vid.isNotEmpty) {

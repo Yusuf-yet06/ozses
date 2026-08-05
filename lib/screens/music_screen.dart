@@ -171,7 +171,8 @@ class _MusicListScreenState extends State<MusicListScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: SafeArea(
+        child: Column(
         children: [
           _buildPlayerHeader(),
           const Divider(height: 1, color: Colors.white24),
@@ -203,7 +204,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
                   ),
           ),
         ],
-      ),
+      )),
     );
   }
 

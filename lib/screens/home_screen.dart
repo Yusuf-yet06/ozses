@@ -1019,7 +1019,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: ''));
               final isCurrentFav = _favoritePaths.contains(currentSong.path);
               return Positioned(
-                bottom: 15,
+                bottom: MediaQuery.of(context).padding.bottom + 15,
                 left: 15,
                 right: 15,
                 child: AnimatedContainer(

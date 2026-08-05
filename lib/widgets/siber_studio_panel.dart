@@ -131,7 +131,9 @@ class _SiberStudioPanelState extends State<SiberStudioPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SafeArea(
+      top: false,
+      child: Container(
       height: MediaQuery.of(context).size.height * 0.70,
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.85),
@@ -293,6 +295,6 @@ class _SiberStudioPanelState extends State<SiberStudioPanel> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

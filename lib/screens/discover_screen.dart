@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:universal_io/io.dart';
+import '../utils/song_media_utils.dart';
+import '../models/song_model.dart'; // 🎯 SİBER ÇEVRİMDIŞI PLAYLİST İÇİN
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui' as ui;
 import 'dart:convert'; // 🎯 SİBER HAMLE: json işlemleri için
@@ -55,7 +59,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   static final DiscoverCache _generalCache = DiscoverCache();
   static final DiscoverCache _personalCache = DiscoverCache();
 
-  DiscoverCache get _currentCache => widget.isPersonalMode ? _personalCache : _generalCache;
+  bool _isPersonalMode = false;
+  DiscoverCache get _currentCache => _isPersonalMode ? _personalCache : _generalCache;
+  bool get _isDesktop => !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
 
   // 🎯 YENİ SİBER HAMLE: Otonom AI Mix Motoru & Hava Durumu
@@ -138,6 +144,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   @override
   void initState() {
     super.initState();
+    _isPersonalMode = widget.isPersonalMode;
 
     // 🎯 SİBER KALKAN: Mod değiştiyse (Örn: Şahsi'den Genel'e) eski hafızayı sök at!
 
@@ -162,6 +169,22 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _initWeather();
   }
 
+  void _restoreCache() {
+    _trendList = _currentCache.trendList;
+    _searchResults = _currentCache.searchResults;
+    _nextPageToken = _currentCache.nextPageToken;
+    _activeCategory = _currentCache.activeCategory;
+    _isSearching = _currentCache.isSearching;
+    _searchController.text = _currentCache.lastSearchQuery;
+    _genreLists = _currentCache.genreLists;
+    _searchPage = _currentCache.searchPage;
+    _hasMoreSearch = _currentCache.hasMoreSearch;
+
+    if (_trendList.isEmpty && !_isSearching) {
+      _initDataAndCache();
+    }
+  }
+
   Future<void> _initWeather() async {
     final w = await WeatherService.getCurrentWeather();
     if (w != null && mounted) {
@@ -177,7 +200,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     await _loadCachedTrends();
     final bool hasCache = _trendList.isNotEmpty;
 
-    if (widget.isPersonalMode) {
+    if (_isPersonalMode) {
       _fetchPersonalRecommendations(silent: hasCache);
     } else {
       _fetchTrends(silent: hasCache);
@@ -894,12 +917,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       _nextPageToken = '';
       _currentCache.trendList.clear();
       _currentCache.genreLists.clear();
-      _activeCategory = widget.isPersonalMode ? 'Size Özel Mix' : 'Trendler';
+      _activeCategory = _isPersonalMode ? 'Size Özel Mix' : 'Trendler';
       _searchPage = 1;
       _hasMoreSearch = true;
     });
 
-    if (widget.isPersonalMode) {
+    if (_isPersonalMode) {
       await _fetchPersonalRecommendations();
     } else {
       await _fetchTrends();
@@ -1027,9 +1050,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           searchQueries.add('$topSong mix');
         }
       }
+      if (searchQueries.isEmpty) {
+        // Genel trendlerden farklı olması için şahsi keşfete özel ruh hali odaklı sorgular
+        searchQueries.addAll(['akustik canlı performans', 'chill türkçe pop', 'deep focus müzikleri']);
+      }
     } catch (e) {}
-
-    if (searchQueries.isEmpty) searchQueries.add('Türkçe müzik trendleri');
 
     List<dynamic> combinedResults = [];
     bool hasAuthError = false;
@@ -1073,13 +1098,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 SİBER HAMLE: Otonom Alt Listeleri Sessizce ve Sırayla Çek (Ağı Yormadan)
   Future<void> _fetchGenresSequentially() async {
-    final genresToFetch = widget.isPersonalMode
+    final genresToFetch = _isPersonalMode
         ? _categories.where((c) => c != 'Size Özel Mix' && c != 'Trendler').toList()
         : ['Türkçe Rap', 'Arabesk', 'Deep House', 'Akustik', 'Popüler Albüm', 'Türkçe Mixler'];
 
     for (var genre in genresToFetch) {
       if (!_genreLists.containsKey(genre)) {
-        final query = widget.isPersonalMode
+        final query = _isPersonalMode
             ? '$genre şarkıları'
             : ((genre == 'Popüler Albüm' || genre == 'Türkçe Mixler')
                 ? genre
@@ -1330,15 +1355,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       title: cTitle,
       artist: cArtist,
       duration: Duration(seconds: finalDuration),
-      artUri: cImgUrl != null ? Uri.parse(cImgUrl) : null,
+      artUri: safeParseUri(cImgUrl),
     );
 
-    // Sadece ilk şarkıyı kuyruğa koy ve çalmaya başla (Asenkron)
-    audioHandler.updateQueue([firstItem]).then((_) {
-      audioHandler.skipToQueueItem(0).then((_) {
-        audioHandler.play();
-      });
-    });
+    // 🛡️ SİBER KALKAN V2: await ile sıralı çalıştır (race condition önlenir)
+    // Eski .then() zinciri skipToQueueItem bitmeden play() çağırıyordu → 00:00 hatası
+    await audioHandler.updateQueue([firstItem]);
+    await audioHandler.skipToQueueItem(0);
+    // NOT: skipToQueueItem içinde zaten play() çağrılıyor, tekrar çağırmıyoruz!
 
     // 2. Arka planda YT Music Radyosunu (Benzer Şarkıları) beklemeden çek ve kuyruğa ekle
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1378,18 +1402,23 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             title: rTitle,
             artist: rArtist,
             duration: Duration(seconds: rFinalDur),
-            artUri: rImgUrl != null ? Uri.parse(rImgUrl) : null,
+            artUri: safeParseUri(rImgUrl),
           ));
         }
       }
       
-      // Kuyruğu zengin radyo listesiyle güncelle
-      await audioHandler.updateQueue(radioQueue);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('✅ Radyo Tamamlandı: ${radioQueue.length - 1} benzer şarkı eklendi!'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ));
+      // 🛡️ SİBER KALKAN V2: updateQueue yerine addQueueItem ile tek tek ekle
+      // updateQueue tüm kuyruğu değiştirir ve çalmakta olan şarkıyı kesebilir!
+      for (var radioItem in radioQueue.skip(1)) { // İlk şarkı (firstItem) zaten kuyrukta
+        await audioHandler.addQueueItem(radioItem);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('✅ Radyo Tamamlandı: ${radioQueue.length - 1} benzer şarkı eklendi!'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ));
+      }
     }
   }
 
@@ -1411,7 +1440,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         title: title,
         artist: artist,
         duration: duration,
-        artUri: imgUrl != null ? Uri.parse(imgUrl) : null,
+        artUri: safeParseUri(imgUrl),
       );
 
       await audioHandler.addQueueItem(mediaItem);
@@ -1444,7 +1473,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         title: title,
         artist: artist,
         duration: duration,
-        artUri: imgUrl != null ? Uri.parse(imgUrl) : null,
+        artUri: safeParseUri(imgUrl),
       );
       await audioHandler.addQueueItem(mediaItem);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -1480,12 +1509,65 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text(widget.isPersonalMode ? 'ŞAHSİ KEŞFET' : 'GENEL KEŞFET',
-            style: TextStyle(
-                color: widget.themeColor,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-                shadows: [Shadow(color: widget.themeColor, blurRadius: 10)])),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_isPersonalMode ? 'ŞAHSİ KEŞFET' : 'GENEL KEŞFET',
+                style: TextStyle(
+                    color: widget.themeColor,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    shadows: [Shadow(color: widget.themeColor, blurRadius: 10)])),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: widget.themeColor.withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (_isPersonalMode) {
+                        setState(() {
+                          _isPersonalMode = false;
+                          _restoreCache();
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: !_isPersonalMode ? widget.themeColor : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('Genel', style: TextStyle(color: !_isPersonalMode ? Colors.white : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      if (!_isPersonalMode) {
+                        setState(() {
+                          _isPersonalMode = true;
+                          _restoreCache();
+                        });
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _isPersonalMode ? widget.themeColor : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('Şahsi', style: TextStyle(color: _isPersonalMode ? Colors.white : Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
@@ -1797,7 +1879,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                 : _buildYouTubeMusicHome(),
 
                 // 🎯 SİBER MİNİ OYNATICI (Sadece şarkı çalarken ortaya çıkar)
-                if (_currentSongName != 'Müzik Seçilmedi')
+                if (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop)
                   Positioned(
                     bottom: 15,
                     left: 15,
@@ -1913,7 +1995,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             ),
           ),
                 const SiberAdWidget(),
-                if (_currentSongName != 'Müzik Seçilmedi')
+                if (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop)
                   const SizedBox(height: 85)
                 else
                   const SizedBox(height: 15),
@@ -2225,16 +2307,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       // Oynatıcı aktifse en alttaki müzikleri görebilmek için ekstra boşluk bırak
       padding: EdgeInsets.only(
-          bottom: _currentSongName != 'Müzik Seçilmedi' ? 140 : 20),
+          bottom: (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop) ? 140 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle((widget.isPersonalMode || _activeCategory == 'Size Özel Mix')
+          _buildSectionTitle((_isPersonalMode || _activeCategory == 'Size Özel Mix')
               ? '🧠 Yapay Zeka: Size Özel Mix'
               : "🔥 Şu An Türkiye'de Trend"),
               
           // 🎯 SİBER HAMLE: Sana Özel Mixler (Şahsi Keşfet'te Görünür)
-          if (widget.isPersonalMode || _activeCategory == 'Size Özel Mix') ...[
+          if (_isPersonalMode || _activeCategory == 'Size Özel Mix') ...[
             _buildMoodChips(),
             const SizedBox(height: 16),
             _buildAutoMixCarousel(),
@@ -2262,7 +2344,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             return const SizedBox.shrink();
           }),
 
-          _buildSectionTitle(widget.isPersonalMode
+          _buildSectionTitle(_isPersonalMode
               ? '🎵 Kütüphane İstihbarat Radarı'
               : '🎧 Sizin İçin Önerilenler'),
           _buildVerticalList(
@@ -2393,7 +2475,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       controller: isScrollable ? _scrollController : null,
       physics: isScrollable ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
       shrinkWrap: !isScrollable,
-      padding: EdgeInsets.only(bottom: _currentSongName != 'Müzik Seçilmedi' ? 140 : 20),
+      padding: EdgeInsets.only(bottom: (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop) ? 140 : 20),
       itemCount: items.length + (isScrollable && _isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= items.length) {
@@ -2462,6 +2544,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('✅ Çevrimdışı Belleğe Mühürlendi!'), backgroundColor: Colors.green),
+                        );
+                      }
+                    }).catchError((e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('❌ İndirme Hatası: $e'), backgroundColor: Colors.redAccent, duration: const Duration(seconds: 5)),
                         );
                       }
                     });
@@ -2543,18 +2631,89 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text(
-                          'Siber Çevrimdışı Bellek',
-                          style: TextStyle(
-                            color: Colors.cyanAccent,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Siber Çevrimdışı Bellek',
+                              style: TextStyle(
+                                color: Colors.cyanAccent,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${cachedSongs.length} şarkı',
+                              style: const TextStyle(color: Colors.white54, fontSize: 13),
+                            ),
+                            if (cachedSongs.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () async {
+                                        final List<MediaItem> mediaItems = cachedSongs.map((s) => MediaItem(
+                                          id: s.path ?? '',
+                                          album: 'Siber Çevrimdışı',
+                                          title: s.title ?? 'Bilinmeyen',
+                                          artist: s.artist ?? 'Victus V7',
+                                          artUri: s.videoId != null ? Uri.parse('https://i.ytimg.com/vi/${s.videoId}/hqdefault.jpg') : null,
+                                          duration: const Duration(seconds: 0),
+                                        )).toList();
+                                        await audioHandler.updateQueue(mediaItems);
+                                        await audioHandler.skipToQueueItem(0);
+                                        await audioHandler.play();
+                                        Navigator.pop(context);
+                                      },
+                                      icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                                      label: const Text('Tümünü Çal'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.cyanAccent.withOpacity(0.2),
+                                        foregroundColor: Colors.cyanAccent,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () async {
+                                        final shuffled = List<SongModel>.from(cachedSongs)..shuffle();
+                                        final List<MediaItem> mediaItems = shuffled.map((s) => MediaItem(
+                                          id: s.path ?? '',
+                                          album: 'Siber Çevrimdışı',
+                                          title: s.title ?? 'Bilinmeyen',
+                                          artist: s.artist ?? 'Victus V7',
+                                          artUri: s.videoId != null ? Uri.parse('https://i.ytimg.com/vi/${s.videoId}/hqdefault.jpg') : null,
+                                          duration: const Duration(seconds: 0),
+                                        )).toList();
+                                        await audioHandler.updateQueue(mediaItems);
+                                        await audioHandler.skipToQueueItem(0);
+                                        await audioHandler.play();
+                                        Navigator.pop(context);
+                                      },
+                                      icon: const Icon(Icons.shuffle_rounded, size: 22),
+                                      label: const Text('Karıştır'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.deepPurpleAccent.withOpacity(0.2),
+                                        foregroundColor: Colors.deepPurpleAccent,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 8),
                       Expanded(
                         child: cachedSongs.isEmpty
                             ? const Center(
@@ -2577,14 +2736,23 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                     ),
                                     child: ListTile(
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                      leading: Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.4),
-                                          borderRadius: BorderRadius.circular(10),
+                                      leading: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          width: 50,
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.4),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: song.videoId != null
+                                              ? Image.network(
+                                                  'https://i.ytimg.com/vi/${song.videoId}/hqdefault.jpg',
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, __, ___) => const Icon(Icons.offline_pin, color: Colors.cyanAccent, size: 28),
+                                                )
+                                              : const Icon(Icons.offline_pin, color: Colors.cyanAccent, size: 28),
                                         ),
-                                        child: const Icon(Icons.offline_pin, color: Colors.cyanAccent, size: 28),
                                       ),
                                       title: Text(
                                         song.title ?? song.name ?? 'Bilinmeyen',
@@ -2637,17 +2805,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                         ],
                                       ),
                                       onTap: () async {
-                                        final mediaItems = cachedSongs.map((s) => MediaItem(
+                                        Navigator.pop(context); // Çalınca çekmeceyi hemen kapat
+                                        final List<MediaItem> mediaItems = cachedSongs.map((s) => MediaItem(
                                           id: s.path ?? '',
                                           album: 'Siber Çevrimdışı',
                                           title: s.title ?? 'Bilinmeyen',
                                           artist: s.artist ?? 'Victus V7',
+                                          artUri: s.videoId != null ? Uri.parse('https://i.ytimg.com/vi/${s.videoId}/hqdefault.jpg') : null,
                                           duration: const Duration(seconds: 0),
                                         )).toList();
                                         await audioHandler.updateQueue(mediaItems);
                                         await audioHandler.skipToQueueItem(index);
                                         await audioHandler.play();
-                                        Navigator.pop(context); // Çalınca çekmeceyi kapat
                                       },
                                     ),
                                   );

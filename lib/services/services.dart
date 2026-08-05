@@ -100,10 +100,36 @@ final List<String> invidiousInstances = [
     return [];
   }
 
-  // 🚀 SİBER HAMLE: Otonom Radyo Motoru (YouTube Music Up Next)
+  // 🚀 SİBER HAMLE: Otonom Radyo Motoru (YouTube Music Mix API)
   Future<List<dynamic>> getRadio(String videoId) async {
     try {
-      print('📻 Siber Radyo İstek Gönderiliyor (YEREL OTONOM): $videoId');
+      print('📻 Siber Radyo İstek Gönderiliyor (BACKEND OTONOM): $videoId');
+      
+      try {
+        final res = await http.get(
+          Uri.parse('https://ozses-1.onrender.com/radio?id=$videoId'),
+        ).timeout(const Duration(seconds: 10));
+        
+        if (res.statusCode == 200) {
+          final data = json.decode(res.body);
+          if (data['status'] == 'basarili' && data['oneriler'] != null) {
+            List<dynamic> items = [];
+            for (var e in data['oneriler'].take(15)) {
+              items.add({
+                'id': e['videoId'] ?? e['id'] ?? '',
+                'title': e['title'] ?? '',
+                'channel': e['artist'] ?? e['channel'] ?? '',
+                'thumbnail': e['thumbnail'] ?? '',
+              });
+            }
+            if (items.isNotEmpty) return items;
+          }
+        }
+      } catch (e) {
+        print('📻 Backend Radyo Hatası, YEREL OTONOM devreye giriyor: $e');
+      }
+
+      print('📻 YEREL OTONOM ÇALIŞIYOR...');
       var yt = YoutubeExplode();
       var v = await yt.videos.get(videoId);
       var related = await yt.videos.getRelatedVideos(v).timeout(const Duration(seconds: 15));
@@ -121,7 +147,7 @@ final List<String> invidiousInstances = [
       yt.close();
       return items;
     } catch (e) {
-      print('🚀 Siber Radyo Hatası: $e');
+      print('🚀 Siber Radyo Genel Hatası: $e');
     }
     return [];
   }
@@ -218,8 +244,9 @@ final List<String> invidiousInstances = [
           // 🎯 1. SIRADA: YoutubeExplode (Yerel Motor - IP Ban yemez)
           print('🎯 Proxy: YoutubeExplode (Yerel Motor) Devrede...');
           try {
-            var ytClients = [YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.android, YoutubeApiClient.tv];
-            var manifest = await yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 10));
+            // YouTube son güncellemelerle Android istemcilerine 403 atıyor, iOS istemcisi (veya boş) daha dirençli.
+            var ytClients = [YoutubeApiClient.ios, YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.tv];
+            var manifest = await yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 30));
             var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
             var ytStreamInfo = audioStreamList.isNotEmpty ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) : manifest.audioOnly.withHighestBitrate();
             ytStreamUrl = ytStreamInfo.url;
@@ -231,26 +258,24 @@ final List<String> invidiousInstances = [
             print('⚠️ YoutubeExplode Hatası veya Zaman Aşımı: $ytEx');
           }
 
-          // 🥈 2. SIRADA: Emergent Ghost Stream API (Hayalet Proxy)
+          // 🥈 2. SIRADA: Vercel Özses Backend (yt-dlp Güvencesi)
           if (streamResponse == null) {
             try {
-              print('🎯 Proxy: YoutubeExplode başarısız, Emergent Ghost Stream API deneniyor...');
-              final ghostRes = await http.post(
-                Uri.parse('https://ghost-stream-api.preview.emergentagent.com/api/stream'),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({"video_id": videoId, "quality": "high"})
+              print('🎯 Proxy: YoutubeExplode başarısız, Özses Vercel Backend deneniyor...');
+              final vercelRes = await http.get(
+                Uri.parse('https://ozses-832f9y4py-ozses.vercel.app/stream?id=$videoId'),
               ).timeout(const Duration(seconds: 20));
               
-              if (ghostRes.statusCode == 200) {
-                final data = jsonDecode(ghostRes.body);
+              if (vercelRes.statusCode == 200) {
+                final data = jsonDecode(vercelRes.body);
                 if (data['stream_url'] != null) {
-                  Uri ghostUrl = Uri.parse(data['stream_url'].toString());
-                  print('✅ Emergent Ghost Stream URL alındı, deneniyor...');
-                  streamResponse = await tryFetchStream(ghostUrl);
+                  Uri vercelUrl = Uri.parse(data['stream_url'].toString());
+                  print('✅ Vercel Backend Stream URL alındı, deneniyor...');
+                  streamResponse = await tryFetchStream(vercelUrl);
                 }
               }
-            } catch (ghostEx) {
-              print('⚠️ Ghost Stream API Hatası: $ghostEx');
+            } catch (vercelEx) {
+              print('⚠️ Vercel Backend API Hatası: $vercelEx');
             }
           }
           
@@ -463,17 +488,38 @@ final List<String> invidiousInstances = [
           return;
         }
 
-        // 🎯 SİBER HAMLE: Artık YoutubeExplode yerine kendi sağlamlaştırdığımız getStreamUrl'yi kullanıyoruz
-        final streamInfo = await getStreamUrl(videoId);
-        if (streamInfo['status'] != 'basarili' || streamInfo['stream_url'] == null) {
-          _downloadStatuses[videoId] = 'hata';
-          print("❌ Siber İndirme Hatası: Akış URL'si alınamadı!");
-          return;
-        }
-        
-        String targetUrl = streamInfo['stream_url'];
-        if (targetUrl == 'proxy_will_handle_it') {
-           targetUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
+        // 🎯 SİBER HAMLE: Android İndirme İçin Doğrudan YoutubeExplode ile Gerçek URL Çözümü
+        String targetUrl;
+        if (!kIsWeb && Platform.isAndroid) {
+          // Android'de proxy çalışmaz, doğrudan YoutubeExplode ile URL al
+          try {
+            var yt = YoutubeExplode();
+            var ytClients = [YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.android, YoutubeApiClient.tv];
+            var manifest = await yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 15));
+            var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
+            var ytStreamInfo = audioStreamList.isNotEmpty 
+                ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b) 
+                : manifest.audioOnly.withHighestBitrate();
+            targetUrl = ytStreamInfo.url.toString();
+            yt.close();
+            print('✅ Android İndirme: YoutubeExplode ile gerçek URL alındı!');
+          } catch (e) {
+            print('❌ YoutubeExplode İndirme URL Hatası: $e');
+            _downloadStatuses[videoId] = 'hata';
+            _downloadMbInfos[videoId] = {'percent': 'Hata: URL alınamadı'};
+            return;
+          }
+        } else {
+          final streamInfo = await getStreamUrl(videoId);
+          if (streamInfo['status'] != 'basarili' || streamInfo['stream_url'] == null) {
+            _downloadStatuses[videoId] = 'hata';
+            print("❌ Siber İndirme Hatası: Akış URL'si alınamadı!");
+            return;
+          }
+          targetUrl = streamInfo['stream_url'];
+          if (targetUrl == 'proxy_will_handle_it') {
+             targetUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
+          }
         }
 
         String ext = 'm4a'; // Piped ve YT genellikle m4a döndürür
@@ -496,47 +542,86 @@ final List<String> invidiousInstances = [
         if (!await file.parent.exists()) {
            await file.parent.create(recursive: true);
         }
-        var fileStream = file.openWrite();
+
+        int totalBytes = 0;
+        int downloadedBytes = 0;
+        bool isDone = false;
+        int retryCount = 0;
+
+        while (!isDone && retryCount < 5) {
+          try {
+            final request = http.Request('GET', Uri.parse(targetUrl));
+            request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+            request.headers['Referer'] = 'https://www.youtube.com/';
+            
+            if (downloadedBytes > 0) {
+              request.headers['Range'] = 'bytes=$downloadedBytes-';
+            }
+            
+            final response = await http.Client().send(request).timeout(const Duration(seconds: 15));
+            
+            if (response.statusCode != 200 && response.statusCode != 206) {
+               if (downloadedBytes > 0 && response.statusCode == 416) {
+                 isDone = true; // Bitti say
+                 break;
+               }
+               _downloadStatuses[videoId] = 'hata';
+               _downloadMbInfos[videoId] = {'percent': 'Hata: ${response.statusCode}'};
+               return;
+            }
+
+            if (totalBytes == 0) {
+              totalBytes = (response.contentLength ?? 0) + downloadedBytes;
+            }
+            
+            var fileStream = file.openWrite(mode: downloadedBytes > 0 ? FileMode.append : FileMode.write);
+            
+            await response.stream.map((chunk) {
+              downloadedBytes += chunk.length;
+              
+              if (totalBytes > 0) {
+                double progress = downloadedBytes / totalBytes;
+                _downloadStatuses[videoId] = 'indiriliyor';
+                _downloadMbInfos[videoId] = {
+                  'downloaded_mb': (downloadedBytes / (1024 * 1024)).toStringAsFixed(2),
+                  'total_mb': (totalBytes / (1024 * 1024)).toStringAsFixed(2),
+                  'percent': '${(progress * 100).toStringAsFixed(0)}%'
+                };
+              } else {
+                _downloadStatuses[videoId] = 'indiriliyor';
+                _downloadMbInfos[videoId] = {
+                  'downloaded_mb': (downloadedBytes / (1024 * 1024)).toStringAsFixed(2),
+                  'total_mb': '?',
+                  'percent': 'İniyor...'
+                };
+              }
+              return chunk;
+            }).pipe(fileStream);
+            
+            await fileStream.close();
+
+            if (totalBytes > 0 && downloadedBytes >= totalBytes) {
+              isDone = true;
+            } else if (totalBytes == 0) {
+              // Boyut bilinmiyorsa stream bitince tamamlandı sayarız
+              isDone = true;
+            } else {
+              // Bağlantı koptu, tekrar denenecek
+              print('⚠️ İndirme koptu ($downloadedBytes / $totalBytes), tekrar deneniyor...');
+              retryCount++;
+              await Future.delayed(const Duration(seconds: 2));
+            }
+          } catch (e) {
+            print('⚠️ İndirme ağ hatası: $e');
+            retryCount++;
+            await Future.delayed(const Duration(seconds: 2));
+          }
+        }
         
-        // 🎯 Yerleşik HTTP İstemcisi ile Stream (Akış) İndirme
-        final request = http.Request('GET', Uri.parse(targetUrl));
-        // Bazı sunucular User-Agent ister
-        request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
-        request.headers['Referer'] = 'https://www.youtube.com/';
-        final response = await http.Client().send(request).timeout(const Duration(seconds: 15));
-        
-        if (response.statusCode != 200 && response.statusCode != 206) {
-           _downloadStatuses[videoId] = 'hata';
-           print('❌ İndirme Sunucu Hatası: ${response.statusCode}');
-           _downloadMbInfos[videoId] = {'percent': 'Hata: ${response.statusCode}'};
-           return;
+        if (!isDone) {
+          throw Exception("Bağlantı çok fazla kez koptu.");
         }
 
-        int totalBytes = response.contentLength ?? 0;
-        int downloadedBytes = 0;
-        
-        await response.stream.map((chunk) {
-          downloadedBytes += chunk.length;
-          
-          if (totalBytes > 0) {
-            double progress = downloadedBytes / totalBytes;
-            _downloadStatuses[videoId] = 'indiriliyor';
-            _downloadMbInfos[videoId] = {
-              'downloaded_mb': (downloadedBytes / (1024 * 1024)).toStringAsFixed(2),
-              'total_mb': (totalBytes / (1024 * 1024)).toStringAsFixed(2),
-              'percent': '${(progress * 100).toStringAsFixed(0)}%'
-            };
-          } else {
-            _downloadStatuses[videoId] = 'indiriliyor';
-            _downloadMbInfos[videoId] = {
-              'downloaded_mb': (downloadedBytes / (1024 * 1024)).toStringAsFixed(2),
-              'total_mb': '?',
-              'percent': 'İniyor...'
-            };
-          }
-          return chunk;
-        }).pipe(fileStream);
-        
         _downloadPaths[videoId] = filePath;
         _downloadStatuses[videoId] = 'basarili';
         _downloadMbInfos.remove(videoId);

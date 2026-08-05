@@ -113,7 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
+      body: SafeArea(
+        child: Container(
         decoration: BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.topCenter,
@@ -256,7 +257,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 

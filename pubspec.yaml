@@ -51,7 +51,7 @@ dependencies:
   youtube_player_iframe: ^5.2.0
   url_launcher: ^6.2.6 # 🎯 SİBER HAMLE: Windows ve PC'de Tarayıcı Köprüsü
   webview_windows: ^0.4.0 # 🎯 SİBER KALKAN: Windows Uygulama İçi Video Motoru
-  youtube_explode_dart: any
+  youtube_explode_dart: ^3.1.0
   
   # 🎯 SİBER HAMLE: Otonom Kimlik Doğrulama ve Güvenlik Motorları
   firebase_core: ^3.1.1
@@ -69,6 +69,7 @@ dependencies:
   fluttertoast: ^9.0.0
   purchases_flutter: ^10.4.3
   universal_io: ^2.3.1
+  sqflite_common_ffi: ^2.4.0+3
 
 dependency_overrides:
   # 🛡️ SİBER KALKAN: Eski bozuk paketleri bodoslama ezen nihai mühür!
@@ -78,8 +79,25 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
 flutter:
   uses-material-design: true
   assets:
     - assets/audio/frequencies/
+    - assets/images/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.jpg"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#0a0a0a"
+  image: "assets/images/logo.jpg"
+  android_12:
+    image: "assets/images/logo.jpg"
+    icon_background_color: "#0a0a0a"
+    color: "#0a0a0a"

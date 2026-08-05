@@ -7,10 +7,13 @@ class AudioEngine {
   static double manualVocal = 1.0;
   static double manualTreble = 1.0;
 
-  // 🎯 SİBER EFEKTLER
+  // 🎛️ SİBER EFEKTLER
   static double manual3DDepth = 0.0; // 0.0 - 1.0 arası
   static double manualTempo = 1.0; // 0.5 (Yavaş) - 2.0 (Hızlı) arası
   static double manualEcho = 0.0; // 0.0 - 1.0 arası
+  
+  // 🔊 ANA SES (Master Volume)
+  static double masterVolume = 1.0; // UI'dan gelen ses kısma ayarı
 
   // 🎯 SİBER GÖRSEL MODLAR
   static bool visualEffectsEnabled = true; // Siber Efekt Şalteri

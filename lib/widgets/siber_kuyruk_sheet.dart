@@ -45,7 +45,9 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
   Widget build(BuildContext context) {
     final color = widget.themeColor;
 
-    return Container(
+    return SafeArea(
+      top: false,
+      child: Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
       decoration: BoxDecoration(
         color: const Color(0xFF080810),
@@ -203,7 +205,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
           const SizedBox(height: 12),
         ],
       ),
-    );
+    ));
   }
 }
 

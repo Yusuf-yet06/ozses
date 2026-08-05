@@ -159,7 +159,7 @@ class _SiberWrappedScreenState extends State<SiberWrappedScreen> with TickerProv
 
             // Hikaye Çubuğu (Progress Bars)
             Positioned(
-              top: 50,
+              top: MediaQuery.of(context).padding.top + 10,
               left: 10,
               right: 10,
               child: Row(
@@ -192,7 +192,7 @@ class _SiberWrappedScreenState extends State<SiberWrappedScreen> with TickerProv
             
             // Kapat Butonu
             Positioned(
-              top: 70,
+              top: MediaQuery.of(context).padding.top + 30,
               right: 20,
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 30),

@@ -64,10 +64,12 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.65,
+    return SafeArea(
+      top: false,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.65,
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.95),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
@@ -195,9 +197,8 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
               ),
               const SizedBox(height: 10),
             ],
-          ),
       ),
-    ));
+    ))));
   }
 
   Widget _buildGrid(List<Map<String, dynamic>> items, String type) {

@@ -110,48 +110,78 @@ class AdPlatformMobile implements AdPlatform {
 
   @override
   Widget buildBannerAdWidget() {
-    if (_bannerAd == null) {
-      _bannerAd = BannerAd(
-        adUnitId: bannerAdUnitId,
-        size: AdSize.banner,
-        request: const AdRequest(),
-        listener: BannerAdListener(
-          onAdLoaded: (ad) {
-            _isBannerAdLoaded = true;
-            if (_bannerStateSetter != null) {
-              _bannerStateSetter!(() {});
-            }
-          },
-          onAdFailedToLoad: (ad, error) {
-            ad.dispose();
-          },
-        ),
-      )..load();
-    }
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        _bannerStateSetter = setState;
-        if (_isBannerAdLoaded && _bannerAd != null) {
-          return Container(
-            alignment: Alignment.center,
-            width: _bannerAd!.size.width.toDouble(),
-            height: _bannerAd!.size.height.toDouble(),
-            margin: EdgeInsets.zero,
-            child: AdWidget(ad: _bannerAd!),
-          );
-        }
-        return const SizedBox.shrink();
-      },
-    );
+    return const _MobileBannerAdWidget();
   }
 
   @override
   void disposeBannerAd() {
-    _bannerAd?.dispose();
-    _bannerAd = null;
-    _isBannerAdLoaded = false;
+    // Banner ads are now self-disposing in their StatefulWidgets
   }
+}
+
+class _MobileBannerAdWidget extends StatefulWidget {
+  const _MobileBannerAdWidget({Key? key}) : super(key: key);
+
+  @override
+  _MobileBannerAdWidgetState createState() => _MobileBannerAdWidgetState();
+}
+
+class _MobileBannerAdWidgetState extends State<_MobileBannerAdWidget> {
+  BannerAd? _bannerAd;
+  bool _isLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    _bannerAd = BannerAd(
+      adUnitId: AdPlatformMobile.bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (mounted) {
+            setState(() {
+              _isLoaded = true;
+            });
+          }
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          if (mounted) {
+            setState(() {
+              _isLoaded = false;
+            });
+          }
+        },
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoaded && _bannerAd != null) {
+      return Container(
+        alignment: Alignment.center,
+        width: _bannerAd!.size.width.toDouble(),
+        height: _bannerAd!.size.height.toDouble(),
+        margin: EdgeInsets.zero,
+        child: AdWidget(ad: _bannerAd!),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+
 }
 
 AdPlatform getAdPlatform() => AdPlatformMobile();

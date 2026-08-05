@@ -20,8 +20,10 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return BackdropFilter(
-      filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+    return SafeArea(
+      top: false,
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -96,6 +98,7 @@ class _SiberEkolayzerSheetState extends State<SiberEkolayzerSheet> {
             }),
             const SizedBox(height: 10),
           ],
+        ),
         ),
       ),
     );

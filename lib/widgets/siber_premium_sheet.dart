@@ -51,7 +51,9 @@ class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
     required Color accentColor,
     required bool isCurrent,
   }) {
-    return Container(
+    return SafeArea(
+      top: false,
+      child: Container(
       width: 260,
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
@@ -141,7 +143,7 @@ class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   @override

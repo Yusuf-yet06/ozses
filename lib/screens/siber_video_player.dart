@@ -85,7 +85,8 @@ class _SiberVideoPlayerState extends State<SiberVideoPlayer> {
             overflow: TextOverflow.ellipsis),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Center(
+      body: SafeArea(
+        child: Center(
         child: Container(
           decoration: BoxDecoration(boxShadow: [
             BoxShadow(
@@ -104,7 +105,7 @@ class _SiberVideoPlayerState extends State<SiberVideoPlayer> {
                   aspectRatio: 16 / 9,
                 ),
         ),
-      ),
+      )),
     );
   }
 }

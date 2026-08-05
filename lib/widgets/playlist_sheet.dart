@@ -15,7 +15,9 @@ class PlaylistSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SafeArea(
+      top: false,
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
@@ -64,7 +66,7 @@ class PlaylistSheet extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 

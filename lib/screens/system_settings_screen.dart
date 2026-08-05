@@ -179,7 +179,9 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
         iconTheme: const IconThemeData(color: Colors.cyanAccent),
         elevation: 0,
       ),
-      body: ListView(
+      body: SafeArea(
+        top: false,
+        child: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           _buildSectionTitle('Zamanlayıcı Oluşturucu'),
@@ -262,7 +264,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 

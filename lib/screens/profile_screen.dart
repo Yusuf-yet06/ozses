@@ -56,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 🎯 YENİ: Haftalık Ruh Hali Motoru
   Map<String, int> _moodStats = {};
-  final String _dominantMood = 'Belirsiz';
+  String _dominantMood = 'Belirsiz';
   Color _auraColor = Colors.cyanAccent;
 
   bool _isSyncing = false;
@@ -181,6 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _lastSync = lastSyncTime;
         _topArtists = sortedArtists.take(3).toList();
         _moodStats = weeklyMoodCounts;
+        _dominantMood = dominantMood;
         _auraColor = _getMoodColor(dominantMood); // 🎯 DİNAMİK AURA MOTORU
         _instagramHandle = instagram;
         _twitterHandle = twitter;
@@ -1147,10 +1148,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 🎯 YENİ SİBER HAMLE: Otonom Sanatçı Podyumu (YouTube Entegrasyonlu)
   Widget _buildArtistPodium() {
-    if (_topArtists.isEmpty) {
-      return const Text('Henüz yeterli veri yok.',
-          style: TextStyle(color: Colors.white38));
-    }
+      if (_topArtists.isEmpty) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+          decoration: BoxDecoration(
+            color: Colors.black45,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white10),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.mic_off, color: Colors.white24, size: 40),
+              const SizedBox(height: 12),
+              const Text('SİBER PODYUM BOŞ', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              const SizedBox(height: 8),
+              const Text('Sanatçı podyumu için henüz yeterli veri yok. Ritimleri keşfetmeye başla!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12)),
+            ],
+          ),
+        );
+      }
 
     return Column(
       children: [
@@ -1756,8 +1774,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )),
                         const SizedBox(height: 15),
                         if (_moodStats.isEmpty)
-                          const Text('Son 7 günde yeterli veri toplanmadı.',
-                              style: TextStyle(color: Colors.white38))
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.white10),
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)],
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.radar, color: Colors.white24, size: 40),
+                                const SizedBox(height: 12),
+                                const Text('SİBER AĞDA VERİ YOK', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                                const SizedBox(height: 8),
+                                const Text('Son 7 günde yeterli dinleme verisi toplanmadı. Müzik dinlemeye devam et.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              ],
+                            ),
+                          )
                         else
                           Container(
                             width: double.infinity,

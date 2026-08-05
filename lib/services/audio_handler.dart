@@ -3,6 +3,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart'; // 🎯 SİBER HAMLE: Donanım (DSP) Destekli Yeni Nesil Motor
 import 'dart:math';
 import 'dart:async';
+import '../utils/song_media_utils.dart'; // safeParseUri için
 import '../services/audio_engine.dart'; // 🎯 SİBER HAMLE: Otonom DSP Kontrolü İçin
 import 'package:universal_io/io.dart';
 import 'ad_manager.dart';
@@ -43,6 +44,18 @@ class MyAudioHandler extends BaseAudioHandler {
   double _lastVolume = -1.0;
   String _lastBioFrequency = 'Kapalı';
 
+  void _safeShowToast(String msg, {Toast? toastLength, Color? backgroundColor, Color? textColor}) {
+    try {
+      if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+        print('💻 Siber Masaüstü Toast: $msg');
+        return;
+      }
+      Fluttertoast.showToast(msg: msg, toastLength: toastLength, backgroundColor: backgroundColor, textColor: textColor);
+    } catch (e) {
+      print('⚠️ Siber Toast Hatası: $msg');
+    }
+  }
+
   MyAudioHandler() {
     // 🎯 SİBER HAMLE: Windows ve Android Çakışmasını Bitiren Saf Motor
     _player = AudioPlayer(
@@ -57,7 +70,7 @@ class MyAudioHandler extends BaseAudioHandler {
     _player.positionStream.listen((position) {
       // 🎯 SİBER KALKAN: Şarkı 30 dakikayı devirirse (1800 sn) araya serpmeli reklam (Interstitial) tetikle
       if (position.inSeconds == 1770) {
-        Fluttertoast.showToast(msg: '🎧 Birazdan Siber Keşiflere ufak bir reklam molası vereceğiz...', toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.deepPurple, textColor: Colors.white);
+        _safeShowToast('🎧 Birazdan Siber Keşiflere ufak bir reklam molası vereceğiz...', toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.deepPurple, textColor: Colors.white);
       }
       if (position.inSeconds == 1800) {
         final isOffline = mediaItem.value?.id.startsWith('yt:') != true;
@@ -73,7 +86,7 @@ class MyAudioHandler extends BaseAudioHandler {
           final forceAd = prevDuration >= 10;
           
           if (forceAd || AdManager.willShowAd(isOfflineMode: isOffline)) {
-            Fluttertoast.showToast(msg: '🎧 Sonraki şarkıya geçerken ufak bir reklam molamız olacak...', toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.deepPurple, textColor: Colors.white);
+            _safeShowToast('🎧 Sonraki şarkıya geçerken ufak bir reklam molamız olacak...', toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.deepPurple, textColor: Colors.white);
           }
         }
       }
@@ -94,12 +107,12 @@ class MyAudioHandler extends BaseAudioHandler {
         if (SubscriptionManager().canUseMetamorphosis()) {
           final remaining = duration - position;
 
-          if (remaining.inMilliseconds <= 5000) {
-            // Son 5 saniye kala yavaşça sesi kıs (Fade Out)
-            fadeVolume = max(0.0, remaining.inMilliseconds / 5000.0);
-          } else if (position.inMilliseconds <= 4000) {
-            // İlk 4 saniye yavaşça sesi aç (Fade In)
-            fadeVolume = min(1.0, position.inMilliseconds / 4000.0);
+          if (remaining.inMilliseconds <= 2000) {
+            // Son 2 saniye kala yavaşça sesi kıs (Fade Out - 5 saniye çok uzundu, ses kesildi sanılıyordu)
+            fadeVolume = max(0.0, remaining.inMilliseconds / 2000.0);
+          } else if (position.inMilliseconds <= 3000) {
+            // İlk 3 saniye yavaşça sesi aç (Fade In)
+            fadeVolume = min(1.0, position.inMilliseconds / 3000.0);
           }
         }
 
@@ -268,6 +281,10 @@ class MyAudioHandler extends BaseAudioHandler {
           // Bas hissiyatı yaratmak için PC'de ana sesi kökler!
           simulatedVolume += (AudioEngine.manualBass - 1.0) * 0.5;
         }
+        
+        // 🔊 UI'dan gelen Master Volume değerini uygula
+        simulatedVolume = simulatedVolume * AudioEngine.masterVolume;
+        
         if (_lastVolume != simulatedVolume) {
           _lastVolume = simulatedVolume;
           await _player.setVolume(simulatedVolume);
@@ -296,7 +313,33 @@ class MyAudioHandler extends BaseAudioHandler {
   }
 
   void _handlePlaybackComplete() {
+    // 🛡️ SİBER KALKAN: Sahte tamamlanma koruması (Çok kısa süreli çalmalar)
+    if (_player.position.inSeconds < 2) {
+      print('⚠️ SİBER KALKAN: Sahte tamamlanma algılandı (pozisyon ${_player.position.inSeconds}sn < 2sn), atlama iptal edildi.');
+      _consecutiveErrors++;
+      if (_consecutiveErrors > 3) {
+        print('🛑 SİBER KALKAN: Üst üste sahte tamamlanma! Oynatma durduruldu.');
+        _consecutiveErrors = 0;
+        stop();
+        return;
+      }
+      Future.delayed(Duration(milliseconds: 1500 * _consecutiveErrors), skipToNext);
+      return;
+    }
+
+    // 🛡️ SİBER KALKAN V2: Erken kesilme koruması (YouTube Throttling)
+    final duration = _player.duration;
+    if (duration != null) {
+      final difference = duration.inSeconds - _player.position.inSeconds;
+      if (difference > 4) {
+        print('⚠️ SİBER KALKAN: Şarkı $difference saniye erken kesildi! (Büyük ihtimalle YouTube bağlantıyı kopardı)');
+        // Şarkı yarıda kesildiği için atlama yapmak en sağlıklısı, ancak hata kaydı düşüyoruz.
+        _safeShowToast('Bağlantı zayıfladı, sıradakine geçiliyor...', backgroundColor: Colors.orange, textColor: Colors.white);
+      }
+    }
+    
     // 🎛️ SİBER DJ: Metamorfoz - Şarkı tam bitmeden (son saniyelerde) sonraki şarkıya pürüzsüz geç
+    _consecutiveErrors = 0; // Başarılı çalma, hata sayacını sıfırla
     final repeatMode = playbackState.value.repeatMode;
     if (repeatMode == AudioServiceRepeatMode.one) {
       seek(Duration.zero);
@@ -352,6 +395,27 @@ class MyAudioHandler extends BaseAudioHandler {
   @override
   Future<void> seek(Duration position) async {
     await _player.seek(position);
+  }
+
+  @override
+  Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) async {
+    if (name == 'setVolume') {
+      final double vol = extras?['volume'] ?? 1.0;
+      AudioEngine.masterVolume = vol; // Master volume'u kaydet
+      
+      // Anında etki etmesi için hesaplayıp player'a basıyoruz
+      double simulatedVolume = vol;
+      if (AudioEngine.manualBass > 1.0) {
+        simulatedVolume += (AudioEngine.manualBass - 1.0) * 0.5;
+        simulatedVolume = simulatedVolume * vol; // vol çarpanını uygula
+      }
+      
+      _lastVolume = simulatedVolume;
+      await _player.setVolume(simulatedVolume);
+      
+      return null;
+    }
+    return super.customAction(name, extras);
   }
 
   @override
@@ -430,10 +494,7 @@ class MyAudioHandler extends BaseAudioHandler {
         if (res['status'] == 'basarili' && res['stream_url'] != null) {
           resolvedUrl = res['stream_url'];
 
-          if (resolvedUrl == 'proxy_will_handle_it') {
-            resolvedUrl = 'http://127.0.0.1:${OzsesBridge.proxyPort}/$videoId';
-          }
-
+          // 🎯 SİBER HAMLE: Dosya zaten varsa anında çal (Çift Çekirdek)
           if (res['is_file'] == true) {
             await _player.setAudioSource(AudioSource.file(resolvedUrl));
             _lastBass = -1.0;
@@ -445,13 +506,11 @@ class MyAudioHandler extends BaseAudioHandler {
             await _player.play();
             return;
           }
-          // 🚀 SİBER HAMLE: Yerel proxy'i (Otonom Motor) direkt kullanıyoruz! (Render'a gitmiyoruz)
-          print('🎯 Otonom Motor Yönlendirmesi: $resolvedUrl');
+
+          // 🚀 Doğrudan URL geldi, kullan
+          print('🎯 Doğrudan Akış URL: $resolvedUrl');
         } else {
-          print(
-              '❌ Hata: Akış çözülemedi, siber kalkan oynatmayı kesti, sıradakine atlanıyor!');
-          Future.delayed(const Duration(seconds: 1), skipToNext);
-          return;
+          throw Exception("Siber Kalkan: Akış çözülemedi (${res['mesaj']})");
         }
       }
 
@@ -460,6 +519,10 @@ class MyAudioHandler extends BaseAudioHandler {
         await _player
             .setAudioSource(AudioSource.uri(
           Uri.parse(resolvedUrl),
+          headers: {
+            // 🛡️ SİBER KALKAN: YouTube'un stream'i yarıda kesmesini (throttling) engellemek için tarayıcı kimliği eklendi!
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          }
         ))
             .timeout(
           const Duration(seconds: 60),
@@ -500,8 +563,8 @@ class MyAudioHandler extends BaseAudioHandler {
       if (_consecutiveErrors > 3) {
         print('🛑 Siber Kalkan: Üst üste 3 defa hata alındı! Oynatma sonsuz döngüye girmemesi için durduruldu.');
         _consecutiveErrors = 0; // Sonraki elle oynatmada tekrar deneyebilsin diye sıfırlıyoruz.
-        Fluttertoast.showToast(
-          msg: 'Bağlantı koptu veya şarkı bozuk. Oynatma durduruldu.',
+        _safeShowToast(
+          'Bağlantı koptu veya şarkı bozuk. Oynatma durduruldu.',
           backgroundColor: Colors.redAccent,
           textColor: Colors.white,
           toastLength: Toast.LENGTH_LONG,
@@ -509,9 +572,10 @@ class MyAudioHandler extends BaseAudioHandler {
         return;
       }
 
-      // 🛡️ SİBER KALKAN: Akış hatasında otonom geçiş (1.5sn bekle ki sonsuz döngü kasmasın)
-      print('⚠️ Hata yakalandı, 1.5 saniye sonra sıradaki şarkıya geçiliyor...');
-      Future.delayed(const Duration(milliseconds: 1500), skipToNext);
+      // 🛡️ SİBER KALKAN: Akış hatasında otonom geçiş (ardışık hata sayısına göre artan gecikme)
+      final delayMs = 1500 * _consecutiveErrors;
+      print('⚠️ Hata yakalandı, ${delayMs}ms sonra sıradaki şarkıya geçiliyor... (ardışık hata: $_consecutiveErrors)');
+      Future.delayed(Duration(milliseconds: delayMs), skipToNext);
     }
   }
 
@@ -534,8 +598,8 @@ class MyAudioHandler extends BaseAudioHandler {
           if (_playlist.isNotEmpty && _playlist.last.id.startsWith('yt:')) {
             final lastVideoId = _playlist.last.id.substring(3);
             
-            Fluttertoast.showToast(
-              msg: '📻 Otonom Radyo Devrede: Sonsuz akış uzatılıyor...',
+            _safeShowToast(
+              '📻 Otonom Radyo Devrede: Sonsuz akış uzatılıyor...',
               backgroundColor: Colors.deepPurple,
               textColor: Colors.white,
             );
@@ -572,7 +636,7 @@ class MyAudioHandler extends BaseAudioHandler {
                     title: rTitle,
                     artist: rArtist,
                     duration: Duration(seconds: rFinalDur),
-                    artUri: rImgUrl != null ? Uri.parse(rImgUrl) : null,
+                    artUri: safeParseUri(rImgUrl),
                   ));
                 }
               }
@@ -581,8 +645,8 @@ class MyAudioHandler extends BaseAudioHandler {
                 _playlist.addAll(newItems);
                 queue.add(_playlist);
                 
-                Fluttertoast.showToast(
-                  msg: '✅ Radyo Güncellendi: ${newItems.length} yeni parça eklendi!',
+                _safeShowToast(
+                  '✅ Radyo Güncellendi: ${newItems.length} yeni parça eklendi!',
                   backgroundColor: Colors.green,
                   textColor: Colors.white,
                 );

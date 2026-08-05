@@ -41,7 +41,9 @@ class _SonicAuraSheetState extends State<SonicAuraSheet> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     if (_auraData == null) {
-      return Container(color: Colors.black.withValues(alpha: 0.9), child: const Center(child: CircularProgressIndicator()));
+      return SafeArea(
+      top: false,
+      child: Container(color: Colors.black.withValues(alpha: 0.9), child: const Center(child: CircularProgressIndicator())));
     }
 
     final auraName = _auraData!['aura'] as String;
