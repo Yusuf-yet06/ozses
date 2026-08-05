@@ -159,6 +159,14 @@ class WindowsPlatform implements SiberPlatform {
       final res = await http.get(Uri.parse(url), headers: {'Range': 'bytes=0-1024', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}).timeout(const Duration(seconds: 5));
       if (res.statusCode == 200 || res.statusCode == 206) {
         final contentType = res.headers['content-type']?.toLowerCase() ?? '';
+        
+        // 🛡️ SİBER KALKAN: Windows Media Foundation (just_audio_windows) native olarak WebM/Opus desteklemez!
+        // Bu yüzden webm gelirse sahte tamamlanma yapar. WebM'yi reddedip mp4/m4a'ya zorluyoruz.
+        if (contentType.contains('webm') || contentType.contains('opus')) {
+          print('⚠️ SİBER KALKAN: Uyumsuz WebM/Opus formatı tespit edildi, reddediliyor ($url)');
+          return false;
+        }
+
         if (contentType.contains('audio') || contentType.contains('video') || contentType.contains('application/octet-stream')) {
           if (res.bodyBytes.length > 100) return true;
         }
@@ -228,9 +236,14 @@ class WindowsPlatform implements SiberPlatform {
              final data = jsonDecode(pipedRes.body);
              final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
              if (audioStreams.isNotEmpty) {
-               final finalUrl = audioStreams.first['url'].toString();
+               // İlk olarak m4a veya mp4 formatını bulmaya çalış
+               var preferredStream = audioStreams.firstWhere(
+                 (s) => s['mimeType'] != null && (s['mimeType'].toString().contains('mp4a') || s['mimeType'].toString().contains('mp4')),
+                 orElse: () => audioStreams.first
+               );
+               final finalUrl = preferredStream['url'].toString();
                if (await _isValidStream(finalUrl)) {
-                 print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance)');
+                 print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance) - ${preferredStream['mimeType']}');
                  return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
                }
              }
@@ -297,13 +310,24 @@ class WindowsPlatform implements SiberPlatform {
           if (invRes.statusCode == 200) {
             final data = jsonDecode(invRes.body);
              final streams = data['formatStreams'] as List<dynamic>? ?? [];
-             for (var s in streams) {
-               if (s['type'] != null && s['type'].toString().contains('audio')) {
-                 final finalUrl = s['url'].toString();
-                 if (await _isValidStream(finalUrl)) {
-                   print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Invidious ($instance)');
-                   return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-                 }
+             final adaptiveFormats = data['adaptiveFormats'] as List<dynamic>? ?? [];
+             
+             // Invidious'ta adaptiveFormats içinde sadece ses olan akışlar bulunur
+             var audioStreams = adaptiveFormats.where((s) => s['type'] != null && s['type'].toString().contains('audio')).toList();
+             if (audioStreams.isEmpty) {
+               audioStreams = streams.where((s) => s['type'] != null && s['type'].toString().contains('audio')).toList();
+             }
+             
+             if (audioStreams.isNotEmpty) {
+               // M4A veya MP4 formatını tercih et (WebM Windows'ta sorun çıkarıyor)
+               var preferredStream = audioStreams.firstWhere(
+                 (s) => s['type'] != null && (s['type'].toString().contains('mp4') || s['type'].toString().contains('m4a')),
+                 orElse: () => audioStreams.first
+               );
+               final finalUrl = preferredStream['url'].toString();
+               if (await _isValidStream(finalUrl)) {
+                 print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Invidious ($instance) - ${preferredStream['type']}');
+                 return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
                }
              }
            }
