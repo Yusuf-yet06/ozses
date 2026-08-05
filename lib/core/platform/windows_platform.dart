@@ -154,6 +154,19 @@ class WindowsPlatform implements SiberPlatform {
     return [];
   }
 
+  Future<bool> _isValidStream(String url) async {
+    try {
+      final res = await http.get(Uri.parse(url), headers: {'Range': 'bytes=0-1024', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}).timeout(const Duration(seconds: 5));
+      if (res.statusCode == 200 || res.statusCode == 206) {
+        final contentType = res.headers['content-type']?.toLowerCase() ?? '';
+        if (contentType.contains('audio') || contentType.contains('video') || contentType.contains('application/octet-stream')) {
+          if (res.bodyBytes.length > 100) return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
   @override
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
     print('🎯 SİBER ÇÖZÜCÜ (Masaüstü): Eşzamanlı yarış başlıyor -> $videoId');
@@ -172,8 +185,10 @@ class WindowsPlatform implements SiberPlatform {
         var ytStreamInfo = audioStreamList.isNotEmpty
             ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
             : manifest.audioOnly.withHighestBitrate();
+        final finalUrl = ytStreamInfo.url.toString();
+        if (!(await _isValidStream(finalUrl))) throw Exception('Invalid Stream');
         print('✅ SİBER YARIŞ KAZANANI (Masaüstü): YoutubeExplode');
-        return {'status': 'basarili', 'stream_url': ytStreamInfo.url.toString(), 'is_file': false};
+        return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
       } catch (e) {
         throw Exception('YoutubeExplode başarısız');
       }
@@ -210,32 +225,38 @@ class WindowsPlatform implements SiberPlatform {
         try {
           final pipedRes = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 15));
           if (pipedRes.statusCode == 200) {
-            final data = jsonDecode(pipedRes.body);
-            final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
-            if (audioStreams.isNotEmpty) {
-              print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance)');
-              return {'status': 'basarili', 'stream_url': audioStreams.first['url'].toString(), 'is_file': false};
-            }
-          }
-        } catch (_) {}
-        throw Exception('Piped başarısız');
-      }());
+             final data = jsonDecode(pipedRes.body);
+             final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
+             if (audioStreams.isNotEmpty) {
+               final finalUrl = audioStreams.first['url'].toString();
+               if (await _isValidStream(finalUrl)) {
+                 print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance)');
+                 return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+               }
+             }
+           }
+         } catch (_) {}
+         throw Exception('Piped başarısız');
+       }());
     }
 
     // 4. Vercel Backend
     resolvers.add(() async {
       try {
         final vercelRes = await http.get(Uri.parse('https://ozses-832f9y4py-ozses.vercel.app/stream?id=$videoId')).timeout(const Duration(seconds: 15));
-        if (vercelRes.statusCode == 200) {
-          final data = jsonDecode(vercelRes.body);
-          if (data['stream_url'] != null) {
-            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Vercel Backend');
-            return {'status': 'basarili', 'stream_url': data['stream_url'].toString(), 'is_file': false};
-          }
-        }
-      } catch (_) {}
-      throw Exception('Vercel başarısız');
-    }());
+         if (vercelRes.statusCode == 200) {
+           final data = jsonDecode(vercelRes.body);
+           if (data['stream_url'] != null) {
+             final finalUrl = data['stream_url'].toString();
+             if (await _isValidStream(finalUrl)) {
+               print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Vercel Backend');
+               return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+             }
+           }
+         }
+       } catch (_) {}
+       throw Exception('Vercel başarısız');
+     }());
 
     // 4.5 Cobalt API (Güçlü Yedek)
     resolvers.add(() async {
@@ -253,16 +274,19 @@ class WindowsPlatform implements SiberPlatform {
           }),
         ).timeout(const Duration(seconds: 15));
         
-        if (cobaltRes.statusCode == 200) {
-          final data = jsonDecode(cobaltRes.body);
-          if (data['url'] != null) {
-            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Cobalt API');
-            return {'status': 'basarili', 'stream_url': data['url'].toString(), 'is_file': false};
-          }
-        }
-      } catch (_) {}
-      throw Exception('Cobalt başarısız');
-    }());
+         if (cobaltRes.statusCode == 200) {
+           final data = jsonDecode(cobaltRes.body);
+           if (data['url'] != null) {
+             final finalUrl = data['url'].toString();
+             if (await _isValidStream(finalUrl)) {
+               print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Cobalt API');
+               return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+             }
+           }
+         }
+       } catch (_) {}
+       throw Exception('Cobalt başarısız');
+     }());
 
     // 5. Invidious API
     final invidiousInstances = ['vid.puffyan.us', 'invidious.jing.rocks'];
@@ -272,17 +296,20 @@ class WindowsPlatform implements SiberPlatform {
           final invRes = await http.get(Uri.parse('https://$instance/api/v1/videos/$videoId')).timeout(const Duration(seconds: 15));
           if (invRes.statusCode == 200) {
             final data = jsonDecode(invRes.body);
-            final streams = data['formatStreams'] as List<dynamic>? ?? [];
-            for (var s in streams) {
-              if (s['type'] != null && s['type'].toString().contains('audio')) {
-                print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Invidious ($instance)');
-                return {'status': 'basarili', 'stream_url': s['url'].toString(), 'is_file': false};
-              }
-            }
-          }
-        } catch (_) {}
-        throw Exception('Invidious başarısız');
-      }());
+             final streams = data['formatStreams'] as List<dynamic>? ?? [];
+             for (var s in streams) {
+               if (s['type'] != null && s['type'].toString().contains('audio')) {
+                 final finalUrl = s['url'].toString();
+                 if (await _isValidStream(finalUrl)) {
+                   print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Invidious ($instance)');
+                   return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+                 }
+               }
+             }
+           }
+         } catch (_) {}
+         throw Exception('Invidious başarısız');
+       }());
     }
 
     try {
