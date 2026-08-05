@@ -237,6 +237,33 @@ class WindowsPlatform implements SiberPlatform {
       throw Exception('Vercel başarısız');
     }());
 
+    // 4.5 Cobalt API (Güçlü Yedek)
+    resolvers.add(() async {
+      try {
+        final cobaltRes = await http.post(
+          Uri.parse('https://api.cobalt.tools/api/json'),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'url': 'https://www.youtube.com/watch?v=$videoId',
+            'isAudioOnly': true,
+            'aFormat': 'mp3'
+          }),
+        ).timeout(const Duration(seconds: 15));
+        
+        if (cobaltRes.statusCode == 200) {
+          final data = jsonDecode(cobaltRes.body);
+          if (data['url'] != null) {
+            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Cobalt API');
+            return {'status': 'basarili', 'stream_url': data['url'].toString(), 'is_file': false};
+          }
+        }
+      } catch (_) {}
+      throw Exception('Cobalt başarısız');
+    }());
+
     // 5. Invidious API
     final invidiousInstances = ['vid.puffyan.us', 'invidious.jing.rocks'];
     for (var instance in invidiousInstances) {

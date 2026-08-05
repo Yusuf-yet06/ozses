@@ -420,6 +420,7 @@ class MyAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> updateQueue(List<MediaItem> newQueue) async {
+    _consecutiveErrors = 0; // 🎯 SİBER HAMLE: Yeni liste geldiğinde hataları sıfırla
     _playlist = newQueue;
     queue.add(newQueue);
   }
@@ -553,7 +554,6 @@ class MyAudioHandler extends BaseAudioHandler {
       applySiberDSP();
 
       await _player.play();
-      _consecutiveErrors = 0; // SİBER BAŞARI: Hata sayacını sıfırla
     } catch (e) {
       print('HATA: Platform oynatma hatası -> $e');
       _consecutiveErrors++;
