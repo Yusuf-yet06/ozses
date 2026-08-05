@@ -2766,41 +2766,38 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      trailing: PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert, color: Colors.white70),
-                                        color: Colors.black87,
-                                        onSelected: (value) async {
-                                          if (value == 'archive') {
-                                            if (song.videoId != null) {
-                                              await OfflineCacheService().exportToArchive(song.videoId!);
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('✅ Ana kütüphaneye başarıyla aktarıldı!'), backgroundColor: Colors.green),
-                                              );
-                                            }
-                                          } else if (value == 'delete') {
-                                            if (song.videoId != null) {
-                                              await OfflineCacheService().removeCachedSong(song.videoId!);
-                                              setModalState(() {}); // BottomSheet içini yenile
-                                              setState(() {}); // Ana ekranı yenile
-                                            }
-                                          }
-                                        },
-                                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                          const PopupMenuItem<String>(
-                                            value: 'archive',
-                                            child: ListTile(
-                                              leading: Icon(Icons.archive, color: Colors.greenAccent),
-                                              title: Text('Arşive Aktar', style: TextStyle(color: Colors.white)),
-                                              contentPadding: EdgeInsets.zero,
-                                            ),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.archive, color: Colors.greenAccent),
+                                            tooltip: 'Arşive Aktar',
+                                            onPressed: () async {
+                                              if (song.videoId != null) {
+                                                await OfflineCacheService().exportToArchive(song.videoId!);
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('✅ Ana kütüphaneye başarıyla aktarıldı!'), backgroundColor: Colors.green),
+                                                  );
+                                                }
+                                              }
+                                            },
                                           ),
-                                          const PopupMenuItem<String>(
-                                            value: 'delete',
-                                            child: ListTile(
-                                              leading: Icon(Icons.delete, color: Colors.redAccent),
-                                              title: Text('Siber Bellekten Sil', style: TextStyle(color: Colors.white)),
-                                              contentPadding: EdgeInsets.zero,
-                                            ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                            tooltip: 'Sil',
+                                            onPressed: () async {
+                                              if (song.videoId != null) {
+                                                await OfflineCacheService().removeCachedSong(song.videoId!);
+                                                setModalState(() {}); // BottomSheet içini yenile
+                                                setState(() {}); // Ana ekranı yenile
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('🗑️ Siber bellekten silindi!'), backgroundColor: Colors.redAccent),
+                                                  );
+                                                }
+                                              }
+                                            },
                                           ),
                                         ],
                                       ),

@@ -166,6 +166,21 @@ Future<void> addToGlobalLibrary(SongModel song) async {
   await saveGlobalLibrarySongs(existing);
 }
 
+Future<void> removeFromGlobalLibrary(String songPath) async {
+  final existing = await loadGlobalLibrarySongs();
+  existing.removeWhere((s) => s.path == songPath);
+  await saveGlobalLibrarySongs(existing);
+  
+  try {
+    final file = File(songPath);
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+  } catch (e) {
+    print('Dosya silme hatası: $e');
+  }
+}
+
 SongModel? _decodeLibraryEntry(String raw) {
   try {
     final map = jsonDecode(raw) as Map<String, dynamic>;

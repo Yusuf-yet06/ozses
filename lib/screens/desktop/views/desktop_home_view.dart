@@ -3,6 +3,7 @@ import '../../../models/song_model.dart';
 import '../../../utils/song_media_utils.dart';
 import '../../../widgets/neon_search_bar.dart';
 import '../../../main.dart'; // audioHandler
+import '../../../services/offline_cache_service.dart';
 
 class DesktopHomeView extends StatefulWidget {
   final Color themeColor;
@@ -126,7 +127,37 @@ class _DesktopHomeViewState extends State<DesktopHomeView> {
                           ),
                           title: Text(song.name ?? 'Bilinmeyen Şarkı', style: const TextStyle(color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                           subtitle: Text('Siber Arşiv', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
-                          trailing: Icon(Icons.play_arrow_rounded, color: widget.themeColor),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                tooltip: 'Sil',
+                                onPressed: () async {
+                                  if (song.path != null) {
+                                    await removeFromGlobalLibrary(song.path!);
+                                    if (song.videoId != null) {
+                                      // Eğer hem kütüphane hem offline'da varsa ikisini de temizle
+                                      try {
+                                        await OfflineCacheService().removeCachedSong(song.videoId!);
+                                      } catch (_) {}
+                                    }
+                                    _loadSongs(); // Listeyi yenile
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Şarkı silindi.'),
+                                          backgroundColor: Colors.redAccent,
+                                          duration: Duration(seconds: 2),
+                                        )
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                              Icon(Icons.play_arrow_rounded, color: widget.themeColor),
+                            ],
+                          ),
                           onTap: () async {
                             if (song.path != null) {
                               final playable = songs.where((s) => s.path != null).toList();
