@@ -942,27 +942,37 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         }
       });
     }
-    final res = await _bridge.fetchKesfet();
-    if (mounted) {
-      if (res.isEmpty || res['status'] == 'hata') {
+    try {
+      final res = await _bridge.fetchKesfet();
+      if (mounted) {
+        if (res.isEmpty || res['status'] == 'hata') {
+          setState(() {
+            _isLoading = false;
+            _isOfflineMode = true; // 🎯 Siber Kalkan: Çevrimdışı modda olduğumuzu anladık
+          });
+
+          return;
+        }
+        setState(() {
+          _isOfflineMode = false;
+          _trendList = res['oneriler'] ?? [];
+          _currentCache.trendList = _trendList;
+          _nextPageToken = res['nextPageToken'] ?? '';
+          _currentCache.nextPageToken = _nextPageToken;
+          _isLoading = false;
+          _showSkeletonTimeout = false;
+          _skeletonTimer?.cancel();
+        });
+        _saveTrendsCache(); // 🎯 Yeni veriyi hafızaya mühürle
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
-          _isOfflineMode = true; // 🎯 Siber Kalkan: Çevrimdışı modda olduğumuzu anladık
+          _isOfflineMode = true;
+          _showSkeletonTimeout = false;
         });
-
-        return;
       }
-      setState(() {
-        _isOfflineMode = false;
-        _trendList = res['oneriler'] ?? [];
-        _currentCache.trendList = _trendList;
-        _nextPageToken = res['nextPageToken'] ?? '';
-        _currentCache.nextPageToken = _nextPageToken;
-        _isLoading = false;
-        _showSkeletonTimeout = false;
-        _skeletonTimer?.cancel();
-      });
-      _saveTrendsCache(); // 🎯 Yeni veriyi hafızaya mühürle
     }
   }
 
