@@ -18,14 +18,14 @@ class DesktopMainScreen extends StatefulWidget {
 class _DesktopMainScreenState extends State<DesktopMainScreen> {
   int _selectedIndex = 0; // 0: Anasayfa, 1: Keşfet, 2: Kütüphanem vb.
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   bool _isCinematicMode = false;
   bool _isRightPanelOpen = false;
-  
+
   // Sürüklenebilir panel state
   bool _isRightPanelDetached = false;
   Offset _rightPanelOffset = const Offset(500, 50); // Başlangıç pozisyonu
-  
+
   StreamSubscription? _mediaItemSubscription;
   bool _hasStartedPlaying = false;
 
@@ -44,7 +44,7 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
       }
     });
   }
-  
+
   @override
   void dispose() {
     _mediaItemSubscription?.cancel();
@@ -54,7 +54,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
   void _onMenuSelected(int index) {
     setState(() {
       _selectedIndex = index;
-      _isCinematicMode = false; // Menüden bir şey seçilince sinematik modu kapat
+      _isCinematicMode =
+          false; // Menüden bir şey seçilince sinematik modu kapat
     });
   }
 
@@ -87,10 +88,11 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                     selectedIndex: _selectedIndex,
                     onMenuSelected: _onMenuSelected,
                   ),
-                  
+
                   // Ferah Odak Alanı
                   Expanded(
-                    child: ClipRect( // BackdropFilter taşmasını (buzlucam efekti) engeller
+                    child: ClipRect(
+                      // BackdropFilter taşmasını (buzlucam efekti) engeller
                       child: Column(
                         children: [
                           Expanded(
@@ -101,18 +103,22 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                                   child: Stack(
                                     children: [
                                       // Altta Ana İçerik
-                                      DesktopDiscoverView(selectedIndex: _selectedIndex),
-                                      
+                                      DesktopDiscoverView(
+                                          selectedIndex: _selectedIndex),
+
                                       // Üstte Sinematik Mod (Eğer açıksa)
                                       if (_isCinematicMode)
                                         StreamBuilder<MediaItem?>(
                                           stream: audioHandler.mediaItem,
                                           builder: (context, snapshot) {
                                             final item = snapshot.data;
-                                            if (item == null) return const SizedBox.shrink();
+                                            if (item == null)
+                                              return const SizedBox.shrink();
                                             return AnimatedOpacity(
-                                              opacity: _isCinematicMode ? 1.0 : 0.0,
-                                              duration: const Duration(milliseconds: 300),
+                                              opacity:
+                                                  _isCinematicMode ? 1.0 : 0.0,
+                                              duration: const Duration(
+                                                  milliseconds: 300),
                                               child: DesktopCinematicView(
                                                 mediaItem: item,
                                                 onMinimize: () {
@@ -127,30 +133,41 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                                     ],
                                   ),
                                 ),
-                                
+
                                 // Sağ Panel (Sabit İse)
                                 if (!_isRightPanelDetached)
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                    width: _isRightPanelOpen ? 320 : 0,
-                                    child: _isRightPanelOpen
-                                        ? DesktopRightPanel(
-                                            onClose: () => setState(() => _isRightPanelOpen = false),
-                                            isDetached: false,
-                                            onToggleDetach: _toggleDetachPanel,
-                                          )
-                                        : const SizedBox.shrink(),
+                                  ClipRect(
+                                    child: AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                      width: _isRightPanelOpen ? 320 : 0,
+                                      child: OverflowBox(
+                                        minWidth: 320,
+                                        maxWidth: 320,
+                                        alignment: Alignment.centerLeft,
+                                        child: _isRightPanelOpen
+                                            ? DesktopRightPanel(
+                                                onClose: () => setState(() =>
+                                                    _isRightPanelOpen = false),
+                                                isDetached: false,
+                                                onToggleDetach:
+                                                    _toggleDetachPanel,
+                                              )
+                                            : const SizedBox.shrink(),
+                                      ),
+                                    ),
                                   ),
                               ],
                             ),
                           ),
-                          
+
                           // Alt Oynatıcı (Sadece müzik çalarken/seçiliyken)
                           StreamBuilder<MediaItem?>(
                             stream: audioHandler.mediaItem,
                             builder: (context, snapshot) {
-                              final isPlaying = snapshot.hasData && snapshot.data != null;
+                              final isPlaying =
+                                  snapshot.hasData && snapshot.data != null;
                               return AnimatedSize(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
@@ -160,7 +177,8 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                                         isRightPanelOpen: _isRightPanelOpen,
                                         onToggleCinematicMode: () {
                                           setState(() {
-                                            _isCinematicMode = !_isCinematicMode;
+                                            _isCinematicMode =
+                                                !_isCinematicMode;
                                           });
                                         },
                                         onToggleRightPanel: _toggleRightPanel,
@@ -188,14 +206,16 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                         double newX = _rightPanelOffset.dx + details.delta.dx;
                         double newY = _rightPanelOffset.dy + details.delta.dy;
 
-                        // Sınırlandırmalar: 
+                        // Sınırlandırmalar:
                         // Sol menü genişliği genelde 240-280px civarıdır. 300px diyelim ki taşmasın.
                         // Alt panel yüksekliği 110px civarıdır.
                         double minX = 260.0; // Sol panel sınırı
-                        double maxX = constraints.maxWidth - 320.0; // Panel genişliği 320
-                        
+                        double maxX =
+                            constraints.maxWidth - 320.0; // Panel genişliği 320
+
                         double minY = 0.0; // Üst sınır
-                        double maxY = constraints.maxHeight - 110.0; // Panel ortalama yüksekliği için alt sınır (eğer alt barda taşma olursa bunu -500 yapabiliriz, pencere çok büyük olabilir)
+                        double maxY = constraints.maxHeight -
+                            110.0; // Panel ortalama yüksekliği için alt sınır (eğer alt barda taşma olursa bunu -500 yapabiliriz, pencere çok büyük olabilir)
 
                         newX = newX.clamp(minX, maxX);
                         newY = newY.clamp(minY, maxY);
@@ -204,9 +224,11 @@ class _DesktopMainScreenState extends State<DesktopMainScreen> {
                       });
                     },
                     child: SizedBox(
-                      height: constraints.maxHeight * 0.7, // Ekranın %70'i kadar boy
+                      height: constraints.maxHeight *
+                          0.7, // Ekranın %70'i kadar boy
                       child: DesktopRightPanel(
-                        onClose: () => setState(() => _isRightPanelOpen = false),
+                        onClose: () =>
+                            setState(() => _isRightPanelOpen = false),
                         isDetached: true,
                         onToggleDetach: _toggleDetachPanel,
                       ),

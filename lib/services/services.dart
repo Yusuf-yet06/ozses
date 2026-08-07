@@ -282,9 +282,9 @@ final List<String> invidiousInstances = [
           // 🥉 3. SIRADA: Piped API (Güçlü Yedek)
           if (streamResponse == null) {
             final List<String> pipedInstances = [
+              'https://piped.video/api', // The only one currently working reliably
               'https://pipedapi.kavin.rocks',
               'https://pipedapi.smnz.de',
-              'https://pipedapi.moomoo.me',
               'https://api.piped.projectsegfau.lt'
             ];
             for (var instance in pipedInstances) {

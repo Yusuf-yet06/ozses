@@ -25,10 +25,9 @@ app.add_middleware(
 YDL_BASE_OPTS = {
     'quiet': True,
     'no_warnings': True,
-    'extractor_args': {'youtube': {'skip': ['hls', 'dash']}},
     'cookiefile': 'cookies.txt',
     'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         'Accept-Language': 'tr-TR,tr;q=0.9,en;q=0.8',
     }
 }
@@ -77,7 +76,7 @@ def stream(id: str = Query(..., description="YouTube video ID")):
     try:
         ydl_opts = {
             **YDL_BASE_OPTS,
-            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+            'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(
@@ -119,7 +118,7 @@ async def play(id: str):
     try:
         ydl_opts = {
             **YDL_BASE_OPTS,
-            'format': 'bestaudio[ext=m4a]/bestaudio/best',
+            'format': 'bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best',
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(

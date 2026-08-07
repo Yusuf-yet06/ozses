@@ -274,6 +274,24 @@ class MobilePlatform implements SiberPlatform {
     
     List<Future<Map<String, dynamic>>> resolvers = [];
 
+    // 0. SİBER KALKAN (Özel Vercel Sunucusu - ozses.com)
+    resolvers.add(() async {
+      try {
+        final vercelUrl = 'https://backendproxy-hazel.vercel.app/api/stream?id=$videoId&apikey=SIBER_KALKAN_API_KEY_BURAYA_GELECEK';
+        final res = await http.get(Uri.parse(vercelUrl)).timeout(const Duration(seconds: 5));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data['stream_url'] != null) {
+            print('✅ SİBER YARIŞ KAZANANI: Özel Vercel Sunucusu (ozses.com) + Gemini Kalkanı');
+            return {'status': 'basarili', 'stream_url': data['stream_url'], 'is_file': false};
+          }
+        }
+        throw Exception('Vercel sunucusu başarısız');
+      } catch (e) {
+        throw Exception('Vercel sunucusu başarısız');
+      }
+    }());
+
     // 1. YoutubeExplode (Yerel)
     resolvers.add(() async {
       try {
