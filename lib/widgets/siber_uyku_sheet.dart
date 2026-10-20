@@ -135,7 +135,7 @@ class _SiberUykuSheetState extends State<SiberUykuSheet>
                 children: [
                   Icon(Icons.bedtime_rounded, color: color, size: 22),
                   const SizedBox(width: 10),
-                  Text('SİBER UYKU ZAMANLAYICI',
+                  Text('UYKU ZAMANLAYICI',
                       style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1.2)),
                 ],
               ),

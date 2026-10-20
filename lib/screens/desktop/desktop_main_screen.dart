@@ -16,7 +16,7 @@ class DesktopMainScreen extends StatefulWidget {
 }
 
 class _DesktopMainScreenState extends State<DesktopMainScreen> {
-  int _selectedIndex = 0; // 0: Anasayfa, 1: Keşfet, 2: Kütüphanem vb.
+  int _selectedIndex = 1; // 0: Anasayfa, 1: Keşfet, 2: Kütüphanem vb.
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _isCinematicMode = false;

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../main.dart';
 import '../services/id3_service.dart';
 import '../services/audio_analysis_service.dart';
+import '../services/siber_theme_service.dart';
 
 class GlobalAmbientBackground extends StatefulWidget {
   final Widget child;
@@ -31,27 +32,31 @@ class _GlobalAmbientBackgroundState extends State<GlobalAmbientBackground> {
   }
 
   void _listenToAudioHandler() {
-    _mediaSub = audioHandler.mediaItem.listen((item) async {
-      if (item == null || !mounted) return;
-      if (item.id == _currentMediaId) return;
+    try {
+      _mediaSub = audioHandler.mediaItem.listen((item) async {
+        if (item == null || !mounted) return;
+        if (item.id == _currentMediaId) return;
 
-      setState(() {
-        _currentMediaId = item.id;
-        _coverBytes = null; // Yeni şarkı geldi, eski resmi temizle
+        setState(() {
+          _currentMediaId = item.id;
+          _coverBytes = null; // Yeni şarkı geldi, eski resmi temizle
+        });
+
+        _fetchCoverArt(item);
       });
 
-      _fetchCoverArt(item);
-    });
-
-    _playbackSub = audioHandler.playbackState.listen((state) {
-      if (!mounted) return;
-      final isPlaying = state.playing;
-      if (_isPlaying != isPlaying) {
-        setState(() {
-          _isPlaying = isPlaying;
-        });
-      }
-    });
+      _playbackSub = audioHandler.playbackState.listen((state) {
+        if (!mounted) return;
+        final isPlaying = state.playing;
+        if (_isPlaying != isPlaying) {
+          setState(() {
+            _isPlaying = isPlaying;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('GlobalAmbientBackground: audioHandler listener henüz aktif değil: $e');
+    }
   }
 
   Future<void> _fetchCoverArt(MediaItem item) async {
@@ -86,68 +91,58 @@ class _GlobalAmbientBackgroundState extends State<GlobalAmbientBackground> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // 1. Dev Ortam Işığı Arka Planı (Neon Ampul Etkisi)
-        if (_coverBytes != null)
-          Positioned.fill(
-            child: StreamBuilder<AudioAnalysisData>(
-              stream: AudioAnalysisService.instance.getAnalysisStream(),
-              builder: (context, snapshot) {
-                // Eğer oynatılmıyorsa 0.6 baz değerde kalır, oynatılıyorsa ritme göre parlar
-                double baseScale = 1.0;
-                double baseOpacity = 0.6;
-                
-                if (_isPlaying && snapshot.hasData) {
-                  double neonScale = snapshot.data!.neonScale; // 1.0 to 1.5
-                  baseOpacity = (0.6 + (neonScale - 1.0)).clamp(0.6, 1.0);
-                  baseScale = 1.0 + (neonScale - 1.0) * 0.2;
-                }
+    return ValueListenableBuilder<bool>(
+      valueListenable: SiberThemeService.instance.isMinimalMode,
+      builder: (context, isMinimal, _) {
+        if (isMinimal) {
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: Container(color: const Color(0xFF101010)),
+              ),
+              widget.child,
+            ],
+          );
+        }
 
-                return Opacity(
-                  opacity: baseOpacity,
-                  child: Transform.scale(
-                    scale: baseScale,
-                    child: Image.memory(
-                      _coverBytes!,
-                      fit: BoxFit.cover,
+        return Stack(
+          children: [
+            // 1. Dev Ortam Işığı Arka Planı (GPU Dostu Hızlı Render & RepaintBoundary Önbelleği)
+            if (_coverBytes != null)
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: ImageFiltered(
+                    imageFilter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                    child: Opacity(
+                      opacity: 0.45,
+                      child: Image.memory(
+                        _coverBytes!,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-          )
-        else
-          Positioned.fill(
-            child: StreamBuilder<AudioAnalysisData>(
-              stream: AudioAnalysisService.instance.getAnalysisStream(),
-              builder: (context, snapshot) {
-                double baseOpacity = 0.6;
-                if (_isPlaying && snapshot.hasData) {
-                   double neonScale = snapshot.data!.neonScale;
-                   baseOpacity = (0.6 + (neonScale - 1.0)).clamp(0.6, 1.0);
-                }
-                return Opacity(
-                  opacity: baseOpacity,
-                  child: Container(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
-                );
-              },
-            ),
-          ),
+                ),
+              )
+            else
+              Positioned.fill(
+                child: Container(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                ),
+              ),
 
-        // 2. Çok Yüksek Bulanıklık ve Okunabilirlik Kalkanı
-        Positioned.fill(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.65), // %65 Siyah kalkan
+            // 2. Koyu Gradyan ve Okunabilirlik Kalkanı (0ms GPU Maliyeti)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.75),
+              ),
             ),
-          ),
-        ),
 
-        // 3. Uygulamanın Geri Kalanı (Rotalar / Ekranlar)
-        widget.child,
-      ],
+            // 3. Uygulamanın Geri Kalanı (Rotalar / Ekranlar)
+            widget.child,
+          ],
+        );
+      },
     );
   }
 }

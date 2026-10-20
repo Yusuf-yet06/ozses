@@ -69,6 +69,13 @@ class AdPlatformWindows implements AdPlatform {
   void disposeBannerAd() {
     // Webview temizliği
   }
+
+  @override
+  void showRewardedAd({required VoidCallback onReward, VoidCallback? onFailed}) {
+    // Windows simülasyonu: Kısa bir bilgi gösterip ödülü tanımla
+    Fluttertoast.showToast(msg: '🎬 Reklam simülasyonu tamamlandı! +2 İndirme hakkı eklendi.');
+    onReward();
+  }
 }
 
 AdPlatform getAdPlatform() => AdPlatformWindows();

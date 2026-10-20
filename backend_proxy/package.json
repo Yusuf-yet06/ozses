@@ -2,5 +2,9 @@
   "name": "ozses-proxy",
   "version": "1.0.0",
   "description": "YouTube Audio Proxy for Ozses - Siber Kalkan",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "yt-search": "^2.13.1"
+  }
 }

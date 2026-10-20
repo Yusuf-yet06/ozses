@@ -4,9 +4,11 @@ import 'package:audio_service/audio_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../main.dart'; // audioHandler için
 import '../../../utils/song_media_utils.dart'; // cleanLyricsTitle vb. için
 import '../../../services/services.dart'; // OzsesBridge için
+import '../../../services/lyrics_service.dart';
 
 // Sadece bu widget için geçici LyricLine (Eğer full_screen_player'da global değilse)
 class DesktopLyricLine {
@@ -31,10 +33,20 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
   bool _isFetchingLyrics = false;
   String _lyricsText = '';
   String _currentProcessedId = '';
-  List<DesktopLyricLine> _parsedLyrics = [];
+  String _currentSongPath = '';
+  String _currentSongName = '';
+  String _currentArtistName = '';
+  final List<DesktopLyricLine> _parsedLyrics = [];
   final ScrollController _lyricsScrollController = ScrollController();
+  final Map<int, GlobalKey> _itemKeys = {};
+  bool _isAutoScrollLocked = true;
   int _lastActiveIndex = -1;
   StreamSubscription? _mediaSub;
+
+  // ⏱️ Siber Senkron & Aday Doğrulama Değişkenleri
+  int _lyricsOffsetMs = 0;
+  bool _isLrcSynced = false;
+  bool _isRemixFallback = false;
 
   final OzsesBridge bridge = OzsesBridge();
 
@@ -46,11 +58,20 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
         bool isNewSong = _currentProcessedId != item.id;
         if (isNewSong) {
           _currentProcessedId = item.id;
+          _currentSongPath = item.id;
+          _currentSongName = item.title;
+          _currentArtistName = item.artist ?? 'Bilinmeyen Sanatçı';
           if (mounted) {
             setState(() {
               _lyricsText = '';
               _parsedLyrics.clear();
+              _itemKeys.clear();
+              _lastActiveIndex = -1;
+              _lyricsOffsetMs = 0;
+              _isLrcSynced = false;
+              _isRemixFallback = false;
             });
+            _loadLyricsOffset(item.id);
             _loadLyrics(item.id, item.title, item.artist ?? 'Bilinmeyen Sanatçı');
           }
         }
@@ -62,6 +83,10 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
       final currentItem = audioHandler.mediaItem.value;
       if (currentItem != null) {
         _currentProcessedId = currentItem.id;
+        _currentSongPath = currentItem.id;
+        _currentSongName = currentItem.title;
+        _currentArtistName = currentItem.artist ?? 'Bilinmeyen Sanatçı';
+        _loadLyricsOffset(currentItem.id);
         _loadLyrics(currentItem.id, currentItem.title, currentItem.artist ?? 'Bilinmeyen Sanatçı');
       }
     });
@@ -74,53 +99,77 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
     super.dispose();
   }
 
-  Future<void> _loadLyrics(String songPath, String songName, String artistName) async {
+  // 🎯 Şarkı Bazlı Senkron Kalibrasyon Metotları
+  Future<void> _loadLyricsOffset(String songPath) async {
+    final savedOffset = await LyricsService.getLyricsOffset(songPath);
+    if (mounted) {
+      setState(() {
+        _lyricsOffsetMs = savedOffset;
+      });
+    }
+  }
+
+  Future<void> _changeLyricsOffset(int deltaMs) async {
+    final newOffset = _lyricsOffsetMs + deltaMs;
+    setState(() {
+      _lyricsOffsetMs = newOffset;
+    });
+    await LyricsService.saveLyricsOffset(_currentSongPath, newOffset);
+  }
+
+  Future<void> _resetLyricsOffset() async {
+    setState(() {
+      _lyricsOffsetMs = 0;
+    });
+    await LyricsService.saveLyricsOffset(_currentSongPath, 0);
+  }
+
+  Future<void> _loadLyrics(String songPath, String songName, String artistName, {bool forceRefresh = false}) async {
     if (!mounted) return;
     setState(() {
       _isFetchingLyrics = true;
     });
 
     try {
-      final searchTitle = cleanLyricsTitle(songName);
-      final searchQuery = '$searchTitle $artistName lyrics';
-      final vId = songPath.startsWith('yt:') ? songPath.substring(3) : songPath;
+      final currentDuration = audioHandler.mediaItem.value?.duration;
+      final vId = songPath.startsWith('yt:') ? songPath.substring(3) : null;
 
-      // 1. YouTube Kül Kalkanı (OzsesBridge) üzerinden getir
-      String? finalText = await bridge.getSiberLyrics(vId, searchQuery);
-      
-      // 2. Eğer YouTube'da yoksa LRCLIB üzerinden dene
-      if (finalText == null || finalText.isEmpty) {
-        try {
-          final url = Uri.parse('https://lrclib.net/api/search?q=${Uri.encodeComponent('$artistName $searchTitle')}');
-          final response = await http.get(url).timeout(const Duration(seconds: 4));
-          if (response.statusCode == 200) {
-            final List<dynamic> dataList = json.decode(response.body);
-            if (dataList.isNotEmpty) {
-              final track = dataList.firstWhere(
-                (item) => item['syncedLyrics'] != null,
-                orElse: () => dataList[0],
-              );
-              if (track['syncedLyrics'] != null) finalText = track['syncedLyrics'];
-              else if (track['plainLyrics'] != null) finalText = track['plainLyrics'];
-            }
-          }
-        } catch (e) {
-          // lrclib başarısız
-        }
-      }
+      final result = await LyricsService.fetchLyrics(
+        songPath,
+        songName,
+        artistName,
+        duration: currentDuration,
+        videoId: vId,
+        forceRefresh: forceRefresh,
+      );
 
-      if (mounted) {
+      if (!mounted || _currentProcessedId != songPath) return;
+
+      if (result != null && result.lines.isNotEmpty) {
         setState(() {
-          _lyricsText = finalText ?? "Şarkı sözü bulunamadı.\n(Siber ağda iz bulunmuyor...)";
-          final currentDuration = audioHandler.mediaItem.value?.duration ?? const Duration(minutes: 3);
-          _parseLrc(_lyricsText, currentDuration);
+          _lyricsText = result.rawText;
+          _parsedLyrics.clear();
+          for (final l in result.lines) {
+            _parsedLyrics.add(DesktopLyricLine(l.time, l.text));
+          }
+          _isLrcSynced = result.isSynced;
+          _isRemixFallback = result.isRemixFallback;
+          _isFetchingLyrics = false;
+        });
+      } else {
+        setState(() {
+          _lyricsText = 'Şarkı sözü bulunamadı.\n(Alakasız şarkı gösterilmemesi için koruma kalkanı devrede)';
+          _parsedLyrics.clear();
+          _parsedLyrics.add(DesktopLyricLine(Duration.zero, _lyricsText));
+          _isLrcSynced = false;
+          _isRemixFallback = false;
           _isFetchingLyrics = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _lyricsText = "Sözler yüklenirken bir ağ hatası oluştu.";
+          _lyricsText = 'Sözler yüklenirken bir ağ hatası oluştu.';
           _parsedLyrics.clear();
           _isFetchingLyrics = false;
         });
@@ -130,29 +179,13 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
 
   void _parseLrc(String text, Duration totalDuration) {
     _parsedLyrics.clear();
-    bool hasTimeTags = text.contains(RegExp(r'\[\d{2}:\d{2}\.\d{2,3}\]'));
-    
-    if (!hasTimeTags) {
-      final lines = text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      final totalMs = totalDuration.inMilliseconds;
-      if (lines.isNotEmpty && totalMs > 0) {
-        final msPerLine = (totalMs * 0.85) ~/ lines.length;
-        final startOffset = totalMs * 0.05;
-        for (int i = 0; i < lines.length; i++) {
-          _parsedLyrics.add(DesktopLyricLine(
-              Duration(milliseconds: startOffset.toInt() + (i * msPerLine)),
-              lines[i]));
-        }
-      } else {
-        _parsedLyrics = lines.map((e) => DesktopLyricLine(Duration.zero, e)).toList();
-      }
-      return;
-    }
+    final regex = RegExp(r'\[(\d{1,2}):(\d{2})\.(\d{2,3})\]');
+    bool foundTimeTag = false;
 
-    final regex = RegExp(r'\[(\d{2}):(\d{2})\.(\d{2,3})\]');
     for (var line in text.split('\n')) {
       final match = regex.firstMatch(line);
       if (match != null) {
+        foundTimeTag = true;
         final min = int.parse(match.group(1)!);
         final sec = int.parse(match.group(2)!);
         final msStr = match.group(3)!;
@@ -164,12 +197,20 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
         }
       }
     }
-    if (_parsedLyrics.isEmpty) {
-      _parsedLyrics = text
+
+    _isLrcSynced = foundTimeTag && _parsedLyrics.length > 1;
+
+    // Düz metin sözler: Yapay zamanlama yapma, doğal serbest kaydırma olarak ekle
+    if (!_isLrcSynced) {
+      final lines = text
           .split('\n')
-          .map((e) => DesktopLyricLine(Duration.zero, e.trim()))
-          .where((e) => e.text.isNotEmpty)
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty && !e.startsWith('[') && !e.endsWith(']'))
           .toList();
+
+      for (var line in lines) {
+        _parsedLyrics.add(DesktopLyricLine(Duration.zero, line));
+      }
     }
   }
 
@@ -188,6 +229,41 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
       return 'Agresif / Hype';
     }
     return 'Standart Ritim';
+  }
+
+  void _scrollToActiveIndex(int activeIndex) {
+    if (!_isAutoScrollLocked || activeIndex < 0 || activeIndex >= _parsedLyrics.length) return;
+    
+    final key = _itemKeys[activeIndex];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        alignment: 0.42, // 🎯 Tam merkez-üstü ideal okuma hizası
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+      );
+    } else if (_lyricsScrollController.hasClients) {
+      final maxExt = _lyricsScrollController.position.maxScrollExtent;
+      if (maxExt > 0 && _parsedLyrics.isNotEmpty) {
+        final ratio = activeIndex / _parsedLyrics.length;
+        final targetOffset = (maxExt * ratio).clamp(0.0, maxExt);
+        _lyricsScrollController.animateTo(
+          targetOffset,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (key?.currentContext != null) {
+            Scrollable.ensureVisible(
+              key!.currentContext!,
+              alignment: 0.42,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -216,17 +292,19 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
       return const Center(child: Text('Şu an bir şey çalmıyor', style: TextStyle(color: Colors.white54)));
     }
 
-    bool isSynced = _lyricsText.contains(RegExp(r'\[\d{2}:\d{2}\.\d{2,3}\]')) || _parsedLyrics.length > 1;
+    bool isSynced = _isLrcSynced && _parsedLyrics.length > 1;
 
     return StreamBuilder<Duration>(
       stream: AudioService.position,
       builder: (context, snapshot) {
         final position = snapshot.data ?? Duration.zero;
+        final effectiveMs = position.inMilliseconds - _lyricsOffsetMs;
+        final effectivePos = effectiveMs > 0 ? Duration(milliseconds: effectiveMs) : Duration.zero;
         int activeIndex = -1;
         
         if (isSynced) {
           for (int i = 0; i < _parsedLyrics.length; i++) {
-            if (position >= _parsedLyrics[i].time) {
+            if (effectivePos >= _parsedLyrics[i].time) {
               activeIndex = i;
             } else {
               break;
@@ -234,91 +312,340 @@ class _DesktopKaraokeLyricsState extends State<DesktopKaraokeLyrics> {
           }
         }
 
+        // 🎯 SİBER SABİTLEME DÜZENEĞİ: Sırası gelen sözü kusursuzca ortala
         if (activeIndex != _lastActiveIndex) {
           _lastActiveIndex = activeIndex;
           if (activeIndex >= 0 && activeIndex < _parsedLyrics.length) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_lyricsScrollController.hasClients) {
-                const double itemExtent = 48.0;
-                double viewportHeight = _lyricsScrollController.position.viewportDimension;
-                double targetOffset = (activeIndex * itemExtent) - (viewportHeight / 2) + (itemExtent / 2);
-                
-                double maxExtent = _lyricsScrollController.position.maxScrollExtent;
-                if (targetOffset < 0) targetOffset = 0;
-                if (targetOffset > maxExtent) targetOffset = maxExtent;
-                
-                _lyricsScrollController.animateTo(
-                  targetOffset,
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeOutCubic,
-                );
-              }
+              _scrollToActiveIndex(activeIndex);
             });
           }
         }
 
-        return Column(
+        return Stack(
           children: [
-            if (isSynced && activeIndex >= 0 && activeIndex < _parsedLyrics.length)
-              Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 5),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: widget.themeColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: widget.themeColor.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.analytics_rounded, color: widget.themeColor, size: 14),
-                    const SizedBox(width: 8),
-                    Text(
-                      'SİBER ANALİZ: ${_analyzeLineMood(_parsedLyrics[activeIndex].text)}',
-                      style: TextStyle(
-                        color: widget.themeColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2
-                      )
-                    ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: ListView.builder(
-                controller: _lyricsScrollController,
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                itemCount: _parsedLyrics.length,
-                itemBuilder: (context, index) {
-                  final line = _parsedLyrics[index];
-                  final isActive = isSynced ? (index == activeIndex) : false;
+            Column(
+              children: [
+                // Üst Durum Çubuğu (Analiz & Sabitleme Kontrolü & Senkron Kalibrasyonu)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 4),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (isSynced && activeIndex >= 0 && activeIndex < _parsedLyrics.length)
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: widget.themeColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: widget.themeColor.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.analytics_rounded, color: widget.themeColor, size: 13),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        _analyzeLineMood(_parsedLyrics[activeIndex].text),
+                                        style: TextStyle(
+                                          color: widget.themeColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.8,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox.shrink(),
 
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    padding: EdgeInsets.symmetric(vertical: isActive ? 12 : 8, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: isActive ? widget.themeColor.withValues(alpha: 0.1) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isActive 
-                          ? Border.all(color: widget.themeColor.withValues(alpha: 0.3))
-                          : Border.all(color: Colors.transparent),
-                    ),
-                    child: Text(
-                      line.text,
-                      style: TextStyle(
-                        color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
-                        fontSize: isActive ? 18 : 14,
-                        fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                        height: 1.4,
+                          // ⏱️ SENKRON / ZAMANLAMA AYARI (±0.5s)
+                          if (isSynced)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () => _changeLyricsOffset(-500),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: const Text('-0.5s', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                InkWell(
+                                  onTap: () {
+                                    _resetLyricsOffset();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Senkron kalibrasyonu sıfırlandı (±0.0s)'),
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: _lyricsOffsetMs != 0
+                                          ? widget.themeColor.withValues(alpha: 0.25)
+                                          : Colors.white.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: _lyricsOffsetMs != 0 ? widget.themeColor : Colors.white24,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _lyricsOffsetMs == 0
+                                          ? '⚡ Senkron'
+                                          : '⚡ ${_lyricsOffsetMs > 0 ? "+" : ""}${(_lyricsOffsetMs / 1000).toStringAsFixed(1)}s',
+                                      style: TextStyle(
+                                        color: _lyricsOffsetMs != 0 ? Colors.white : Colors.white60,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                                InkWell(
+                                  onTap: () => _changeLyricsOffset(500),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white24),
+                                    ),
+                                    child: const Text('+0.5s', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.notes_rounded, color: Colors.amber, size: 12),
+                                  SizedBox(width: 4),
+                                  Text('DÜZ METİN', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          
+                          // 🎯 Sabitleme Düzeneği Butonu
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _isAutoScrollLocked = !_isAutoScrollLocked;
+                              });
+                              if (_isAutoScrollLocked && activeIndex >= 0) {
+                                _scrollToActiveIndex(activeIndex);
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _isAutoScrollLocked
+                                    ? widget.themeColor.withValues(alpha: 0.2)
+                                    : Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: _isAutoScrollLocked
+                                      ? widget.themeColor.withValues(alpha: 0.5)
+                                      : Colors.white12,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isAutoScrollLocked ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                                    color: _isAutoScrollLocked ? widget.themeColor : Colors.white54,
+                                    size: 13,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    _isAutoScrollLocked ? 'Sabit' : 'Serbest',
+                                    style: TextStyle(
+                                      color: _isAutoScrollLocked ? Colors.white : Colors.white54,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // 🔄 Yenile Butonu
+                          InkWell(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Sözler siber ağdan yeniden taranıyor...'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                              _loadLyrics(_currentSongPath, _currentSongName, _currentArtistName, forceRefresh: true);
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white12),
+                              ),
+                              child: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 14),
+                            ),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  );
-                },
-              ),
+
+                      if (_isRemixFallback)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.purpleAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.4)),
+                            ),
+                            child: const Text(
+                              '⚡ Remix Versiyon İçin Orijinal Şarkı Sözleri Eşleştirildi',
+                              style: TextStyle(color: Colors.purpleAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                Expanded(
+                  child: ListView.builder(
+                    controller: _lyricsScrollController,
+                    cacheExtent: 3500,
+                    padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
+                    itemCount: _parsedLyrics.length,
+                    itemBuilder: (context, index) {
+                      final line = _parsedLyrics[index];
+                      final isActive = isSynced ? (index == activeIndex) : false;
+                      final itemKey = _itemKeys.putIfAbsent(index, () => GlobalKey());
+
+                      return InkWell(
+                        onTap: () {
+                          if (isSynced && line.time > Duration.zero) {
+                            audioHandler.seek(line.time);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          key: itemKey,
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          padding: EdgeInsets.symmetric(vertical: isActive ? 12 : 8, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: isActive ? widget.themeColor.withValues(alpha: 0.15) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: isActive 
+                                ? Border.all(color: widget.themeColor.withValues(alpha: 0.4), width: 1.5)
+                                : Border.all(color: Colors.transparent),
+                            boxShadow: [
+                              if (isActive)
+                                BoxShadow(
+                                  color: widget.themeColor.withValues(alpha: 0.2),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                ),
+                            ],
+                          ),
+                          child: Text(
+                            line.text,
+                            style: TextStyle(
+                              color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.35),
+                              fontSize: isActive ? 18 : 14,
+                              fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
+
+            // 🎯 Hızlı Sabitleme Düğmesi (Aşağıda kaybolmayı önleyen acil odak butonu)
+            if (isSynced && activeIndex >= 0)
+              Positioned(
+                bottom: 12,
+                right: 16,
+                child: AnimatedOpacity(
+                  opacity: _isAutoScrollLocked ? 0.7 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _isAutoScrollLocked = true;
+                      });
+                      _scrollToActiveIndex(activeIndex);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: widget.themeColor.withValues(alpha: 0.6)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.themeColor.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.my_location_rounded, color: widget.themeColor, size: 14),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'Şarkıya Odakla',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },

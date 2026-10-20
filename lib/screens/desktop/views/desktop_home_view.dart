@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/song_model.dart';
 import '../../../utils/song_media_utils.dart';
+import '../../../utils/search_utils.dart';
 import '../../../widgets/neon_search_bar.dart';
 import '../../../main.dart'; // audioHandler
 import '../../../services/offline_cache_service.dart';
@@ -37,7 +38,16 @@ class _DesktopHomeViewState extends State<DesktopHomeView> {
   }
 
   List<SongModel> get _filteredAndSortedSongs {
-    List<SongModel> list = _allSongs.where((s) => (s.name ?? '').toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    List<SongModel> list = _allSongs.where((s) {
+      if (_searchQuery.trim().isEmpty) return true;
+      return SearchUtils.matchesSong(
+        query: _searchQuery,
+        title: s.title,
+        artist: s.artist,
+        name: s.name,
+        path: s.path,
+      );
+    }).toList();
     
     if (_sortMode == 1) {
       list.sort((a, b) => (a.name ?? '').compareTo(b.name ?? ''));

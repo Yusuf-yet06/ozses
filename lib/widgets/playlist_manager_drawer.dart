@@ -49,6 +49,8 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
                     final pName = names[index];
                     final isDeleting = _longPressedPlaylist == pName;
                     final isFavoriteList = pName == 'Favorilerim';
+                    final isOnRepeatList = pName == '🔥 Zirvedekiler (Top 15)' || pName.contains('Zirvedekiler');
+                    final isProtectedList = isFavoriteList || isOnRepeatList;
 
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
@@ -64,17 +66,24 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
                             : null,
                       ),
                       child: ListTile(
-                        leading: Icon(Icons.folder_copy_outlined,
+                        leading: Icon(
+                            isFavoriteList
+                                ? Icons.favorite
+                                : (isOnRepeatList
+                                    ? Icons.local_fire_department_rounded
+                                    : Icons.folder_copy_outlined),
                             color: isFavoriteList
                                 ? Colors.redAccent
-                                : (isDeleting
-                                    ? Colors.redAccent
-                                    : widget.themeColor.withValues(alpha: 0.7))),
+                                : (isOnRepeatList
+                                    ? Colors.deepOrangeAccent
+                                    : (isDeleting
+                                        ? Colors.redAccent
+                                        : widget.themeColor.withValues(alpha: 0.7)))),
                         title: Text(pName,
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 14)),
-                        onLongPress: isFavoriteList
-                            ? null // 🎯 SİBER KALKAN: Favorilerim listesi silinemez!
+                        onLongPress: isProtectedList
+                            ? null // 🎯 SİBER KALKAN: Favorilerim ve Zirvedekiler silinemez!
                             : () => setState(() => _longPressedPlaylist =
                                 isDeleting ? null : pName),
                         trailing: isDeleting
@@ -145,12 +154,12 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
           // --- SİBER KOMUTAN (MİKROFON) ---
           ListTile(
             leading: Icon(Icons.mic, color: widget.themeColor),
-            title: const Text('SİBER KOMUTAN',
+            title: const Text('SESLİ KOMUT',
                 style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2)),
-            subtitle: const Text('Sesli komutları aktif et',
+            subtitle: const Text('Sesli asistanı başlat',
                 style: TextStyle(color: Colors.white54, fontSize: 10)),
             onTap: () {
               Navigator.pop(context);
@@ -185,7 +194,7 @@ class _PlaylistManagerDrawerState extends State<PlaylistManagerDrawer> {
             child: Icon(Icons.person, color: widget.themeColor, size: 40),
           ),
           const SizedBox(height: 10),
-          const Text('ÖZSES V7 IMPERIUM',
+          const Text('ÖZSES IMPERIUM',
               style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

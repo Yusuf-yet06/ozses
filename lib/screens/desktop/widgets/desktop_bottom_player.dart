@@ -240,10 +240,30 @@ class _DesktopBottomPlayerState extends State<DesktopBottomPlayer> {
                                 hoverColor: Colors.white10,
                               ),
                               const SizedBox(width: 12),
-                              IconButton(
-                                icon: const Icon(Icons.repeat_rounded, color: Colors.white54, size: 22),
-                                onPressed: () {},
-                                hoverColor: Colors.white10,
+                              StreamBuilder<PlaybackState>(
+                                stream: audioHandler.playbackState,
+                                builder: (context, snapshot) {
+                                  final repeatMode = snapshot.data?.repeatMode ?? AudioServiceRepeatMode.none;
+                                  final isOne = repeatMode == AudioServiceRepeatMode.one;
+                                  final isAll = repeatMode == AudioServiceRepeatMode.all;
+                                  return IconButton(
+                                    icon: Icon(
+                                      isOne ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+                                      color: (isOne || isAll) ? themeColor : Colors.white54,
+                                      size: 22,
+                                    ),
+                                    onPressed: () {
+                                      if (repeatMode == AudioServiceRepeatMode.none) {
+                                        audioHandler.setRepeatMode(AudioServiceRepeatMode.all);
+                                      } else if (repeatMode == AudioServiceRepeatMode.all) {
+                                        audioHandler.setRepeatMode(AudioServiceRepeatMode.one);
+                                      } else {
+                                        audioHandler.setRepeatMode(AudioServiceRepeatMode.none);
+                                      }
+                                    },
+                                    hoverColor: Colors.white10,
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -263,8 +283,9 @@ class _DesktopBottomPlayerState extends State<DesktopBottomPlayer> {
                                 builder: (context, snapshot) {
                                   final position = snapshot.data ?? Duration.zero;
                                   final duration = audioHandler.mediaItem.value?.duration ?? Duration.zero;
+                                  final durText = (duration == Duration.zero) ? '--:--' : _formatDuration(duration);
                                   return Text(
-                                    '${_formatDuration(position)} / ${_formatDuration(duration)}',
+                                    '${_formatDuration(position)} / $durText',
                                     style: TextStyle(
                                       color: Colors.white.withValues(alpha: 0.7), 
                                       fontSize: 12,
@@ -300,7 +321,7 @@ class _DesktopBottomPlayerState extends State<DesktopBottomPlayer> {
                                         );
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: const Text('Şarkı arşive indiriliyor...'),
+                                            content: const Text('Şarkı siber arşive alınıyor...'),
                                             backgroundColor: themeColor,
                                             behavior: SnackBarBehavior.floating,
                                           )

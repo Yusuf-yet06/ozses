@@ -63,7 +63,7 @@ class _SonicAuraSheetState extends State<SonicAuraSheet> with SingleTickerProvid
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('SİBER SES İZİN', style: TextStyle(color: Colors.white54, fontSize: 16, letterSpacing: 3, fontWeight: FontWeight.bold)),
+          const Text('SES İZİN (AURA)', style: TextStyle(color: Colors.white54, fontSize: 16, letterSpacing: 3, fontWeight: FontWeight.bold)),
           const SizedBox(height: 30),
           
           // 3D Dönen Enerji Küresi İllüzyonu

@@ -85,6 +85,7 @@ class OzsesPlaylistScreen extends StatelessWidget {
           );
         },
       ),
+    ),
     );
   }
 }

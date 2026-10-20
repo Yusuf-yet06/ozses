@@ -6,12 +6,25 @@ import 'package:http/http.dart' as http;
 import 'siber_platform.dart';
 import '../../services/ytdlp_service.dart';
 
+class _WindowsStreamCacheEntry {
+  final Map<String, dynamic> data;
+  final DateTime expiresAt;
+  _WindowsStreamCacheEntry(this.data, this.expiresAt);
+  bool get isValid => DateTime.now().isBefore(expiresAt);
+}
+
 class WindowsPlatform implements SiberPlatform {
   @override
   bool get supportsHardwareDSP => false;
 
+  @override
+  void preWarm(String videoId) {}
+
   final YoutubeExplode _yt = YoutubeExplode();
   final _AsyncMutex _ytMutex = _AsyncMutex();
+
+  // ⚡ SİBER JET RAM ÖNBELLEĞİ: Çözülen akış URL'lerini bellekte tutar (0 ms yanıt)
+  static final Map<String, _WindowsStreamCacheEntry> _streamCache = {};
 
   @override
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken}) async {
@@ -47,8 +60,7 @@ class WindowsPlatform implements SiberPlatform {
       print('🚀 Siber Yerel Keşfet Hatası (Masaüstü): $e');
       print('🔄 SİBER KALKAN: Piped Keşfet Fallback Devrede...');
       final List<String> pipedInstances = [
-        'https://piped.video/api', // The only one currently working reliably
-        'https://pipedapi.kavin.rocks',
+                'https://pipedapi.kavin.rocks',
         'https://api.piped.projectsegfau.lt',
         'https://pipedapi.smnz.de'
       ];
@@ -56,8 +68,9 @@ class WindowsPlatform implements SiberPlatform {
         try {
           final res = await http.get(Uri.parse('$instance/search?q=popüler+türkçe+şarkılar&filter=all')).timeout(const Duration(seconds: 10));
           if (res.statusCode == 200) {
-             final data = jsonDecode(res.body);
-             var items = [];
+             try {
+               final data = jsonDecode(res.body);
+               var items = [];
              for (var item in data['items']) {
                if (item['type'] == 'stream') {
                  items.add({
@@ -72,6 +85,7 @@ class WindowsPlatform implements SiberPlatform {
              if (items.isNotEmpty) {
                return {'status': 'basarili', 'oneriler': items, 'nextPageToken': ''};
              }
+             } catch (decodeEx) { print('JSON Parse error'); }
           }
         } catch (ex) {
           print('⚠️ Piped Keşfet Hatası ($instance): $ex');
@@ -82,7 +96,7 @@ class WindowsPlatform implements SiberPlatform {
   }
 
   @override
-  Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1}) async {
+  Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1, bool onlyMusic = true}) async {
     print('--- SİBER ARAMA BAŞLATILIYOR (Masaüstü) ---');
     try {
       return await _ytMutex.run(() async {
@@ -102,8 +116,7 @@ class WindowsPlatform implements SiberPlatform {
       print('Siber Arama Hatası: $e');
       print('🔄 SİBER KALKAN: Piped Arama Fallback Devrede (Masaüstü)...');
       final List<String> pipedInstances = [
-        'https://piped.video/api', // The only one currently working reliably
-        'https://pipedapi.kavin.rocks',
+                'https://pipedapi.kavin.rocks',
         'https://pipedapi.smnz.de',
         'https://pipedapi.adminforge.de',
         'https://api.piped.projectsegfau.lt'
@@ -114,8 +127,9 @@ class WindowsPlatform implements SiberPlatform {
           print('🎯 Deneniyor: $instance');
           final res = await http.get(Uri.parse('$instance/search?q=${Uri.encodeComponent(query)}&filter=all')).timeout(const Duration(seconds: 4));
           if (res.statusCode == 200) {
-             final data = jsonDecode(res.body);
-             var items = [];
+             try {
+               final data = jsonDecode(res.body);
+               var items = [];
              for (var item in data['items']) {
                if (item['type'] == 'stream') {
                  items.add({
@@ -130,6 +144,7 @@ class WindowsPlatform implements SiberPlatform {
                print('✅ Piped Arama Başarılı ($instance)');
                return items;
              }
+             } catch (decodeEx) { print('JSON Parse error'); }
           }
         } catch (ex) {
           print('⚠️ Piped Arama Hatası ($instance): $ex');
@@ -157,19 +172,21 @@ class WindowsPlatform implements SiberPlatform {
 
   Future<bool> _isValidStream(String url) async {
     try {
-      final res = await http.get(Uri.parse(url), headers: {'Range': 'bytes=0-1024', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}).timeout(const Duration(seconds: 5));
+      final res = await http.get(
+        Uri.parse(url),
+        headers: {'Range': 'bytes=0-1024', 'Accept': '*/*'},
+      ).timeout(const Duration(seconds: 4));
       if (res.statusCode == 200 || res.statusCode == 206) {
         final contentType = res.headers['content-type']?.toLowerCase() ?? '';
-        
+
         // 🛡️ SİBER KALKAN: Windows Media Foundation (just_audio_windows) native olarak WebM/Opus desteklemez!
-        // Bu yüzden webm gelirse sahte tamamlanma yapar. WebM'yi reddedip mp4/m4a'ya zorluyoruz.
         if (contentType.contains('webm') || contentType.contains('opus')) {
-          print('⚠️ SİBER KALKAN: Uyumsuz WebM/Opus formatı tespit edildi, reddediliyor ($url)');
+          print('⚠️ SİBER KALKAN: Uyumsuz WebM/Opus formatı tespit edildi ($url)');
           return false;
         }
 
         if (contentType.contains('audio') || contentType.contains('video') || contentType.contains('application/octet-stream')) {
-          if (res.bodyBytes.length > 100) return true;
+          if (res.bodyBytes.length > 50) return true;
         }
       }
     } catch (_) {}
@@ -178,189 +195,154 @@ class WindowsPlatform implements SiberPlatform {
 
   @override
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
-    print('🎯 SİBER ÇÖZÜCÜ (Masaüstü): Eşzamanlı yarış başlıyor -> $videoId');
-    
+    String finalVideoId = videoId;
+    if (videoId.startsWith('spotify:')) {
+      final query = videoId.substring(8);
+      print('🔍 [SPOTIFY MAPPING - PC] YouTube üzerinde aranıyor: $query');
+      try {
+        var searchResults = await _yt.search.search(query).timeout(const Duration(seconds: 8));
+        if (searchResults.isNotEmpty) {
+          finalVideoId = searchResults.first.id.value;
+          print('✅ [SPOTIFY MAPPING - PC] Eşleşme bulundu: $finalVideoId');
+        }
+      } catch (e) {
+        print('⚠️ Spotify arama hatası: $e');
+      }
+    }
+
+    print('🎯 SİBER ÇÖZÜCÜ (Masaüstü): Hızlı yarış başlıyor -> $finalVideoId');
+
+    // ⚡ 0. JET MOTORU: Hızlı RAM Önbelleği (0 ms gecikme)
+    final cached = _streamCache[finalVideoId];
+    if (cached != null && cached.isValid) {
+      print('⚡ [JET MOTORU - PC] $finalVideoId akış URL\'si RAM önbellekten 0 ms ile alındı!');
+      return cached.data;
+    }
+
     List<Future<Map<String, dynamic>>> resolvers = [];
 
-    // 0. SİBER KALKAN (Özel Vercel Sunucusu - ozses.com)
+    // 1. YoutubeExplode (Çoklu İstemci + Muxed MP4 Desteği)
     resolvers.add(() async {
       try {
-        final vercelUrl = 'https://backendproxy-hazel.vercel.app/api/stream?id=$videoId&apikey=SIBER_KALKAN_API_KEY_BURAYA_GELECEK';
-        final res = await http.get(Uri.parse(vercelUrl)).timeout(const Duration(seconds: 15));
+        var ytClients = [
+          YoutubeApiClient.androidVr,
+          YoutubeApiClient.ios,
+          YoutubeApiClient.androidSdkless,
+          YoutubeApiClient.safari,
+        ];
+        var manifest = await _yt.videos.streamsClient.getManifest(finalVideoId, ytClients: ytClients).timeout(const Duration(seconds: 6));
+        List<StreamInfo> audioStreamList = manifest.audioOnly
+            .where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a'))
+            .toList();
+        
+        // 🛡️ SİBER KALKAN: Nadir parçalarda sadece muxed mp4 olabilir!
+        if (audioStreamList.isEmpty) {
+          audioStreamList = manifest.muxed
+              .where((s) => s.container.name == 'mp4')
+              .toList();
+        }
+
+        if (audioStreamList.isNotEmpty) {
+          var ytStreamInfo = audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b);
+          final finalUrl = ytStreamInfo.url.toString();
+          print('✅ SİBER YARIŞ KAZANANI (Masaüstü): YoutubeExplode (Hızlı)');
+          return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+        }
+      } catch (_) {}
+      throw Exception('YoutubeExplode başarısız');
+    }());
+
+    // 2. yt-dlp (VisionOS Kamuflajı + Genişletilmiş Zaman Aşımı)
+    resolvers.add(() async {
+      try {
+        String exePath = await YtDlpService().getExecutablePath();
+        var process = await Process.run(exePath, [
+          '-g',
+          '--no-playlist',
+          '-f', 'ba[ext=m4a]/ba[ext=mp4]/b[ext=mp4]/ba',
+          '--no-check-certificate',
+          '--no-warnings',
+          '--extractor-args', 'youtube:player_client=visionos,android_vr,ios,web',
+          'https://www.youtube.com/watch?v=$finalVideoId',
+        ]).timeout(const Duration(seconds: 14));
+
+        if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
+          final lines = process.stdout.toString().trim().split('\n');
+          final finalUrl = lines.firstWhere((l) => l.trim().startsWith('http'), orElse: () => '').trim();
+          if (finalUrl.isNotEmpty) {
+            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): yt-dlp');
+            return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+          }
+        }
+      } catch (_) {}
+      throw Exception('yt-dlp başarısız');
+    }());
+
+    // 3. Vercel Backend Fallback
+    resolvers.add(() async {
+      try {
+        final res = await http.get(Uri.parse('https://ozses-api.vercel.app/api/stream?id=$finalVideoId')).timeout(const Duration(seconds: 6));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
-          if (data['stream_url'] != null) {
-            final finalUrl = data['stream_url'];
-            if (await _isValidStream(finalUrl)) {
-              print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Özel Vercel Sunucusu (ozses.com) + Gemini Kalkanı');
-              return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-            }
+          if (data['stream_url'] != null && data['stream_url'].toString().startsWith('http')) {
+            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Vercel Backend');
+            return {'status': 'basarili', 'stream_url': data['stream_url'].toString(), 'is_file': false};
           }
         }
-        throw Exception('Vercel sunucusu başarısız');
-      } catch (e) {
-        throw Exception('Vercel sunucusu başarısız');
-      }
+      } catch (_) {}
+      throw Exception('Vercel başarısız');
     }());
 
-    // 1. YoutubeExplode (Yerel)
-    resolvers.add(() async {
-      try {
-        var ytClients = [YoutubeApiClient.ios, YoutubeApiClient.androidVr, YoutubeApiClient.androidSdkless, YoutubeApiClient.tv];
-        var manifest = await _yt.videos.streamsClient.getManifest(videoId, ytClients: ytClients).timeout(const Duration(seconds: 15));
-        var audioStreamList = manifest.audioOnly.where((s) => s.container.name == 'mp4' || s.audioCodec.contains('mp4a')).toList();
-        if (audioStreamList.isEmpty) {
-          audioStreamList = manifest.audioOnly.toList();
-        }
-        var ytStreamInfo = audioStreamList.isNotEmpty
-            ? audioStreamList.reduce((a, b) => a.bitrate.bitsPerSecond > b.bitrate.bitsPerSecond ? a : b)
-            : manifest.audioOnly.withHighestBitrate();
-        final finalUrl = ytStreamInfo.url.toString();
-        if (!(await _isValidStream(finalUrl))) throw Exception('Invalid Stream');
-        print('✅ SİBER YARIŞ KAZANANI (Masaüstü): YoutubeExplode');
-        return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-      } catch (e) {
-        throw Exception('YoutubeExplode başarısız');
-      }
-    }());
-
-    // 2. yt-dlp (Normal)
-    resolvers.add(() async {
-      try {
-        String exePath = await YtDlpService().getExecutablePath();
-        var process = await Process.run(exePath, ['-g', '-f', 'bestaudio[ext=m4a]/bestaudio', '--no-check-certificate', 'https://www.youtube.com/watch?v=$videoId']).timeout(const Duration(seconds: 15));
-        if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
-          final finalUrl = process.stdout.toString().trim().split('\n').first;
-          if (await _isValidStream(finalUrl)) {
-            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): yt-dlp (Normal)');
-            return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-          }
-        }
-        throw Exception('yt-dlp normal başarısız');
-      } catch (_) { throw Exception('yt-dlp normal başarısız'); }
-    }());
-
-    // 3. yt-dlp (Chrome Çerezli)
-    resolvers.add(() async {
-      try {
-        String exePath = await YtDlpService().getExecutablePath();
-        var process = await Process.run(exePath, ['-g', '-f', 'bestaudio[ext=m4a]/bestaudio', '--no-check-certificate', '--cookies-from-browser', 'chrome', 'https://www.youtube.com/watch?v=$videoId']).timeout(const Duration(seconds: 15));
-        if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
-          final finalUrl = process.stdout.toString().trim().split('\n').first;
-          if (await _isValidStream(finalUrl)) {
-            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): yt-dlp (Chrome)');
-            return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-          }
-        }
-        throw Exception('yt-dlp chrome başarısız');
-      } catch (_) { throw Exception('yt-dlp chrome başarısız'); }
-    }());
-
-    // 4. yt-dlp (Edge Çerezli)
-    resolvers.add(() async {
-      try {
-        String exePath = await YtDlpService().getExecutablePath();
-        var process = await Process.run(exePath, ['-g', '-f', 'bestaudio[ext=m4a]/bestaudio', '--no-check-certificate', '--cookies-from-browser', 'edge', 'https://www.youtube.com/watch?v=$videoId']).timeout(const Duration(seconds: 15));
-        if (process.exitCode == 0 && process.stdout.toString().trim().isNotEmpty) {
-          final finalUrl = process.stdout.toString().trim().split('\n').first;
-          if (await _isValidStream(finalUrl)) {
-            print('✅ SİBER YARIŞ KAZANANI (Masaüstü): yt-dlp (Edge)');
-            return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-          }
-        }
-        throw Exception('yt-dlp edge başarısız');
-      } catch (_) { throw Exception('yt-dlp edge başarısız'); }
-    }());
-
-    // 3. Piped API
+    // 4. Güncel Piped API Yedekleri
     final pipedInstances = [
-      'https://piped.video/api', // The only one currently working reliably
-      'https://pipedapi.kavin.rocks',
+      'https://pipedapi.leptons.xyz',
+      'https://pipedapi.nosebs.ru',
       'https://pipedapi.smnz.de',
-      'https://pipedapi.lunar.icu'
+      'https://api.piped.yt',
     ];
     for (var instance in pipedInstances) {
       resolvers.add(() async {
         try {
-          final pipedRes = await http.get(Uri.parse('$instance/streams/$videoId')).timeout(const Duration(seconds: 15));
+          final pipedRes = await http.get(Uri.parse('$instance/streams/$finalVideoId')).timeout(const Duration(seconds: 5));
           if (pipedRes.statusCode == 200) {
-             final data = jsonDecode(pipedRes.body);
-             final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
-             if (audioStreams.isNotEmpty) {
-               // İlk olarak m4a veya mp4 formatını bulmaya çalış
-               var preferredStream = audioStreams.firstWhere(
-                 (s) => s['mimeType'] != null && (s['mimeType'].toString().contains('mp4a') || s['mimeType'].toString().contains('mp4')),
-                 orElse: () => audioStreams.first
-               );
-               final finalUrl = preferredStream['url'].toString();
-               if (await _isValidStream(finalUrl)) {
-                 print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance) - ${preferredStream['mimeType']}');
-                 return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-               }
-             }
-           }
-         } catch (_) {}
-         throw Exception('Piped başarısız');
-       }());
+            final data = jsonDecode(pipedRes.body);
+            final audioStreams = data['audioStreams'] as List<dynamic>? ?? [];
+            if (audioStreams.isNotEmpty) {
+              var preferredStream = audioStreams.firstWhere(
+                (s) => s['mimeType'] != null && (s['mimeType'].toString().contains('mp4a') || s['mimeType'].toString().contains('mp4')),
+                orElse: () => audioStreams.first,
+              );
+              final finalUrl = preferredStream['url'].toString();
+              if (await _isValidStream(finalUrl)) {
+                print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Piped ($instance)');
+                return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
+              }
+            }
+          }
+        } catch (_) {}
+        throw Exception('Piped başarısız');
+      }());
     }
 
-    // 4. Vercel Backend
+    // 5. VPS Audio Relay (Son Çare)
     resolvers.add(() async {
       try {
-        final vercelRes = await http.get(Uri.parse('https://ozses-832f9y4py-ozses.vercel.app/stream?id=$videoId')).timeout(const Duration(seconds: 15));
-         if (vercelRes.statusCode == 200) {
-           final data = jsonDecode(vercelRes.body);
-           if (data['stream_url'] != null) {
-             final finalUrl = data['stream_url'].toString();
-             if (await _isValidStream(finalUrl)) {
-               print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Vercel Backend');
-               return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-             }
-           }
-         }
-       } catch (_) {}
-       throw Exception('Vercel başarısız');
-     }());
-
-    // Cobalt API kapatıldı, Vercel devre dışı (yedek olarak SİBER KALKAN tarafından korunan Piped/Invidious yeterli)
-
-    // 5. Invidious API
-    final invidiousInstances = ['inv.tux.pizza', 'invidious.lunar.icu', 'vid.puffyan.us', 'invidious.asir.dev'];
-    for (var instance in invidiousInstances) {
-      resolvers.add(() async {
-        try {
-          final invRes = await http.get(Uri.parse('https://$instance/api/v1/videos/$videoId')).timeout(const Duration(seconds: 15));
-          if (invRes.statusCode == 200) {
-            final data = jsonDecode(invRes.body);
-             final streams = data['formatStreams'] as List<dynamic>? ?? [];
-             final adaptiveFormats = data['adaptiveFormats'] as List<dynamic>? ?? [];
-             
-             // Invidious'ta adaptiveFormats içinde sadece ses olan akışlar bulunur
-             var audioStreams = adaptiveFormats.where((s) => s['type'] != null && s['type'].toString().contains('audio')).toList();
-             if (audioStreams.isEmpty) {
-               audioStreams = streams.where((s) => s['type'] != null && s['type'].toString().contains('audio')).toList();
-             }
-             
-             if (audioStreams.isNotEmpty) {
-               // M4A veya MP4 formatını tercih et (WebM Windows'ta sorun çıkarıyor)
-               var preferredStream = audioStreams.firstWhere(
-                 (s) => s['type'] != null && (s['type'].toString().contains('mp4') || s['type'].toString().contains('m4a')),
-                 orElse: () => audioStreams.first
-               );
-               final finalUrl = preferredStream['url'].toString();
-               if (await _isValidStream(finalUrl)) {
-                 print('✅ SİBER YARIŞ KAZANANI (Masaüstü): Invidious ($instance) - ${preferredStream['type']}');
-                 return {'status': 'basarili', 'stream_url': finalUrl, 'is_file': false};
-               }
-             }
-           }
-         } catch (_) {}
-         throw Exception('Invidious başarısız');
-       }());
-    }
+        final relayUrl = 'http://167.172.190.129:8080/stream/$videoId';
+        final check = await http.head(Uri.parse(relayUrl)).timeout(const Duration(seconds: 4));
+        if (check.statusCode == 200 || check.statusCode == 206 || check.statusCode == 302) {
+          print('✅ SİBER YARIŞ KAZANANI (Masaüstü): VPS Audio Relay');
+          return {'status': 'basarili', 'stream_url': relayUrl, 'is_file': false};
+        }
+      } catch (_) {}
+      throw Exception('VPS Relay başarısız');
+    }());
 
     try {
-      return await firstSuccessful(resolvers);
+      final winner = await firstSuccessful(resolvers);
+      if (winner['status'] == 'basarili' && winner['stream_url'] != null) {
+        _streamCache[finalVideoId] = _WindowsStreamCacheEntry(winner, DateTime.now().add(const Duration(hours: 4)));
+      }
+      return winner;
     } catch (e) {
       print('🛑 SİBER ÇÖZÜCÜ (Masaüstü): TÜM MOTORLAR ÇÖKTÜ! HİÇBİR URL BULUNAMADI.');
       return {'status': 'hata', 'mesaj': 'Tüm akış motorları çöktü'};

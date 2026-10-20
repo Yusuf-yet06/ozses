@@ -21,6 +21,7 @@ import 'sleep_timer_sheet.dart';
 import 'siber_uyku_sheet.dart';
 import 'siber_kuyruk_sheet.dart';
 import 'siber_istatistik_sheet.dart';
+import 'interactive_vinyl_disc.dart';
 
 class LyricLine {
   final Duration time;
@@ -65,9 +66,12 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
   String _currentProcessedId =
       ''; // 🎯 Titremeyi (Flicker) engelleyen kimlik mührü
   List<LyricLine> _parsedLyrics = [];
+  List<GlobalKey> _lyricKeys = [];
   final ScrollController _lyricsScrollController = ScrollController();
   int _lastActiveIndex = -1;
   StreamSubscription? _mediaSub;
+  bool _isAutoScrollLocked = true;
+  int _lyricsOffsetMs = 0;
 
   @override
   void initState() {
@@ -87,7 +91,10 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                   null; // 🛡️ Yalnızca şarkı DEĞİŞTİĞİNDE resmi sıfırla!
               _lyricsText = '';
               _parsedLyrics.clear();
+              _lyricKeys.clear();
               _showLyrics = false;
+              _lastActiveIndex = -1;
+              _lyricsOffsetMs = 0;
             });
           }
           _loadCoverForMediaItem(item);
@@ -97,33 +104,58 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
   }
 
   void _loadCoverForMediaItem(MediaItem item) {
+    final vid = item.extras?['videoId']?.toString() ?? extractVideoIdFromPath(item.id);
     final uri = artUriForMediaId(
       item.id,
-      videoId: item.extras?['videoId']?.toString(),
+      videoId: vid,
       existing: item.artUri,
     );
 
-    if (uri != null) {
-      http.get(uri).then((response) {
-        if (response.statusCode == 200 &&
-            mounted &&
-            _currentProcessedId == item.id) {
-          setState(() => _coverBytes = response.bodyBytes);
+    // 1. Önce yerel hafızadan (ID3 / M4A / Çevrimdışı Kapak) kontrol et! (0ms gecikme & kota koruması)
+    ID3Service.getCoverBytesForSong(item.id, videoId: vid, artUrl: item.artUri?.toString()).then((bytes) {
+      if (bytes != null && mounted && _currentProcessedId == item.id) {
+        setState(() => _coverBytes = bytes);
+        _updatePalette();
+        return;
+      }
+
+      // 2. Yerelde yoksa ve internet URL'si varsa çek ve yerel belleğe mühürle
+      if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+        http.get(uri).then((response) {
+          if (response.statusCode == 200 &&
+              mounted &&
+              _currentProcessedId == item.id) {
+            setState(() => _coverBytes = response.bodyBytes);
+            _updatePalette();
+            if (vid != null && vid.isNotEmpty) {
+              ID3Service.cacheCoverBytes(vid, response.bodyBytes);
+            }
+          }
+        }).catchError((_) {
+          _extractFallbackTags(item.id);
+        });
+        return;
+      }
+
+      _extractFallbackTags(item.id);
+    }).catchError((_) {
+      _extractFallbackTags(item.id);
+    });
+  }
+
+  void _extractFallbackTags(String filePath) {
+    if (filePath.startsWith('downloading:') || filePath == 'bilinmeyen_yol') {
+      return;
+    }
+
+    ID3Service.extractTags(filePath).then((tags) {
+      if (!mounted || _currentProcessedId != filePath) return;
+      setState(() {
+        final b = ID3Service.getCoverBytes(tags);
+        if (b != null) {
+          _coverBytes = b;
           _updatePalette();
         }
-      }).catchError((_) {});
-      return;
-    }
-
-    if (item.id.startsWith('downloading:') || item.id == 'bilinmeyen_yol') {
-      return;
-    }
-
-    ID3Service.extractTags(item.id).then((tags) {
-      if (!mounted || _currentProcessedId != item.id) return;
-      setState(() {
-        _coverBytes = ID3Service.getCoverBytes(tags);
-        _updatePalette();
         final extractedArtist = tags['Artist'];
         if (extractedArtist != null &&
             extractedArtist.toString().trim().isNotEmpty) {
@@ -166,6 +198,55 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       }
     } catch (e) {}
     return null;
+  }
+
+  void _changeLyricsOffset(int deltaMs) {
+    setState(() {
+      _lyricsOffsetMs += deltaMs;
+    });
+    LyricsService.saveLyricsOffset(_songPath, _lyricsOffsetMs);
+  }
+
+  void _resetLyricsOffset() {
+    setState(() {
+      _lyricsOffsetMs = 0;
+    });
+    LyricsService.saveLyricsOffset(_songPath, 0);
+  }
+
+  void _scrollToActiveIndex(int activeIndex) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_lyricsScrollController.hasClients) return;
+      if (activeIndex >= 0 && activeIndex < _lyricKeys.length) {
+        final key = _lyricKeys[activeIndex];
+        final itemContext = key.currentContext;
+        if (itemContext != null) {
+          Scrollable.ensureVisible(
+            itemContext,
+            alignment: 0.45, // 🎯 Tam göz hizası (Hafifçe ortanın üstü)
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOutCubic,
+          );
+        } else {
+          // 🛡️ SİBER KALKAN: Eğer henüz render edilmemişse yaklaşık konuma sıçra, sonra hizala
+          if (_lyricsScrollController.position.hasContentDimensions) {
+            final maxExtent = _lyricsScrollController.position.maxScrollExtent;
+            final targetOffset = (activeIndex * 55.0 - (_lyricsScrollController.position.viewportDimension / 2)).clamp(0.0, maxExtent);
+            _lyricsScrollController.jumpTo(targetOffset);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && key.currentContext != null) {
+                Scrollable.ensureVisible(
+                  key.currentContext!,
+                  alignment: 0.45,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOutCubic,
+                );
+              }
+            });
+          }
+        }
+      }
+    });
   }
 
   Future<void> _saveLocalLyrics(String songPath, String lyrics) async {
@@ -319,6 +400,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       } else {
         _parsedLyrics = lines.map((e) => LyricLine(Duration.zero, e)).toList();
       }
+      _lyricKeys = List.generate(_parsedLyrics.length, (_) => GlobalKey());
       return;
     }
 
@@ -344,6 +426,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
           .where((e) => e.text.isNotEmpty)
           .toList();
     }
+    _lyricKeys = List.generate(_parsedLyrics.length, (_) => GlobalKey());
   }
 
   String _analyzeLineMood(String text) {
@@ -581,8 +664,10 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                           : StreamBuilder<Duration>(
                                               stream: AudioService.position,
                                               builder: (context, snapshot) {
-                                                final pos = snapshot.data ??
+                                                final rawPos = snapshot.data ??
                                                     Duration.zero;
+                                                final effectiveMs = (rawPos.inMilliseconds - _lyricsOffsetMs).clamp(0, 99999999);
+                                                final pos = Duration(milliseconds: effectiveMs);
                                                 int activeIndex = -1;
                                                 bool isSynced =
                                                     _parsedLyrics.length > 1 &&
@@ -601,55 +686,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                     activeIndex = i;
                                                   }
 
-                                                  // 🛠️ SİBER OPERASYON: Kaydırma taşması ve kilitlenmesi jilet gibi sıfırlandı
+                                                  // 🛠️ SİBER OPERASYON: Sabitleyici modu açıksa otomatik kaydır, serbest moddaysa kullanıcının kaydırmasına izin ver
                                                   if (activeIndex != -1 &&
                                                       activeIndex !=
                                                           _lastActiveIndex) {
-                                                    WidgetsBinding.instance
-                                                        .addPostFrameCallback(
-                                                            (_) {
-                                                      if (_lyricsScrollController
-                                                              .hasClients &&
-                                                          activeIndex <
-                                                              _parsedLyrics
-                                                                  .length) {
-                                                        const double
-                                                            itemExtent = 54.0;
-                                                        double viewportHeight =
-                                                            _lyricsScrollController
-                                                                .position
-                                                                .viewportDimension;
-                                                        double targetOffset =
-                                                            (activeIndex *
-                                                                    itemExtent) -
-                                                                (viewportHeight /
-                                                                    2) +
-                                                                (itemExtent /
-                                                                    2);
-
-                                                        // Max extent kontrolünü güvenli sınıra aldık
-                                                        double maxExtent =
-                                                            _lyricsScrollController
-                                                                .position
-                                                                .maxScrollExtent;
-                                                        targetOffset =
-                                                            targetOffset.clamp(
-                                                                0.0,
-                                                                maxExtent > 0
-                                                                    ? maxExtent
-                                                                    : double
-                                                                        .infinity);
-
-                                                        _lyricsScrollController.animateTo(
-                                                            targetOffset,
-                                                            duration:
-                                                                const Duration(
-                                                                    milliseconds:
-                                                                        400),
-                                                            curve: Curves
-                                                                .fastOutSlowIn);
-                                                      }
-                                                    });
+                                                    if (_isAutoScrollLocked) {
+                                                      _scrollToActiveIndex(activeIndex);
+                                                    }
                                                     _lastActiveIndex =
                                                         activeIndex;
                                                   }
@@ -657,6 +700,160 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
 
                                                 return Column(
                                                   children: [
+                                                    // ⏱️ Kalibrasyon, Sabitleyici & Çeviri Kontrol Paneli
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(top: 8.0, bottom: 4.0, left: 8.0, right: 8.0),
+                                                      child: Wrap(
+                                                        alignment: WrapAlignment.center,
+                                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                                        spacing: 6,
+                                                        runSpacing: 6,
+                                                        children: [
+                                                          // 1. Senkron Ofset Ayar Çubuğu (Varsa)
+                                                          if (isSynced)
+                                                            Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.black.withValues(alpha: 0.4),
+                                                                borderRadius: BorderRadius.circular(14),
+                                                                border: Border.all(
+                                                                  color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.35),
+                                                                  width: 1,
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                children: [
+                                                                  InkWell(
+                                                                    onTap: () => _changeLyricsOffset(-500),
+                                                                    borderRadius: BorderRadius.circular(8),
+                                                                    child: const Padding(
+                                                                      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                                                      child: Text('-0.5s', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(width: 3),
+                                                                  InkWell(
+                                                                    onTap: _resetLyricsOffset,
+                                                                    borderRadius: BorderRadius.circular(8),
+                                                                    child: Padding(
+                                                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                                                      child: Text(
+                                                                        _lyricsOffsetMs == 0 ? 'Senkron' : 's',
+                                                                        style: TextStyle(
+                                                                          color: (_dynamicColor ?? widget.themeColor),
+                                                                          fontSize: 10,
+                                                                          fontWeight: FontWeight.bold,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(width: 3),
+                                                                  InkWell(
+                                                                    onTap: () => _changeLyricsOffset(500),
+                                                                    borderRadius: BorderRadius.circular(8),
+                                                                    child: const Padding(
+                                                                      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                                                      child: Text('+0.5s', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+
+                                                          // 2. 📌 Sabitleyici / Serbest Mod Butonu
+                                                          InkWell(
+                                                            onTap: () {
+                                                              setState(() {
+                                                                _isAutoScrollLocked = !_isAutoScrollLocked;
+                                                              });
+                                                              if (_isAutoScrollLocked && activeIndex >= 0) {
+                                                                _scrollToActiveIndex(activeIndex);
+                                                              }
+                                                            },
+                                                            borderRadius: BorderRadius.circular(14),
+                                                            child: Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                              decoration: BoxDecoration(
+                                                                color: _isAutoScrollLocked
+                                                                    ? (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.25)
+                                                                    : Colors.black.withValues(alpha: 0.4),
+                                                                borderRadius: BorderRadius.circular(14),
+                                                                border: Border.all(
+                                                                  color: _isAutoScrollLocked
+                                                                      ? (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.7)
+                                                                      : Colors.white24,
+                                                                  width: 1,
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                children: [
+                                                                  Icon(
+                                                                    _isAutoScrollLocked ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                                                                    color: _isAutoScrollLocked ? (_dynamicColor ?? widget.themeColor) : Colors.white60,
+                                                                    size: 12,
+                                                                  ),
+                                                                  const SizedBox(width: 4),
+                                                                  Text(
+                                                                    _isAutoScrollLocked ? 'Sabit' : 'Serbest',
+                                                                    style: TextStyle(
+                                                                      color: _isAutoScrollLocked ? Colors.white : Colors.white70,
+                                                                      fontSize: 10,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+
+                                                          // 3. 🌐 Türkçe Çeviri Butonu (Sistem döşenmemiş, şık UI butonu)
+                                                          InkWell(
+                                                            onTap: () {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                const SnackBar(
+                                                                  content: Text('🌐 Türkçe Çeviri Motoru V8 ile aktif edilecek.'),
+                                                                  backgroundColor: Colors.deepPurple,
+                                                                  duration: Duration(seconds: 2),
+                                                                ),
+                                                              );
+                                                            },
+                                                            borderRadius: BorderRadius.circular(14),
+                                                            child: Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors.black.withValues(alpha: 0.4),
+                                                                borderRadius: BorderRadius.circular(14),
+                                                                border: Border.all(
+                                                                  color: Colors.white24,
+                                                                  width: 1,
+                                                                ),
+                                                              ),
+                                                              child: const Row(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                children: [
+                                                                  Icon(
+                                                                    Icons.translate_rounded,
+                                                                    color: Colors.cyanAccent,
+                                                                    size: 12,
+                                                                  ),
+                                                                  SizedBox(width: 4),
+                                                                  Text(
+                                                                    'Türkçe Çeviri',
+                                                                    style: TextStyle(
+                                                                      color: Colors.white,
+                                                                      fontSize: 10,
+                                                                      fontWeight: FontWeight.bold,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                     if (isSynced &&
                                                         activeIndex >= 0 &&
                                                         activeIndex <
@@ -725,106 +922,136 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                         ),
                                                       ),
                                                     Expanded(
-                                                      child: ListView.builder(
-                                                        controller:
-                                                            _lyricsScrollController,
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                vertical: 20,
-                                                                horizontal: 20),
-                                                        itemCount: _parsedLyrics
-                                                            .length,
-                                                        itemBuilder:
-                                                            (context, index) {
-                                                          final line =
-                                                              _parsedLyrics[
-                                                                  index];
-                                                          final isActive =
-                                                              isSynced
-                                                                  ? (index ==
-                                                                      activeIndex)
-                                                                  : false;
+                                                      child: MediaQuery(
+                                                        data: MediaQuery.of(context).copyWith(
+                                                          textScaler: MediaQuery.of(context).textScaler.clamp(
+                                                            minScaleFactor: 0.85,
+                                                            maxScaleFactor: 1.10,
+                                                          ),
+                                                        ),
+                                                        child: ListView.builder(
+                                                          controller:
+                                                              _lyricsScrollController,
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 24,
+                                                                  horizontal: 16),
+                                                          itemCount: _parsedLyrics
+                                                              .length,
+                                                          itemBuilder:
+                                                              (context, index) {
+                                                            final line =
+                                                                _parsedLyrics[
+                                                                    index];
+                                                            final isActive =
+                                                                isSynced
+                                                                    ? (index ==
+                                                                        activeIndex)
+                                                                    : false;
+                                                            final key = (index < _lyricKeys.length)
+                                                                ? _lyricKeys[index]
+                                                                : null;
 
-                                                          return AnimatedContainer(
-                                                            duration:
-                                                                const Duration(
-                                                                    milliseconds:
-                                                                        250),
-                                                            margin:
-                                                                const EdgeInsets
+                                                            return InkWell(
+                                                              key: key,
+                                                              borderRadius: BorderRadius.circular(15),
+                                                              splashColor: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.25),
+                                                              highlightColor: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.1),
+                                                              onTap: () {
+                                                                if (isSynced) {
+                                                                  audioHandler.seek(line.time);
+                                                                  HapticFeedback.selectionClick();
+                                                                  _scrollToActiveIndex(index);
+                                                                }
+                                                              },
+                                                              child: AnimatedContainer(
+                                                                duration:
+                                                                    const Duration(
+                                                                        milliseconds:
+                                                                            250),
+                                                                margin:
+                                                                    const EdgeInsets
+                                                                        .symmetric(
+                                                                        vertical:
+                                                                            4),
+                                                                padding: EdgeInsets
                                                                     .symmetric(
-                                                                    vertical:
-                                                                        6),
-                                                            padding: EdgeInsets
-                                                                .symmetric(
-                                                                    vertical:
-                                                                        isActive
-                                                                            ? 12
-                                                                            : 6,
-                                                                    horizontal:
-                                                                        8),
-                                                            decoration: isActive
-                                                                ? BoxDecoration(
-                                                                    color: widget
-                                                                        .themeColor
-                                                                        .withValues(alpha: 
-                                                                            0.2),
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            15),
-                                                                    border: Border.all(
+                                                                        vertical:
+                                                                            isActive
+                                                                                ? 10
+                                                                                : 6,
+                                                                        horizontal:
+                                                                            12),
+                                                                decoration: isActive
+                                                                    ? BoxDecoration(
                                                                         color: widget
                                                                             .themeColor
                                                                             .withValues(alpha: 
-                                                                                0.8),
-                                                                        width:
-                                                                            1),
-                                                                  )
-                                                                : null,
-                                                            child: isActive ? (SubscriptionManager().canUseAdvancedKaraoke() ? Text(
-                                                              line.text,
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: TextStyle(
-                                                                color: Colors.white,
-                                                                fontSize: 32,
-                                                                fontWeight: FontWeight.w900,
-                                                                shadows: [
-                                                                  Shadow(
-                                                                      color: (_dynamicColor ?? widget.themeColor),
-                                                                      blurRadius: 15),
-                                                                  Shadow(
-                                                                      color: (_dynamicColor ?? widget.themeColor),
-                                                                      blurRadius: 30)
-                                                                ],
+                                                                                0.2),
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(
+                                                                                15),
+                                                                        border: Border.all(
+                                                                            color: widget
+                                                                                .themeColor
+                                                                                .withValues(alpha: 
+                                                                                    0.8),
+                                                                            width:
+                                                                                1),
+                                                                      )
+                                                                    : null,
+                                                                child: isActive ? (SubscriptionManager().canUseAdvancedKaraoke() ? Text(
+                                                                  line.text,
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .center,
+                                                                  maxLines: 4,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: TextStyle(
+                                                                    color: Colors.white,
+                                                                    fontSize: 22,
+                                                                    fontWeight: FontWeight.w800,
+                                                                    shadows: [
+                                                                      Shadow(
+                                                                          color: (_dynamicColor ?? widget.themeColor),
+                                                                          blurRadius: 10),
+                                                                      Shadow(
+                                                                          color: (_dynamicColor ?? widget.themeColor),
+                                                                          blurRadius: 20)
+                                                                    ],
+                                                                  ),
+                                                                ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                                                                 .shimmer(duration: 1500.ms, color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5))
+                                                                 .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.03, 1.03), duration: 800.ms)
+                                                                : Text(
+                                                                  line.text,
+                                                                  textAlign: TextAlign.center,
+                                                                  maxLines: 4,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: TextStyle(
+                                                                    color: (_dynamicColor ?? widget.themeColor),
+                                                                    fontSize: 21,
+                                                                    fontWeight: FontWeight.w800,
+                                                                  ),
+                                                                ))
+                                                                : Text(
+                                                                  line.text,
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .center,
+                                                                  maxLines: 4,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: const TextStyle(
+                                                                    color: Colors.white54,
+                                                                    fontSize: 15,
+                                                                    fontWeight: FontWeight.w600,
+                                                                  ),
+                                                                ),
                                                               ),
-                                                            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                                                             .shimmer(duration: 1500.ms, color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5))
-                                                             .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.05, 1.05), duration: 800.ms)
-                                                            : Text(
-                                                              line.text,
-                                                              textAlign: TextAlign.center,
-                                                              style: TextStyle(
-                                                                color: (_dynamicColor ?? widget.themeColor),
-                                                                fontSize: 28,
-                                                                fontWeight: FontWeight.w800,
-                                                              ),
-                                                            ))
-                                                            : Text(
-                                                              line.text,
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: const TextStyle(
-                                                                color: Colors.white54,
-                                                                fontSize: 20,
-                                                                fontWeight: FontWeight.bold,
-                                                              ),
-                                                            ),
-                                                          );
-                                                        },
+                                                            );
+                                                          },
+                                                        ),
                                                       ),
                                                     ),
                                                   ],
@@ -839,8 +1066,15 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                   child: StreamBuilder<PlaybackState>(
                                       stream: audioHandler.playbackState,
                                       builder: (context, snapshot) {
+                                        final playbackState = snapshot.data;
                                         final isPlaying =
-                                            snapshot.data?.playing ?? false;
+                                            playbackState?.playing ?? false;
+                                        final currentSpeed =
+                                            playbackState?.speed ?? 1.0;
+                                        final currentPos =
+                                            playbackState?.position ?? Duration.zero;
+                                        final totalDur = audioHandler.mediaItem.value?.duration ?? Duration.zero;
+
                                         // 🛠️ SİBER REHİS: Masaüstü dikey alanına göre CD boyutunu koruma altına aldık
                                         double calculatedSize =
                                             constraints.maxHeight * 0.45;
@@ -851,11 +1085,44 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                           calculatedSize = 180;
                                         }
 
-                                        return RotatingCDCover(
+                                        return InteractiveVinylDisc(
                                           isPlaying: isPlaying,
                                           themeColor: (_dynamicColor ?? widget.themeColor),
                                           coverBytes: _coverBytes,
                                           size: calculatedSize,
+                                          playbackSpeed: currentSpeed,
+                                          currentPosition: currentPos,
+                                          totalDuration: totalDur,
+                                          onSwipeUp: _handleKaraokeToggle,
+                                          onSwipeDown: () {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              backgroundColor: Colors.transparent,
+                                              isScrollControlled: true,
+                                              builder: (context) => SiberKuyrukSheet(
+                                                themeColor: (_dynamicColor ?? widget.themeColor),
+                                              ),
+                                            );
+                                          },
+                                          onSwipeLeft: () {
+                                            audioHandler.skipToNext();
+                                          },
+                                          onSwipeRight: () {
+                                            audioHandler.skipToPrevious();
+                                          },
+                                          onTap: () {
+                                            if (isPlaying) {
+                                              audioHandler.pause();
+                                            } else {
+                                              audioHandler.play();
+                                            }
+                                          },
+                                          onSeek: (target) async {
+                                            await audioHandler.seek(target);
+                                          },
+                                          onSpeedChanged: (speed) async {
+                                            await audioHandler.setSpeed(speed);
+                                          },
                                         );
                                       }),
                                 ),

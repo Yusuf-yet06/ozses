@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../services/subscription_manager.dart';
-import '../screens/siber_payment_screen.dart';
+import 'legal_sheets.dart';
 
 class SiberPremiumSheet extends StatefulWidget {
   final Color themeColor;
@@ -14,6 +18,125 @@ class SiberPremiumSheet extends StatefulWidget {
 
 class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
   final SubscriptionManager _subManager = SubscriptionManager();
+  bool _isLoading = false;
+  Offerings? _offerings;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOfferings();
+  }
+
+  Future<void> _fetchOfferings() async {
+    try {
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        Offerings offerings = await Purchases.getOfferings();
+        if (mounted) {
+          setState(() {
+            _offerings = offerings;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Siber Hata: RevenueCat paketleri alınamadı: $e");
+    }
+  }
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.black87,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: widget.themeColor),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: widget.themeColor),
+              const SizedBox(height: 15),
+              const Text('Güvenli Bağlantı Kuruluyor...',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      decoration: TextDecoration.none)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processPurchase(SiberTier tier, String planName, String entitlementId) async {
+    _showLoadingDialog();
+
+    try {
+      if (!kIsWeb &&
+          (Platform.isAndroid || Platform.isIOS) &&
+          _offerings != null &&
+          _offerings!.current != null) {
+        Package? packageToBuy;
+
+        if (entitlementId == 'student') {
+          packageToBuy = _offerings!.current!.availablePackages.firstWhere(
+              (p) => p.identifier.contains('student'),
+              orElse: () => _offerings!.current!.availablePackages.first);
+        } else {
+          packageToBuy = _offerings!.current!.availablePackages.firstWhere(
+              (p) => p.identifier.contains('premium'),
+              orElse: () => _offerings!.current!.availablePackages.first);
+        }
+
+        if (packageToBuy != null) {
+          PurchaseResult purchaseResult =
+              await Purchases.purchasePackage(packageToBuy);
+          CustomerInfo customerInfo = purchaseResult.customerInfo;
+          if (customerInfo.entitlements.all[entitlementId]?.isActive == true) {
+            await _subManager.syncPurchases();
+            _onPurchaseSuccess(planName);
+            return;
+          }
+        }
+      }
+
+      // Geliştirici / Test simülasyonu
+      await Future.delayed(const Duration(seconds: 1));
+      await _subManager.setTier(tier);
+      _onPurchaseSuccess(planName);
+    } on PlatformException catch (e) {
+      if (mounted) Navigator.pop(context); // Loading dialog
+      var errorCode = PurchasesErrorHelper.getErrorCode(e);
+      if (errorCode != PurchasesErrorCode.purchaseCancelledError) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Hata: ${e.message}')));
+        }
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Hata oluştu: $e')));
+      }
+    }
+  }
+
+  void _onPurchaseSuccess(String planName) {
+    if (mounted) {
+      Navigator.pop(context); // Loading dialog
+      Navigator.pop(context); // Sheet'i kapat
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('🎉 $planName Paketine Geçiş Yapıldı! Uygulama yenileniyor...'),
+        backgroundColor: widget.themeColor,
+        duration: const Duration(seconds: 3),
+      ));
+    }
+  }
 
   Widget _buildFeatureRow(String text, bool included, {bool highlight = false}) {
     return Padding(
@@ -120,18 +243,18 @@ class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
                             setState(() {});
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('🎉 $title Paketine Geçiş Başarılı! Uygulama yenileniyor...'),
+                                content: Text('🎉 $title Paketine Geçiş Başarılı!'),
                                 backgroundColor: accentColor,
                               )
                             );
+                            Navigator.pop(context);
                           }
                         } else {
-                          Navigator.pop(context); // Modal kapat
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SiberPaymentScreen(themeColor: widget.themeColor),
-                            ),
+                          // Doğrudan bu pencerede satın alma işlemi başlat
+                          await _processPurchase(
+                            tier,
+                            title,
+                            tier == SiberTier.student ? 'student' : 'premium',
                           );
                         }
                       },
@@ -155,7 +278,7 @@ class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(top: BorderSide(color: widget.themeColor.withValues(alpha: 0.5), width: 2)),
+        border: Border(top: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5), width: 2)),
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -169,9 +292,9 @@ class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.workspace_premium, color: widget.themeColor, size: 32),
+                  Icon(Icons.workspace_premium, color: Theme.of(context).colorScheme.primary, size: 32),
                   const SizedBox(width: 10),
-                  const Text('SİBER LİGLER', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                  const Text('ÖZSES PLANLARI', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2)),
                 ],
               ),
               const SizedBox(height: 30),
@@ -182,64 +305,113 @@ class _SiberPremiumSheetState extends State<SiberPremiumSheet> {
                   children: [
                     // FREE TIER
                     _buildPlanCard(
-                      title: 'ÇAYLAK',
-                      price: 'Ücretsiz',
+                      title: 'ÜCRETSİZ',
+                      price: '0 ₺ / Ay',
                       tier: SiberTier.free,
                       accentColor: Colors.blueGrey,
                       isCurrent: currentTier == SiberTier.free,
                       features: [
-                        _buildFeatureRow('Sınırsız Dinleme & İndirme', true),
-                        _buildFeatureRow('Reklamlar', false),
-                        _buildFeatureRow('Standart Karaoke', true),
-                        _buildFeatureRow('AI Liste (Günde 1)', true),
-                        _buildFeatureRow('İstatistik Raporu (Yılda 3)', true),
-                        _buildFeatureRow('Şahsi Keşfet & Otomatik Mix', false),
-                        _buildFeatureRow('Sesli Komut', false),
-                        _buildFeatureRow('Metamorfoz Modu', false),
-                        _buildFeatureRow('Neon Şimmer Efektleri', false),
+                        _buildFeatureRow('Sınırsız Dinleme', true),
+                        _buildFeatureRow('Reklamsız Deneyim', false),
+                        _buildFeatureRow('Arşive Ekleme (5/Gün)', true),
+                        _buildFeatureRow('Reklamla Ekstra Hak (+2)', true),
+                        _buildFeatureRow('AI Listeleme (1/Gün)', true),
+                        _buildFeatureRow('İstatistik (Yılda 2)', true),
+                        _buildFeatureRow('Atmosferik Hava Mixi', false),
+                        _buildFeatureRow('Metamorfoz Stüdyosu', false),
                       ],
                     ),
                     // STUDENT TIER
                     _buildPlanCard(
-                      title: 'AKADEMİK',
-                      price: '55 ₺ / Ay',
+                      title: 'ÖĞRENCİ PLANI',
+                      price: '54.99 ₺ / Ay',
                       tier: SiberTier.student,
                       accentColor: Colors.cyanAccent,
                       isCurrent: currentTier == SiberTier.student,
                       features: [
-                        _buildFeatureRow('Sınırsız Dinleme & İndirme', true),
+                        _buildFeatureRow('Sınırsız Dinleme', true),
                         _buildFeatureRow('Reklamsız Deneyim', true, highlight: true),
-                        _buildFeatureRow('Neon Karaoke Efektleri', true),
-                        _buildFeatureRow('Şahsi Keşfet & Otomatik Mix', true, highlight: true),
-                        _buildFeatureRow('AI Liste (Günde 5)', true),
-                        _buildFeatureRow('Sesli Komut (Limitli)', true),
-                        _buildFeatureRow('İstatistik Raporu (Ayda 1)', true),
-                        _buildFeatureRow('Kısıtlı Aura Temaları', true),
-                        _buildFeatureRow('Metamorfoz Modu', false),
+                        _buildFeatureRow('Arşive Ekleme (15/Gün)', true, highlight: true),
+                        _buildFeatureRow('AI Listeleme (5/Gün)', true),
+                        _buildFeatureRow('İstatistik (2 Ayda 1)', true),
+                        _buildFeatureRow('Atmosferik Hava Mixi Açık', true, highlight: true),
+                        _buildFeatureRow('Metamorfoz Stüdyosu', false),
                       ],
                     ),
                     // PREMIUM TIER
                     _buildPlanCard(
-                      title: 'SİBER LORD',
-                      price: '90 ₺ / Ay',
+                      title: 'IMPERIUM PREMIUM',
+                      price: '89.99 ₺ / Ay',
                       tier: SiberTier.premium,
-                      accentColor: Colors.purpleAccent,
+                      accentColor: Colors.amber,
                       isCurrent: currentTier == SiberTier.premium,
                       features: [
-                        _buildFeatureRow('Sınırsız Dinleme & İndirme', true),
+                        _buildFeatureRow('Sınırsız Dinleme', true),
                         _buildFeatureRow('Sıfır Reklam', true),
-                        _buildFeatureRow('Sınırsız AI Müzik Listesi', true, highlight: true),
-                        _buildFeatureRow('Limitsiz Sesli Komut', true),
-                        _buildFeatureRow('İstatistik Raporu (14 Günde 1)', true),
-                        _buildFeatureRow('Limitsiz Aura Renkleri', true),
-                        _buildFeatureRow('Siber Metamorfoz Modu', true, highlight: true),
-                        _buildFeatureRow('Özel İmparator Rozeti', true, highlight: true),
+                        _buildFeatureRow('Limitsiz Şarkı Arşivleme', true, highlight: true),
+                        _buildFeatureRow('Limitsiz AI Listeleme', true, highlight: true),
+                        _buildFeatureRow('Limitsiz İstatistik Raporu', true),
+                        _buildFeatureRow('Atmosferik Hava Mixi Açık', true, highlight: true),
+                        _buildFeatureRow('Metamorfoz Stüdyosu Açık', true, highlight: true),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 10),
+              // Satın Alımları Geri Yükle
+              TextButton.icon(
+                onPressed: () async {
+                  _showLoadingDialog();
+                  await _subManager.syncPurchases();
+                  if (!context.mounted) return;
+                  Navigator.pop(context); // Dialogu kapat
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                          'Satın alımlarınız kontrol edildi ve senkronize edildi.'),
+                      backgroundColor: widget.themeColor,
+                    ),
+                  );
+                  if (mounted) setState(() {});
+                },
+                icon: Icon(Icons.restore, color: widget.themeColor, size: 16),
+                label: Text('Satın Alımları Geri Yükle',
+                    style: TextStyle(
+                        color: widget.themeColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12)),
+              ),
+              // Yasal Bilgilendirme & EULA Linkleri
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () => showLegalDocsModal(context,
+                          themeColor: widget.themeColor, initialTab: 0),
+                      child: const Text('Kullanım Koşulları',
+                          style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                              decoration: TextDecoration.underline)),
+                    ),
+                    const Text(' • ',
+                        style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    TextButton(
+                      onPressed: () => showLegalDocsModal(context,
+                          themeColor: widget.themeColor, initialTab: 1),
+                      child: const Text('Gizlilik Politikası',
+                          style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                              decoration: TextDecoration.underline)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
             ],
           ),
         ),

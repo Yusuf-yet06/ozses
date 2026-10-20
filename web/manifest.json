@@ -1,12 +1,12 @@
 {
-    "name": "ozses_v7_imperium",
-    "short_name": "ozses_v7_imperium",
+    "name": "ÖZSES IMPERIUM",
+    "short_name": "ÖZSES",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#0D0E15",
+    "theme_color": "#0D0E15",
+    "description": "Yeni Nesil Hibrit Müzik ve Ses Deneyimi",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../../../services/playlist_service.dart';
 import '../../../utils/song_media_utils.dart';
+import '../../../utils/search_utils.dart';
 import '../../../models/song_model.dart';
 import '../../../widgets/neon_search_bar.dart';
 import 'desktop_home_view.dart';
@@ -95,13 +96,25 @@ class _DesktopLibraryViewState extends State<DesktopLibraryView> {
                       const SizedBox(height: 15),
                       _buildSelectionTile(
                         context: context,
-                        title: 'Siber Zeka (Otonom)',
+                        title: 'Akıllı Mix (Otonom)',
                         subtitle: 'Ruh halinize ve müzik türüne göre otomatik liste hazırlasın.',
                         icon: Icons.auto_awesome_rounded,
                         color: Colors.orangeAccent,
                         onTap: () {
                           Navigator.pop(context);
                           _showOfflineAutoPlaylistDialog(context, themeColor);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      _buildSelectionTile(
+                        context: context,
+                        title: 'Sanatçıya Özel Otonom Liste',
+                        subtitle: 'Kütüphanenizdeki bir sanatçının solo ve düet parçalarından liste üretir.',
+                        icon: Icons.mic_external_on_rounded,
+                        color: Colors.pinkAccent,
+                        onTap: () {
+                          Navigator.pop(context);
+                          _showArtistAutoPlaylistDialog(context, themeColor);
                         },
                       ),
                       const SizedBox(height: 20),
@@ -489,6 +502,458 @@ class _DesktopLibraryViewState extends State<DesktopLibraryView> {
     );
   }
 
+  void _showArtistAutoPlaylistDialog(BuildContext context, Color themeColor) async {
+    final List<SongModel> globalSongs = await loadGlobalLibrarySongs();
+    if (!context.mounted) return;
+    if (globalSongs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Kütüphanenizde henüz şarkı bulunmuyor!'),
+        backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
+      ));
+      return;
+    }
+
+    final Map<String, int> artistCounts = {};
+    for (var song in globalSongs) {
+      String rawArtist = (song.artist ?? '').trim();
+      if (rawArtist.isEmpty || rawArtist.toLowerCase() == '<unknown>' || rawArtist.toLowerCase() == 'unknown') {
+        if (song.title != null && song.title!.contains(' - ')) {
+          rawArtist = song.title!.split(' - ')[0].trim();
+        }
+      }
+      if (rawArtist.isNotEmpty && rawArtist.toLowerCase() != '<unknown>' && rawArtist.toLowerCase() != 'unknown') {
+        final parts = rawArtist.split(RegExp(r'\s*(,|&|x|/|\+|feat\.?|ft\.?|ile)\s*', caseSensitive: false));
+        for (var p in parts) {
+          final trimmed = p.trim();
+          if (trimmed.length > 1 && trimmed.toLowerCase() != 'feat' && trimmed.toLowerCase() != 'ft') {
+            artistCounts[trimmed] = (artistCounts[trimmed] ?? 0) + 1;
+          }
+        }
+      }
+    }
+
+    final sortedArtists = artistCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final TextEditingController searchCtrl = TextEditingController();
+    bool includeSolo = true;
+    bool includeDuet = true;
+    String selectedArtist = sortedArtists.isNotEmpty ? sortedArtists.first.key : '';
+    if (selectedArtist.isNotEmpty) {
+      searchCtrl.text = selectedArtist;
+    }
+
+    if (!context.mounted) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final query = searchCtrl.text.trim().toLowerCase();
+            final filteredArtists = query.isEmpty
+                ? sortedArtists.take(16).toList()
+                : sortedArtists
+                    .where((e) => e.key.toLowerCase().contains(query))
+                    .take(16)
+                    .toList();
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                height: 520,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.95),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  border: Border(top: BorderSide(color: Colors.pinkAccent.withValues(alpha: 0.6), width: 2)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.pinkAccent.withValues(alpha: 0.15), blurRadius: 30, spreadRadius: 4),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 15, bottom: 12),
+                            width: 50,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.mic_external_on_rounded, color: Colors.pinkAccent, size: 26),
+                            SizedBox(width: 10),
+                            Text(
+                              'SANATÇI OTONOM MOTORU',
+                              style: TextStyle(
+                                color: Colors.pinkAccent,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Center(
+                          child: Text(
+                            'Kütüphanendeki sanatçının solo ve düet parçalarını otonom derle',
+                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
+                            ),
+                            child: TextField(
+                              controller: searchCtrl,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              onChanged: (val) {
+                                setSheetState(() {
+                                  selectedArtist = val.trim();
+                                });
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Sanatçı adı ara veya yazın...',
+                                hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                                prefixIcon: const Icon(Icons.search_rounded, color: Colors.pinkAccent, size: 20),
+                                suffixIcon: searchCtrl.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear_rounded, color: Colors.white54, size: 18),
+                                        onPressed: () {
+                                          setSheetState(() {
+                                            searchCtrl.clear();
+                                            selectedArtist = '';
+                                          });
+                                        },
+                                      )
+                                    : null,
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 22),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 14),
+                              const SizedBox(width: 6),
+                              Text(
+                                'KÜTÜPHANENDEN ÖNERİLENLER',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: filteredArtists.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      searchCtrl.text.trim().isNotEmpty
+                                          ? '"${searchCtrl.text.trim()}" için özel arama yapılacak'
+                                          : 'Kütüphanede sanatçı bulunamadı',
+                                      style: const TextStyle(color: Colors.white38, fontSize: 13),
+                                    ),
+                                  )
+                                : SingleChildScrollView(
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: filteredArtists.map((entry) {
+                                        final isSel = selectedArtist.toLowerCase() == entry.key.toLowerCase();
+                                        return InkWell(
+                                          onTap: () {
+                                            setSheetState(() {
+                                              selectedArtist = entry.key;
+                                              searchCtrl.text = entry.key;
+                                            });
+                                          },
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                            decoration: BoxDecoration(
+                                              color: isSel
+                                                  ? Colors.pinkAccent.withValues(alpha: 0.25)
+                                                  : Colors.white.withValues(alpha: 0.05),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: isSel
+                                                    ? Colors.pinkAccent
+                                                    : Colors.white.withValues(alpha: 0.15),
+                                                width: isSel ? 1.5 : 1,
+                                              ),
+                                              boxShadow: isSel
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: Colors.pinkAccent.withValues(alpha: 0.3),
+                                                        blurRadius: 8,
+                                                      )
+                                                    ]
+                                                  : null,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.person_rounded,
+                                                  size: 14,
+                                                  color: isSel ? Colors.pinkAccent : Colors.white70,
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  entry.key,
+                                                  style: TextStyle(
+                                                    color: isSel ? Colors.white : Colors.white70,
+                                                    fontSize: 12,
+                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                  decoration: BoxDecoration(
+                                                    color: isSel
+                                                        ? Colors.pinkAccent.withValues(alpha: 0.6)
+                                                        : Colors.white12,
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Text(
+                                                    '${entry.value}',
+                                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () {
+                                    if (!includeSolo && !includeDuet) return;
+                                    setSheetState(() {
+                                      includeSolo = !includeSolo;
+                                      if (!includeSolo && !includeDuet) includeDuet = true;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: includeSolo ? Colors.cyanAccent.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: includeSolo ? Colors.cyanAccent : Colors.white24),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(includeSolo ? Icons.check_circle_rounded : Icons.radio_button_unchecked, color: includeSolo ? Colors.cyanAccent : Colors.white38, size: 16),
+                                        const SizedBox(width: 6),
+                                        const Text('👑 Solo Eserler', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () {
+                                    if (!includeSolo && !includeDuet) return;
+                                    setSheetState(() {
+                                      includeDuet = !includeDuet;
+                                      if (!includeSolo && !includeDuet) includeSolo = true;
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: includeDuet ? Colors.purpleAccent.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.03),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: includeDuet ? Colors.purpleAccent : Colors.white24),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(includeDuet ? Icons.check_circle_rounded : Icons.radio_button_unchecked, color: includeDuet ? Colors.purpleAccent : Colors.white38, size: 16),
+                                        const SizedBox(width: 6),
+                                        const Text('🤝 Düet & Feat', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: selectedArtist.isNotEmpty ? Colors.pinkAccent : Colors.white12,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              elevation: selectedArtist.isNotEmpty ? 8 : 0,
+                              shadowColor: Colors.pinkAccent.withValues(alpha: 0.5),
+                            ),
+                            onPressed: selectedArtist.isNotEmpty
+                                ? () {
+                                    Navigator.pop(context);
+                                    _handleArtistAutoPlaylist(
+                                      selectedArtist,
+                                      includeSolo,
+                                      includeDuet,
+                                      themeColor,
+                                    );
+                                  }
+                                : null,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.rocket_launch_rounded, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  selectedArtist.isNotEmpty
+                                      ? '"$selectedArtist" Otonom Listesini Başlat'
+                                      : 'Sanatçı Seçin',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _handleArtistAutoPlaylist(
+    String artistQuery,
+    bool includeSolo,
+    bool includeDuet,
+    Color themeColor,
+  ) async {
+    final List<SongModel> globalSongs = await loadGlobalLibrarySongs();
+    if (globalSongs.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Hata: Cihazınızda hiç şarkı yok!'),
+          backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
+        ));
+      }
+      return;
+    }
+
+    final cleanQuery = artistQuery.trim();
+    if (cleanQuery.isEmpty) return;
+
+    final escaped = RegExp.escape(cleanQuery);
+    final artistRegex = RegExp(r'(^|[\s\(\[\-\_\,\.\&])' + escaped + r'($|[\s\)\]\-\_\,\.\&])', caseSensitive: false);
+    final duetRegex = RegExp(r'\b(feat\.?|ft\.?|&|x|\+|ile|düet|duet)\b', caseSensitive: false);
+
+    List<SongModel> soloMatches = [];
+    List<SongModel> duetMatches = [];
+
+    for (var song in globalSongs) {
+      final title = (song.title ?? '').trim();
+      final artist = (song.artist ?? '').trim();
+      final name = (song.name ?? '').trim();
+      final combined = '$title $artist $name';
+
+      final isMatch = artistRegex.hasMatch(combined) || combined.toLowerCase().contains(cleanQuery.toLowerCase());
+      if (isMatch) {
+        final isDuet = duetRegex.hasMatch(combined);
+        if (isDuet) {
+          duetMatches.add(song);
+        } else {
+          soloMatches.add(song);
+        }
+      }
+    }
+
+    List<SongModel> finalSongs = [];
+    if (includeSolo) finalSongs.addAll(soloMatches);
+    if (includeDuet) finalSongs.addAll(duetMatches);
+
+    if (finalSongs.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('⚠️ Kütüphanenizde "$cleanQuery" sanatçısına ait parça bulunamadı.'),
+          backgroundColor: Colors.amber.shade900,
+        ));
+      }
+      return;
+    }
+
+    final pName = '$cleanQuery Otonom';
+    final existingPlaylists = await _playlistService.getAllPlaylistNames();
+    if (!existingPlaylists.contains(pName)) {
+      await _playlistService.createPlaylist(pName);
+    }
+    for (var song in finalSongs) {
+      if (song.path != null) {
+        await _playlistService.addSongToPlaylist(pName, song.path!);
+      }
+    }
+
+    if (mounted) {
+      _loadPlaylists();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('🎙️ "$cleanQuery" Otonom Listesi hazırlandı (${finalSongs.length} şarkı: ${soloMatches.length} solo, ${duetMatches.length} düet)!'),
+        backgroundColor: Colors.pinkAccent.withValues(alpha: 0.85),
+        duration: const Duration(seconds: 4),
+      ));
+    }
+  }
+
   void _handleOfflineAutoPlaylist(String selection, Color themeColor) async {
     final List<SongModel> globalSongs = await loadGlobalLibrarySongs();
     if (globalSongs.isEmpty) {
@@ -511,7 +976,7 @@ class _DesktopLibraryViewState extends State<DesktopLibraryView> {
       filteredSongs = filteredSongs.take(15).toList();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Siber Zeka: '$selection' için çevrimdışı arşivinizden uygun şarkılar harmanlandı!"),
+          content: Text("Akıllı Mix: '$selection' için kütüphanenizden uygun şarkılar harmanlandı!"),
           backgroundColor: themeColor.withValues(alpha: 0.8),
         ));
       }
@@ -583,7 +1048,7 @@ class _DesktopLibraryViewState extends State<DesktopLibraryView> {
 
   @override
   Widget build(BuildContext context) {
-    List<String> filteredPlaylists = _playlists.where((p) => p.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    List<String> filteredPlaylists = _playlists.where((p) => SearchUtils.matchesText(p, _searchQuery)).toList();
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

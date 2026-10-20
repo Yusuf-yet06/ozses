@@ -22,7 +22,7 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
 
   // Önceden tanımlanmış siber tema paletleri
   static const List<_ThemePreset> _presets = [
-    _ThemePreset('Siber Mavi', Color(0xFF00B4FF), Icons.water_drop_rounded),
+    _ThemePreset('Okyanus Mavisi', Color(0xFF00B4FF), Icons.water_drop_rounded),
     _ThemePreset('Neon Mor', Color(0xFF9C27B0), Icons.auto_awesome),
     _ThemePreset('Lazer Yeşil', Color(0xFF00E676), Icons.eco_rounded),
     _ThemePreset('Kızıl Ateş', Color(0xFFFF1744), Icons.local_fire_department),
@@ -34,6 +34,18 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
     _ThemePreset('Kırmızı Biber', Color(0xFFD50000), Icons.whatshot_rounded),
     _ThemePreset('Gece Mavisi', Color(0xFF3D5AFE), Icons.nightlight_round),
     _ThemePreset('Elektrik', Color(0xFFE040FB), Icons.bolt_rounded),
+    _ThemePreset('Saf Zümrüt', Color(0xFF00C853), Icons.diamond_rounded),
+    _ThemePreset('Menekşe', Color(0xFF7C4DFF), Icons.psychology_rounded),
+    _ThemePreset('Kutup', Color(0xFF1DE9B6), Icons.ac_unit_rounded),
+    _ThemePreset('Mercan', Color(0xFFFF5252), Icons.fireplace_rounded),
+    _ThemePreset('Gece Yarısı', Color(0xFF303F9F), Icons.dark_mode_rounded),
+    _ThemePreset('Neon Sarı', Color(0xFFFFEA00), Icons.wb_sunny_rounded),
+    _ThemePreset('Lavanta', Color(0xFFB388FF), Icons.cloudy_snowing),
+    _ThemePreset('Kızıl Gül', Color(0xFFE91E63), Icons.favorite),
+    _ThemePreset('Safir', Color(0xFF0288D1), Icons.blur_on_rounded),
+    _ThemePreset('Titanyum', Color(0xFF90A4AE), Icons.shield_rounded),
+    _ThemePreset('Bordo', Color(0xFF880E4F), Icons.wine_bar_rounded),
+    _ThemePreset('Karbon', Color(0xFF607D8B), Icons.hardware_rounded),
   ];
 
   @override
@@ -162,7 +174,7 @@ class _SiberThemePickerSheetState extends State<SiberThemePickerSheet> {
                     widget.onColorChanged(_selectedColor);
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('🎨 Siber Aura Rengi Değiştirildi!'),
+                      content: const Text('✨ Tema Rengi Değiştirildi!'),
                       backgroundColor: _selectedColor,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

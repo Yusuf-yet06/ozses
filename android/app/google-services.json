@@ -50,6 +50,74 @@
       },
       "oauth_client": [
         {
+          "client_id": "533526268311-608gabs8mb1aoka3ucs3vrni643cdojl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ozses_v7_imperium",
+            "certificate_hash": "f941853583a21ac55d06b305068ef1ddb95dea00"
+          }
+        },
+        {
+          "client_id": "533526268311-egngnuh5s84ld96jso1nu8g71j8ul14d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ozses_v7_imperium",
+            "certificate_hash": "1236edfc108fa8c9fec7264eaa9cc68525f74d99"
+          }
+        },
+        {
+          "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH038IbGRqmbIgcuJuxM-SFJ6wsqyIFj8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "533526268311-tcv8k1qdb944innirdg595jqk7tdr9og.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.ozsesV7Imperium"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:533526268311:android:641e182c5a2c733d4a1cd2",
+        "android_client_info": {
+          "package_name": "com.ozses.imperium"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "533526268311-608gabs8mb1aoka3ucs3vrni643cdojl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ozses.imperium",
+            "certificate_hash": "f941853583a21ac55d06b305068ef1ddb95dea00"
+          }
+        },
+        {
+          "client_id": "533526268311-egngnuh5s84ld96jso1nu8g71j8ul14d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ozses.imperium",
+            "certificate_hash": "1236edfc108fa8c9fec7264eaa9cc68525f74d99"
+          }
+        },
+        {
           "client_id": "533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com",
           "client_type": 3
         }

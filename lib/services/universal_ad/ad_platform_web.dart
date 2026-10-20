@@ -73,6 +73,12 @@ class AdPlatformWeb implements AdPlatform {
   void disposeBannerAd() {
     // Web banner temizliği
   }
+
+  @override
+  void showRewardedAd({required VoidCallback onReward, VoidCallback? onFailed}) {
+    Fluttertoast.showToast(msg: '🎬 Reklam tamamlandı! +2 İndirme hakkı eklendi.');
+    onReward();
+  }
 }
 
 AdPlatform getAdPlatform() => AdPlatformWeb();

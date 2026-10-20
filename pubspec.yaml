@@ -2,7 +2,7 @@ name: ozses_v7
 description: "Özses V7 - Müzik Çalar ve Güvenlik Sistemi"
 publish_to: 'none' 
 
-version: 1.0.0+1
+version: 1.0.16+19
 
 # KRİTİK DÜZELTME BURASI:
 environment:
@@ -18,7 +18,6 @@ dependencies:
   audio_service: ^0.18.18
   speech_to_text: ^7.4.0
   flutter_tts: ^4.2.5
-  record: ^6.2.0 # 🎯 SİBER ŞAPLAK 3: Stabil Sürüm
 
   # Dosya ve Sistem Paketleri
   file_picker: ^11.0.2
@@ -36,7 +35,6 @@ dependencies:
   webview_flutter_wkwebview: ^3.13.0
   
   # 🎯 SİBER YAPAY ZEKA VE FREKANS MOTORLARI
-  fftea: ^1.5.0+1
   pitch_detector_dart: ^0.0.7
   
   # Tasarım ve Durum Yönetimi
@@ -51,11 +49,15 @@ dependencies:
   youtube_player_iframe: ^5.2.0
   url_launcher: ^6.2.6 # 🎯 SİBER HAMLE: Windows ve PC'de Tarayıcı Köprüsü
   webview_windows: ^0.4.0 # 🎯 SİBER KALKAN: Windows Uygulama İçi Video Motoru
-  youtube_explode_dart: ^3.1.0
+  youtube_explode_dart:
+    git:
+      url: https://github.com/its-ashutosh-pathak/youtube_explode_dart.git
+      ref: fix-visionos-403
   
   # 🎯 SİBER HAMLE: Otonom Kimlik Doğrulama ve Güvenlik Motorları
   firebase_core: ^3.1.1
   firebase_auth: ^5.1.1
+  cloud_firestore: ^5.6.0  # 🎯 SİBER HAMLE: Hesaba Bağlı Bulut Arşiv Motoru
   google_sign_in: ^6.2.1
   google_sign_in_dartio: ^0.3.0
   sign_in_with_apple: ^6.1.1 # 🍎 SİBER KALKAN: iOS Zorunlu Giriş Motoru
@@ -70,10 +72,12 @@ dependencies:
   purchases_flutter: ^10.4.3
   universal_io: ^2.3.1
   sqflite_common_ffi: ^2.4.0+3
+  flutter_secure_storage: ^10.3.1
+  record_web: ^1.3.0
+  fftea: ^1.5.0+1
 
 dependency_overrides:
   # 🛡️ SİBER KALKAN: Eski bozuk paketleri bodoslama ezen nihai mühür!
-  record_linux: ^1.3.0
 
 dev_dependencies:
   flutter_test:
@@ -87,6 +91,7 @@ flutter:
   assets:
     - assets/audio/frequencies/
     - assets/images/
+    - assets/silent.wav
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -96,8 +101,6 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#0a0a0a"
-  image: "assets/images/logo.jpg"
   android_12:
-    image: "assets/images/logo.jpg"
     icon_background_color: "#0a0a0a"
     color: "#0a0a0a"

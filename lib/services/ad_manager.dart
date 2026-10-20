@@ -42,4 +42,9 @@ class AdManager {
   static void disposeBannerAd() {
     _platform?.disposeBannerAd();
   }
+
+  static void showRewardedAd({required VoidCallback onReward, VoidCallback? onFailed}) {
+    _ensurePlatformInitialized();
+    _platform!.showRewardedAd(onReward: onReward, onFailed: onFailed);
+  }
 }

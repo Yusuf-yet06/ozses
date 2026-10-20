@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Siber mühür için tüm alanları doldurun!'), backgroundColor: Colors.redAccent),
+        const SnackBar(content: Text('Lütfen tüm alanları doldurun!'), backgroundColor: Colors.redAccent),
       );
       return;
     }
@@ -54,8 +54,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _siberGoogleGiris() async {
     setState(() => _isLoading = true);
     try {
-      final user = await AuthService().signInWithGoogle();
-      if (user != null && mounted) {
+      final success = await AuthService().signInWithGoogle();
+      if (success && mounted) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -63,9 +63,15 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google Bağlantı Hatası: ${e.toString()}'), backgroundColor: Colors.redAccent),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -101,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         title: const Text(
-          'SİBER KARARGAHA GİRİŞ',
+          'ÖZSES HESABINA GİRİŞ',
           style: TextStyle(
             color: Colors.cyanAccent,
             fontWeight: FontWeight.bold,
@@ -130,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 🎯 Siber Logo (Güvenlik Kalkanı)
+                  // 🎯 Logo
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -146,11 +152,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Colors.cyanAccent.withValues(alpha: 0.8),
                           width: 2),
                     ),
-                    child: const Icon(Icons.security, size: 60, color: Colors.cyanAccent),
+                    child: const Icon(Icons.music_note_rounded, size: 60, color: Colors.cyanAccent),
                   ),
                   const SizedBox(height: 40),
 
-                  // 🎯 SİBER FORM (Glassmorphism Mührü)
+                  // 🎯 FORM
                   _buildGlassCard(
                     child: Column(
                       children: [
@@ -162,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const Divider(color: Colors.white10, height: 1),
                         _buildSiberTextField(
-                          hint: 'Siber Şifre',
+                          hint: 'Şifre',
                           icon: Icons.lock_outline,
                           isPassword: true,
                           controller: _passController,
@@ -198,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           )
                         : const Text(
-                          'KİMLİĞİ DOĞRULA',
+                          'GİRİŞ YAP',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -216,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
                     },
-                    child: const Text('Siber Ağ\'a Katıl (Kayıt Ol)', style: TextStyle(color: Colors.white70)),
+                    child: const Text('Hesap Oluştur (Kayıt Ol)', style: TextStyle(color: Colors.white70)),
                   ),
 
                   const SizedBox(height: 15),

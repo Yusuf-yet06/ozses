@@ -7,20 +7,29 @@ import '../subscription_manager.dart';
 
 class AdPlatformMobile implements AdPlatform {
   static String get bannerAdUnitId {
-    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/6300978111';
+    if (Platform.isAndroid) return 'ca-app-pub-1775209250876098/4411279991';
     if (Platform.isIOS) return 'ca-app-pub-3940256099942544/2934735716';
     return '';
   }
 
   static String get interstitialAdUnitId {
-    if (Platform.isAndroid) return 'ca-app-pub-3940256099942544/1033173712';
+    if (Platform.isAndroid) return 'ca-app-pub-1775209250876098/1022785047';
     if (Platform.isIOS) return 'ca-app-pub-3940256099942544/4411468910';
+    return '';
+  }
+
+  static String get rewardedAdUnitId {
+    if (Platform.isAndroid) return 'ca-app-pub-1775209250876098/9040875862';
+    if (Platform.isIOS) return 'ca-app-pub-3940256099942544/1712485313';
     return '';
   }
 
   InterstitialAd? _interstitialAd;
   int _interstitialLoadAttempts = 0;
   DateTime? _lastAdTime;
+  
+  RewardedAd? _rewardedAd;
+  bool _isRewardedAdLoading = false;
   
   BannerAd? _bannerAd;
   bool _isBannerAdLoaded = false;
@@ -55,56 +64,41 @@ class AdPlatformMobile implements AdPlatform {
 
   @override
   bool willShowAd({bool isOfflineMode = false}) {
-    if (SubscriptionManager().currentTier != SiberTier.free) return false;
-    if (_lastAdTime == null) return true; // Eğer hiç reklam gösterilmediyse hazırdır
-    final difference = DateTime.now().difference(_lastAdTime!);
-    final requiredMinutes = isOfflineMode ? 35 : 25;
-    return difference.inSeconds >= (requiredMinutes * 60) - 30; // 30 saniye tolerans
+    if (SubscriptionManager().isAdFree) return false;
+    return _interstitialAd != null;
   }
 
   @override
   void showInterstitialAdIfReady({bool isOfflineMode = false, bool forceShow = false}) {
-    if (SubscriptionManager().currentTier != SiberTier.free) return; // 🎯 SİBER KALKAN: Premium kullanıcılara tam ekran reklam gösterilmez!
+    if (SubscriptionManager().isAdFree) return; // 🎯 SİBER KALKAN: Premium veya Geçici Reklamsız kullanıcılara tam ekran reklam gösterilmez!
 
-    _lastAdTime ??= DateTime.now();
-    final now = DateTime.now();
-    final difference = now.difference(_lastAdTime!);
-    
-    final requiredMinutes = isOfflineMode ? 35 : 25;
+    // 🛡️ SİBER KALKAN: Arka planda veya ekran kilitliyken reklam gösterilemez (Android Activity çökmesini önler)
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      print('🛡️ SİBER KALKAN: Arka planda interstitial reklam atlandı.');
+      return;
+    }
 
-    if (forceShow || difference.inMinutes >= requiredMinutes) {
-      if (_interstitialAd != null) {
-        Fluttertoast.showToast(
-            msg: "Siber Keşiflere kısa bir ara... Reklam yükleniyor 🚀",
-            toastLength: Toast.LENGTH_LONG,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 3,
-            backgroundColor: Colors.deepPurpleAccent,
-            textColor: Colors.white,
-            fontSize: 14.0
-        );
-
-        final adToShow = _interstitialAd;
-        _interstitialAd = null; // Hemen null yap ki birden fazla kez tetiklenmesin
-        
-        Future.delayed(const Duration(seconds: 3), () {
-          if (adToShow == null) return;
-          adToShow.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (InterstitialAd ad) {
-              ad.dispose();
-              _createInterstitialAd();
-            },
-            onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
-              ad.dispose();
-              _createInterstitialAd();
-            },
-          );
-          adToShow.show();
-          _lastAdTime = DateTime.now();
-        });
-      } else {
-        _createInterstitialAd();
-      }
+    if (_interstitialAd != null) {
+      final adToShow = _interstitialAd!;
+      _interstitialAd = null; // Hemen null yap ki mükerrer tetiklenmesin
+      
+      adToShow.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (InterstitialAd ad) {
+          ad.dispose();
+          _createInterstitialAd();
+        },
+        onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+          ad.dispose();
+          _createInterstitialAd();
+        },
+      );
+      adToShow.show();
+      _lastAdTime = DateTime.now();
+      print('✅ [REKLAM]: Tam ekran reklam başarıyla gösterildi.');
+    } else {
+      print('⚠️ [REKLAM]: Interstitial reklam hazır değil, yeniden yükleniyor...');
+      _interstitialLoadAttempts = 0;
+      _createInterstitialAd();
     }
   }
 
@@ -116,6 +110,85 @@ class AdPlatformMobile implements AdPlatform {
   @override
   void disposeBannerAd() {
     // Banner ads are now self-disposing in their StatefulWidgets
+  }
+
+  void _loadRewardedAd() {
+    if (_isRewardedAdLoading || _rewardedAd != null) return;
+    _isRewardedAdLoading = true;
+    RewardedAd.load(
+      adUnitId: rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (RewardedAd ad) {
+          _rewardedAd = ad;
+          _isRewardedAdLoading = false;
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          _rewardedAd = null;
+          _isRewardedAdLoading = false;
+        },
+      ),
+    );
+  }
+
+  @override
+  void showRewardedAd({required VoidCallback onReward, VoidCallback? onFailed}) {
+    if (_rewardedAd != null) {
+      final ad = _rewardedAd!;
+      _rewardedAd = null;
+      bool userEarnedReward = false;
+
+      ad.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadRewardedAd();
+          if (userEarnedReward) {
+            onReward();
+          } else {
+            onFailed?.call();
+          }
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadRewardedAd();
+          // Hata durumunda kullanıcıyı cezalandırma, ödülü ver
+          onReward();
+        },
+      );
+
+      ad.show(onUserEarnedReward: (adWithoutView, reward) {
+        userEarnedReward = true;
+      });
+    } else {
+      // Reklam o anda hazır değilse direkt AdMob yükleme denemesi yapalım
+      RewardedAd.load(
+        adUnitId: rewardedAdUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd ad) {
+            bool userEarned = false;
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                if (userEarned) onReward(); else onFailed?.call();
+              },
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                ad.dispose();
+                onReward();
+              },
+            );
+            ad.show(onUserEarnedReward: (adWithoutView, reward) {
+              userEarned = true;
+            });
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            // Reklam servisine ulaşılamadıysa kullanıcıyı mağdur etme, bonusu ver
+            Fluttertoast.showToast(msg: '🎬 Reklam ağına bağlanamadı, +2 hak tanımlandı!');
+            onReward();
+          },
+        ),
+      );
+    }
   }
 }
 
@@ -137,6 +210,11 @@ class _MobileBannerAdWidgetState extends State<_MobileBannerAdWidget> {
   }
 
   void _loadAd() {
+    // 🛡️ SİBER REKLAMSIZ KALKAN: Siber Öğrenci, Imperium Premium veya Geçici Reklamsız Mod
+    if (SubscriptionManager().isAdFree) {
+      return;
+    }
+
     _bannerAd = BannerAd(
       adUnitId: AdPlatformMobile.bannerAdUnitId,
       size: AdSize.banner,
@@ -169,6 +247,9 @@ class _MobileBannerAdWidgetState extends State<_MobileBannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (SubscriptionManager().isAdFree) {
+      return const SizedBox.shrink();
+    }
     if (_isLoaded && _bannerAd != null) {
       return Container(
         alignment: Alignment.center,

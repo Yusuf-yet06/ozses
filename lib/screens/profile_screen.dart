@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'siber_wrapped_screen.dart'; // 🚀 Siber Özet Ekranı
+import 'package:flutter/services.dart';
+import 'siber_wrapped_screen.dart';
+import '../widgets/cyber_story_canvas.dart'; // 🚀 Siber Özet Ekranı
 import '../widgets/siber_premium_sheet.dart'; // 👑 Premium Ekranı
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui' as ui;
@@ -14,22 +17,38 @@ import '../services/services.dart';
 import '../services/auth_service.dart'; // 🎯 Auth Motoru
 import '../services/subscription_manager.dart';
 import '../screens/siber_payment_screen.dart';
-import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../services/history_service.dart';
-import '../services/auth_service.dart'; // 🎯 SİBER HAMLE: Gerçek Auth Motoru
 import 'package:screenshot/screenshot.dart'; // 🎯 SİBER HAMLE: Wrapped
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/siber_theme_service.dart'; // 🔮 Siber Tema Bağlantısı
 import '../widgets/siber_theme_picker_sheet.dart'; // 🎨 Yeni Tema Rengi Seçici
 import '../widgets/siber_istatistik_sheet.dart'; // 📊 İstatistik Radarı
+import '../widgets/legal_sheets.dart'; // 🎯 MAĞAZA UYUMLULUK: Gizlilik ve EULA
 import 'listening_mode_screen.dart'; // 🎯 Dinlenme Modu
+import '../services/rank_manager.dart';
+import '../services/cloud_library_service.dart';
+import '../services/analytics_service.dart';
+import '../widgets/personal_discover_setup_sheet.dart';
 
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onGenerateAIPlaylists;
+  final VoidCallback? onScanFolderForMusic;
+  final VoidCallback? onShowIPSettings;
+  final VoidCallback? onShowSleepTimer;
+  final VoidCallback? onLaunchPersonalDiscover;
+  final VoidCallback? onScanNewRecruits;
+
+  const ProfileScreen({
+    super.key,
+    this.onGenerateAIPlaylists,
+    this.onScanFolderForMusic,
+    this.onShowIPSettings,
+    this.onShowSleepTimer,
+    this.onLaunchPersonalDiscover,
+    this.onScanNewRecruits,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -37,7 +56,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
-  String _username = 'Siber Ajan';
+  String _username = 'Müziksever';
   String _email = 'Bağlı hesap yok';
   String _rank = 'Acemi Dinleyici';
   String _nextRank = 'Çırak Taktisyen';
@@ -45,6 +64,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _hoursForNextRank = 5;
   double _rankProgress = 0.0;
   bool _isAccountLinked = false;
+  String _listeningPersona = 'Keşfetmeye Hazır';
+  String _topAnalyzedSong = '—';
 
   // 🎯 VİZYON DEĞİŞKENLERİ
 
@@ -66,6 +87,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _instagramHandle = '';
   String _twitterHandle = '';
 
+  // 🕵️‍♂️ SİBER LABORATUVAR: Gizli Yıl Sonu Özeti Tetikleyicisi (5 Tık)
+  int _secretWrappedTapCount = 0;
+  DateTime? _lastSecretTapTime;
+
+  void _handleSecretWrappedTrigger() {
+    final now = DateTime.now();
+    if (_lastSecretTapTime == null || now.difference(_lastSecretTapTime!) > const Duration(seconds: 3)) {
+      _secretWrappedTapCount = 1;
+    } else {
+      _secretWrappedTapCount++;
+    }
+    _lastSecretTapTime = now;
+
+    if (_secretWrappedTapCount >= 5) {
+      _secretWrappedTapCount = 0;
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🔓 Siber Laboratuvar Açıldı: 2026 İnteraktif Özeti Devrede!'),
+          backgroundColor: Color(0xFF00FFE0),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SiberWrappedScreen(),
+        ),
+      );
+    } else if (_secretWrappedTapCount >= 2) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -76,14 +131,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     final linked = prefs.getBool('siber_is_linked') ?? false;
-    final name = prefs.getString('siber_username') ?? 'Siber Ajan';
+    final name = prefs.getString('siber_username') ?? 'Müziksever';
     final email = prefs.getString('siber_email') ?? 'Bağlı hesap yok';
     // final auraValue =
     // prefs.getInt...
     final avatar = prefs.getString('siber_avatar_url') ??
         'https://robohash.org/$name.png?set=set3';
     final lastSyncTime =
-        prefs.getString('siber_last_sync') ?? 'Henüz mühürlenmedi';
+        prefs.getString('siber_last_sync') ?? 'Henüz eşitlenmedi';
     final instagram = prefs.getString('siber_instagram') ?? '';
     final twitter = prefs.getString('siber_twitter') ?? '';
 
@@ -111,27 +166,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // 🎯 YENİ 7 KADEMELİ RÜTBE SİSTEMİ
     String rank = 'Yeni Dinleyici';
-    String nextRank = 'Amatör';
+    String nextRank = 'Çırak Taktisyen';
     int hoursForNextRank = 5;
     double rankProgress = 0.0;
 
-    final List<Map<String, dynamic>> rankTiers = [
-      {'name': 'Yeni Dinleyici', 'hours': 0},
-      {'name': 'Amatör', 'hours': 5},
-      {'name': 'Müziksever', 'hours': 25},
-      {'name': 'Ritim Tutkunu', 'hours': 75},
-      {'name': 'Melodi Ustası', 'hours': 150},
-      {'name': 'Ses Gurmesi', 'hours': 300},
-      {'name': 'ÖZSES Efsanesi', 'hours': 500},
-    ];
+    final rankTiers = RankManager.allTiers;
 
     for (int i = 0; i < rankTiers.length; i++) {
-      if (totalHours >= rankTiers[i]['hours']) {
-        rank = rankTiers[i]['name'];
+      if (totalHours >= rankTiers[i].hours) {
+        rank = rankTiers[i].name;
         if (i < rankTiers.length - 1) {
-          nextRank = rankTiers[i + 1]['name'];
-          int currentTierHours = rankTiers[i]['hours'];
-          int nextTierHours = rankTiers[i + 1]['hours'];
+          nextRank = rankTiers[i + 1].name;
+          int currentTierHours = rankTiers[i].hours;
+          int nextTierHours = rankTiers[i + 1].hours;
           hoursForNextRank = nextTierHours - totalHours;
           int hoursInCurrentTier = totalHours - currentTierHours;
           int tierSpan = nextTierHours - currentTierHours;
@@ -160,9 +207,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       dominantMood = sortedMoods.first.key;
     }
 
+    String persona = 'Keşfetmeye Hazır';
+    String topSong = '—';
+    try {
+      persona = await AnalyticsService().getListeningPersona();
+      final songs = await AnalyticsService().getTopSongs(limit: 1);
+      if (songs.isNotEmpty) {
+        topSong = songs.first['title'] ?? '—';
+      }
+    } catch (_) {}
+
     if (mounted) {
       setState(() {
         _isAccountLinked = linked;
+        _listeningPersona = persona;
+        _topAnalyzedSong = topSong;
         _username = name;
         _email = email;
         _rank = rank;
@@ -380,12 +439,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 🎯 Rütbeye Göre Çerçeve Rengi Seçici
   Color _getRankColor() {
-    if (_rank == 'ÖZSES VETERANI') return Colors.redAccent;
-    if (_rank == 'Kıdemli Komutan') return Colors.orangeAccent;
-    if (_rank == 'Usta Analist') return Colors.purpleAccent;
-    if (_rank == 'Siber İstihbaratçı') return Colors.tealAccent;
-    if (_rank == 'Saha Operatörü') return Colors.greenAccent;
-    if (_rank == 'Çırak Taktisyen') return Colors.lightBlueAccent;
+    if (_rank == 'ÖZSES Efsanesi') return Colors.amber;
+    if (_rank == 'Ses Gurmesi') return Colors.redAccent;
+    if (_rank == 'Melodi Ustası') return Colors.orangeAccent;
+    if (_rank == 'Ritim Tutkunu') return Colors.purpleAccent;
+    if (_rank == 'Müziksever') return Colors.blueAccent;
+    if (_rank == 'Çırak Taktisyen') return Colors.greenAccent;
     return Colors.white54;
   }
 
@@ -435,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
-                      'Siber buluta bağlanmak için kimliğini doğrula.',
+                      'Bulut senkronizasyonu için kimliğinizi doğrulayın.',
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -448,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildTextField(emailController, 'E-Posta', Icons.email),
                     const SizedBox(height: 10),
                     _buildTextField(
-                        passwordController, 'Siber Şifre', Icons.lock,
+                        passwordController, 'Şifre', Icons.lock,
                         isPassword: true),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -477,7 +536,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Navigator.pop(context);
                                   _loadProfileData(); // Arayüzü güncelle
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                    content: const Text('Siber Ağa Başarıyla Bağlanıldı!'),
+                                    content: const Text('Hesabınıza Başarıyla Giriş Yapıldı!'),
                                     backgroundColor: _auraColor,
                                   ));
                                 }
@@ -494,7 +553,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               }
                             } catch (e) {
                               if (context.mounted) {
-                                String errorMsg = 'Siber Hata Oluştu.';
+                                String errorMsg = 'Hata oluştu.';
                                 if (e.toString().contains('email_not_verified')) {
                                   errorMsg = 'E-postanı henüz doğrulamamışsın! Lütfen mail kutunu kontrol et.';
                                 } else if (e.toString().contains('email-already-in-use')) {
@@ -514,13 +573,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(const SnackBar(
                               content: Text(
-                                  'Lütfen siber mühür için tüm alanları doldur!'),
+                                  'Lütfen tüm alanları doldurun!'),
                               backgroundColor: Colors.redAccent,
                             ));
                           }
                         },
                         child: Text(
-                            isLoginMode ? 'GİRİŞ YAP' : 'KAYIT OL & MÜHÜRLE',
+                            isLoginMode ? 'GİRİŞ YAP' : 'HESAP OLUŞTUR',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 15)),
                       ),
@@ -556,35 +615,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (success) {
                               _loadProfileData();
                               if (mounted) {
-                                scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Siber ağa başarıyla bağlanıldı (Google).'), backgroundColor: Colors.green));
+                                scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Başarıyla giriş yapıldı (Google).'), backgroundColor: Colors.green));
                               }
                             }
                           } catch (e) {
-                            scaffoldMessenger.showSnackBar(SnackBar(content: Text('Bağlantı hatası: Google Play Hizmetleri erişimi reddetti (SHA-1 Hatası)'), backgroundColor: Colors.red));
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text(e.toString().replaceAll('Exception: ', '')),
+                                backgroundColor: Colors.redAccent,
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
                           }
                         },
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Apple Button (Passive)
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.apple, color: Colors.white, size: 28),
-                        label: const Text('Apple ile Bağlan (Çok Yakında)', style: TextStyle(color: Colors.white70)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          side: const BorderSide(color: Colors.white24, width: 1),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    // Apple Button
+                    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS))
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.apple, color: Colors.white, size: 28),
+                          label: const Text('Apple ile Bağlan', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            side: const BorderSide(color: Colors.white24, width: 1),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () async {
+                            final scaffoldMessenger = ScaffoldMessenger.of(context);
+                            Navigator.pop(context);
+                            try {
+                              final user = await AuthService().signInWithApple();
+                              if (user != null) {
+                                _loadProfileData();
+                                if (mounted) {
+                                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Başarıyla giriş yapıldı (Apple).'), backgroundColor: Colors.green));
+                                }
+                              }
+                            } catch (e) {
+                              scaffoldMessenger.showSnackBar(SnackBar(content: Text('Bağlantı hatası: $e'), backgroundColor: Colors.red));
+                            }
+                          },
                         ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Apple bağlantısı şu anda yapım aşamasında. Çok yakında!'), backgroundColor: Colors.orange)
-                          );
-                        },
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -650,6 +726,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // 🎯 SİBER HAMLE: Google Hesabını Bağlama Motoru
+  Future<void> _linkGoogleAccount() async {
+    try {
+      final success = await AuthService().signInWithGoogle();
+      if (success) {
+        if (CloudLibraryService().isUserLoggedIn) {
+          await CloudLibraryService().fullSync();
+        }
+        await _loadProfileData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Google Hesabı başarıyla bağlandı ve bulut arşivi eşitlendi!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
   // 🎯 SİBER HAMLE: Hesabı Koparma Motoru
   void _unlinkAccount() async {
     // 1. Gerçek Çıkış İşlemi
@@ -659,10 +766,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Hesap siber ağdan koparıldı.'),
+        content: Text('Hesap bağlantısı kesildi.'),
         backgroundColor: Colors.orangeAccent,
       ));
     }
+  }
+
+  // 🎯 MAĞAZA UYUMLULUK: Hesabı Tamamen Silme
+  void _deleteAccount() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+            side: const BorderSide(color: Colors.redAccent, width: 1.5),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Expanded(child: Text('Hesabımı Sil', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16))),
+            ],
+          ),
+          content: const Text(
+            'Bu işlem geri alınamaz. Bulut arşivinizdeki tüm şarkılar, oynatma listeleriniz, dinleme geçmişiniz ve profil verileriniz kalıcı olarak silinecektir.\n\nEmin misiniz?',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Vazgeç', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () async {
+                Navigator.pop(context); // Dialogu kapat
+                try {
+                  await AuthService().deleteAccount();
+                  _loadProfileData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Hesabınız ve verileriniz başarıyla silindi.'), backgroundColor: Colors.green),
+                    );
+                  }
+                } catch (e) {
+                  if (e.toString().contains('requires-recent-login')) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Güvenlik nedeniyle hesabı silmeden önce tekrar giriş yapmalısınız.'), backgroundColor: Colors.orangeAccent),
+                      );
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Hesap silme başarısız: $e'), backgroundColor: Colors.redAccent),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Kalıcı Olarak Sil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // 🎯 SİBER HAMLE: Sosyal Medya Bağlantı Paneli
@@ -693,7 +863,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Siber profiline bu platformu mühürle.',
+                const Text('Profiline bu platformu bağla.',
                     style: TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 15),
                 _buildTextField(handleController, 'Kullanıcı Adı / Handle',
@@ -727,12 +897,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   });
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('$platform başarıyla mühürlendi!'),
+                    content: Text('$platform başarıyla kaydedildi!'),
                     backgroundColor: platformColor,
                   ));
                 }
               },
-              child: const Text('Mühürle',
+              child: const Text('Kaydet',
                   style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
@@ -804,7 +974,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: _auraColor)),
-            title: Text('SİBER KİMLİK KARTI',
+            title: Text('PROFİLİ DÜZENLE',
                 style:
                     TextStyle(color: _auraColor, fontWeight: FontWeight.bold)),
             content: SingleChildScrollView(
@@ -812,7 +982,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                      'Siber ajan adını ve avatarını güncelleyebilirsin.',
+                      'Profil adını ve avatarını güncelleyebilirsin.',
                       style: TextStyle(color: Colors.white54, fontSize: 12)),
                   const SizedBox(height: 15),
                   _buildTextField(
@@ -826,7 +996,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         backgroundColor: _auraColor,
                         foregroundColor: Colors.black),
                     icon: const Icon(Icons.smart_toy),
-                    label: const Text('Otonom Yüz Üret'),
+                    label: const Text('Rastgele Avatar'),
                     onPressed: () async {
                       String randId =
                           DateTime.now().millisecondsSinceEpoch.toString();
@@ -887,7 +1057,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Navigator.pop(context);
                   }
                 },
-                child: Text('Mühürle',
+                child: Text('Kaydet',
                     style: TextStyle(
                         color: _auraColor, fontWeight: FontWeight.bold)),
               )
@@ -896,158 +1066,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
   }
 
-  // 🎯 SİBER HAMLE: Bulut Senkronizasyon Simülasyonu
+  // 🎯 SİBER HAMLE: Bulut Senkronizasyonu (Gerçek Firestore & SQLite)
   Future<void> _startCloudSync() async {
     if (_isSyncing) return;
     setState(() {
       _isSyncing = true;
-      _syncProgress = 0.0;
+      _syncProgress = 0.2;
     });
 
-    Timer.periodic(const Duration(milliseconds: 50), (timer) async {
-      if (!mounted) {
-        timer.cancel();
-        return;
+    try {
+      if (CloudLibraryService().isUserLoggedIn) {
+        setState(() => _syncProgress = 0.6);
+        await CloudLibraryService().fullSync();
       }
-      setState(() {
-        _syncProgress += 0.02;
-      });
-      if (_syncProgress >= 1.0) {
-        timer.cancel();
-        final prefs = await SharedPreferences.getInstance();
-        final now = DateTime.now();
-        String timeStr =
-            '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute}';
-        await prefs.setString('siber_last_sync', timeStr);
+      setState(() => _syncProgress = 1.0);
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      String timeStr =
+          '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      await prefs.setString('siber_last_sync', timeStr);
+      if (mounted) {
         setState(() {
           _isSyncing = false;
           _lastSync = timeStr;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Bulut senkronizasyonu başarıyla tamamlandı!'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSyncing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Senkronizasyon uyarısı: $e'), backgroundColor: Colors.orange),
+        );
+      }
+    }
   }
 
-  // 🎯 SİBER HAMLE: Keşfet Profilini Güncelleme Modülü
-  void _showPersonalSurveyDialog() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> availableGenres = [
-      'Türkçe Rap',
-      'Arabesk',
-      'Akustik',
-      'Deep House',
-      'Pop',
-      'Rock',
-      'Türkü',
-      'R&B',
-      'Özgün Müzik',
-      'Slow'
-    ];
-    List<String> selectedGenres =
-        prefs.getStringList('siber_personal_genres') ?? [];
-    TextEditingController artistController = TextEditingController(
-        text: prefs.getString('siber_personal_artists') ?? '');
-
-    if (!mounted) return;
-
-    showDialog(
-        context: context,
-        builder: (context) {
-          return StatefulBuilder(builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: Colors.grey[900],
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-                side: BorderSide(color: _auraColor),
-              ),
-              title: Text('KEŞFET PROFİLİNİ GÜNCELLE',
-                  style: TextStyle(
-                      color: _auraColor, fontWeight: FontWeight.bold)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                        'Siber yapay zekanın seni tanıması için dinlediğin müzik türlerini seç (Maks 4):',
-                        style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: availableGenres.map((genre) {
-                        final isSelected = selectedGenres.contains(genre);
-                        return ChoiceChip(
-                          label: Text(genre,
-                              style: TextStyle(
-                                  color:
-                                      isSelected ? Colors.black : Colors.white,
-                                  fontSize: 11)),
-                          selected: isSelected,
-                          selectedColor: _auraColor,
-                          backgroundColor: Colors.black45,
-                          onSelected: (selected) {
-                            setDialogState(() {
-                              if (selected) {
-                                if (selectedGenres.length < 4) {
-                                  selectedGenres.add(genre);
-                                }
-                              } else {
-                                selectedGenres.remove(genre);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text('Favori Sanatçıların (Virgülle ayırarak yaz):',
-                        style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: artistController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Örn: Sagopa, Müslüm, Ceza...',
-                        hintStyle: const TextStyle(color: Colors.white30),
-                        enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: _auraColor)),
-                        focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: _auraColor)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('İptal',
-                      style: TextStyle(color: Colors.white54)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: _auraColor),
-                  onPressed: () async {
-                    await prefs.setStringList(
-                        'siber_personal_genres', selectedGenres);
-                    await prefs.setString(
-                        'siber_personal_artists', artistController.text.trim());
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: const Text('Keşfet Profilin Başarıyla Güncellendi!'),
-                        backgroundColor: _auraColor,
-                      ));
-                    }
-                  },
-                  child: const Text('Mühürle',
-                      style: TextStyle(
-                          color: Colors.black, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            );
-          });
-        });
+  // 🎯 SİBER HAMLE: Keşfet Profilini Güncelleme Modülü (Genel Keşfet ile 100% Uyumlu)
+  void _showPersonalSurveyDialog() {
+    PersonalDiscoverSetupSheet.show(
+      context,
+      themeColor: _auraColor,
+      isInitialSetup: false,
+      onCompleted: () {
+        if (mounted) setState(() {});
+      },
+    );
   }
+
 
   String _getAvatarSetByRank(String rank) {
     if (rank == 'Yeni Dinleyici' || rank == 'Çırak Taktisyen') {
@@ -1065,7 +1136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 🎯 YENİ SİBER HAMLE: Yapay Zeka Ruh Hali Yorumcusu
   String _generateCyberDiagnosis() {
     if (_dominantMood == 'Belirsiz') {
-      return 'Siber veri akışı tespit edilemedi. Nöronlarını müzikle beslemeye devam et.';
+      return 'Yeterli dinleme verisi tespit edilemedi. Müzik dinledikçe raporunuz burada oluşacak.';
     }
 
     String artist = _topArtists.isNotEmpty
@@ -1084,12 +1155,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'Kopmalık':
       case 'Motivasyon':
       case 'Siber':
-        return 'SİSTEM TEŞHİSİ: Nöronların alev alev! Ağ bağlantıların maksimum hızda. $artist ritimleriyle sistemine enerji pompalıyorsun. Tam bir siber savaşçı!';
+        return 'MÜZİK ANALİZİ: Ritimlerin alev alev! $artist ezgileriyle enerjini maksimuma çıkarıyorsun. Müzik tutkun zirvede!';
       case 'Odaklanma':
       case 'Rahatlatıcı':
       case 'Uyku Öncesi':
       case 'Mistik':
-        return 'SİSTEM TEŞHİSİ: Meditasyon ve mutlak odak hali. $artist frekansları zihnindeki gürültüyü arındırıyor. Siber huzura ulaşıldı.';
+        return 'MÜZİK ANALİZİ: Meditasyon ve mutlak odak hali. $artist frekansları zihnini dinlendiriyor. Müzik huzuruna ulaşıldı.';
       default:
         return 'SİSTEM TEŞHİSİ: Kompleks bir veri denizi. $artist ağırlıklı eşsiz bir frekans sentezi ruhunu sarmalıyor.';
     }
@@ -1121,7 +1192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: _getMoodColor(_dominantMood), size: 18),
               const SizedBox(width: 8),
               Text(
-                '🧠 SİBER ZEKANIN TEŞHİSİ',
+                '🧠 YAPAY ZEKA TEŞHİSİ',
                 style: TextStyle(
                   color: _getMoodColor(_dominantMood),
                   fontWeight: FontWeight.bold,
@@ -1146,6 +1217,688 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // 🔮 SİBER SES İZİ (SONIC AURA ANALİZİ)
+  Widget _buildSonicAuraSection() {
+    return Container(
+      margin: const EdgeInsets.only(top: 15),
+      child: InkWell(
+        onTap: _showSonicAuraDialog,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _auraColor.withValues(alpha: 0.18),
+                Colors.black.withValues(alpha: 0.5),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _auraColor.withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: _auraColor.withValues(alpha: 0.1),
+                blurRadius: 12,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              // Animasyonlu 3D Aura Küresi
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      _auraColor,
+                      _auraColor.withValues(alpha: 0.4),
+                      Colors.transparent,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _auraColor.withValues(alpha: 0.6),
+                      blurRadius: 18,
+                      spreadRadius: 2,
+                    )
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.graphic_eq_rounded, color: Colors.white, size: 26),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'SES İZİ',
+                          style: TextStyle(
+                            color: _auraColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.open_in_new_rounded, color: _auraColor.withValues(alpha: 0.8), size: 14),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _dominantMood != 'Belirsiz'
+                          ? 'Baskın Tarz: ${_dominantMood.toUpperCase()} FREKANSI'
+                          : 'Baskın Tarz: KARANLIK POP',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Frekans spektrumu ve 3D aura küreni incelemek için dokun',
+                      style: TextStyle(color: Colors.white38, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSonicAuraDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.transparent,
+        contentPadding: EdgeInsets.zero,
+        content: Container(
+          height: 430,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A0C16),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: _auraColor, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: _auraColor.withValues(alpha: 0.5),
+                blurRadius: 35,
+                spreadRadius: 5,
+              )
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'SES İZİN',
+                style: TextStyle(
+                  color: _auraColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 25),
+              // Animasyonlu 3D Küre
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0.85, end: 1.15),
+                duration: const Duration(seconds: 2),
+                curve: Curves.easeInOut,
+                builder: (context, val, child) {
+                  return Container(
+                    width: 130 * val,
+                    height: 130 * val,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          _auraColor,
+                          _auraColor.withValues(alpha: 0.5),
+                          Colors.transparent,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _auraColor.withValues(alpha: 0.8),
+                          blurRadius: 40 * val,
+                          spreadRadius: 10 * val,
+                        )
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.graphic_eq_rounded, color: Colors.white, size: 50),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 25),
+              Text(
+                _dominantMood != 'Belirsiz'
+                    ? 'Baskın Akustik Rezonans:\n${_dominantMood.toUpperCase()} DALGASI'
+                    : 'Baskın Akustik Rezonans:\nKARANLIK POP',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 25),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _auraColor,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Kapat', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // 🎯 SİBER HAMLE: Çoklu Hesap Bağlama & Entegrasyon Merkezi
+  Widget _buildConnectedAccountsHub() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _auraColor.withValues(alpha: 0.35), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: _auraColor.withValues(alpha: 0.08),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _auraColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.hub_rounded, color: _auraColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'HESAP BAĞLANTI & BULUT MERKEZİ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Google, E-Posta & Bulut Entegrasyonu',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white12, height: 1),
+          const SizedBox(height: 14),
+
+          // 1. GOOGLE HESAP SATIRI
+          _buildAccountTile(
+            icon: Icons.g_mobiledata_rounded,
+            iconColor: Colors.redAccent,
+            title: 'Google Hesabı',
+            subtitle: _isAccountLinked
+                ? (_email != 'Bağlı hesap yok' ? _email : 'Google ile Bağlandı')
+                : 'Bulut arşivi ve listeleri otomatik eşitle',
+            isConnected: _isAccountLinked,
+            connectedLabel: 'Bağlı',
+            actionButtonText: _isAccountLinked ? 'Kopar' : 'Bağla',
+            actionButtonColor: _isAccountLinked ? Colors.orangeAccent : Colors.redAccent,
+            onAction: _isAccountLinked ? _unlinkAccount : _linkGoogleAccount,
+          ),
+
+          const SizedBox(height: 12),
+
+          // 2. E-POSTA / SİBER HESAP GİRİŞİ
+          _buildAccountTile(
+            icon: Icons.alternate_email_rounded,
+            iconColor: _auraColor,
+            title: 'E-Posta Hesabı',
+            subtitle: _isAccountLinked
+                ? 'Hesap bağlı ($_username)'
+                : 'E-posta ve şifre ile kayıt ol veya giriş yap',
+            isConnected: _isAccountLinked,
+            connectedLabel: 'Kayıtlı',
+            actionButtonText: _isAccountLinked ? null : 'Giriş / Kayıt',
+            actionButtonColor: _auraColor,
+            onAction: _isAccountLinked ? null : _showLinkAccountDialog,
+          ),
+
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white12, height: 1),
+          const SizedBox(height: 14),
+
+          // BULUT KİTAPLIĞI EŞİTLE BUTONU
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSyncing ? null : _startCloudSync,
+              icon: _isSyncing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    )
+                  : const Icon(Icons.cloud_sync_rounded, size: 20),
+              label: Text(
+                _isSyncing ? 'BULUTLA EŞİTLENİYOR...' : 'BULUT KİTAPLIĞINI EŞİTLE',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _auraColor,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+
+          // HESAP SİLME BUTONU (MAĞAZA ZORUNLULUĞU - SADECE HESAP BAĞLIYSA GÖRÜNÜR)
+          if (_isAccountLinked) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _deleteAccount,
+                icon: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent, size: 18),
+                label: const Text(
+                  'HESABIMI VE TÜM VERİLERİMİ SİL',
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Hesap bağlama satırı bileşeni
+  Widget _buildAccountTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool isConnected,
+    required String connectedLabel,
+    String? actionButtonText,
+    required Color actionButtonColor,
+    VoidCallback? onAction,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isConnected ? iconColor.withValues(alpha: 0.4) : Colors.white10,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (isConnected) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.greenAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5), width: 0.8),
+                        ),
+                        child: Text(
+                          connectedLabel,
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (actionButtonText != null && onAction != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  backgroundColor: actionButtonColor.withValues(alpha: 0.15),
+                  foregroundColor: actionButtonColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: actionButtonColor.withValues(alpha: 0.4)),
+                  ),
+                ),
+                child: Text(
+                  actionButtonText,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // 🎯 Müzik Analizi & Dinleme Raporu Kartı
+  Widget _buildAnalysisAndStatsCard() {
+    final isMinimal = SiberThemeService.instance.isMinimalMode.value;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isMinimal ? const Color(0xFF18181C) : Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isMinimal ? Colors.white12 : Colors.purpleAccent.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+        boxShadow: isMinimal
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.purpleAccent.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                ),
+              ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isMinimal ? const Color(0xFF24242A) : Colors.purpleAccent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.insights_rounded,
+                  color: isMinimal ? Colors.white70 : Colors.purpleAccent,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'MÜZİK ANALİZİ & KARNE',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Yapay Zeka Müzik DNA ve Dinleme Raporu',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white12, height: 1),
+          const SizedBox(height: 14),
+
+          // DİNLERKEN KİMLİK / PERSONA ROZETİ (5 Kez Tıklayınca Gizli 2026 Wrapped Açar)
+          GestureDetector(
+            onTap: _handleSecretWrappedTrigger,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isMinimal ? const Color(0xFF1E1E24) : null,
+                gradient: isMinimal
+                    ? null
+                    : LinearGradient(
+                        colors: [
+                          Colors.purple.withValues(alpha: 0.2),
+                          Colors.indigo.withValues(alpha: 0.15),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isMinimal ? Colors.white10 : Colors.purpleAccent.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isMinimal ? const Color(0xFF282830) : Colors.purpleAccent.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.psychology_rounded,
+                      color: isMinimal ? Colors.white70 : Colors.purpleAccent,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DİNLERKEN KİŞİLİĞİ',
+                          style: TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1.0, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _listeningPersona,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // İKİLİ BİLGİ KUTUCUKLARI (En Çok Dinlenen & Toplam Saat)
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.headset_rounded, color: Colors.cyanAccent, size: 14),
+                          SizedBox(width: 6),
+                          Text('TOPLAM DİNLEME', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$_totalListenHours Saat',
+                        style: const TextStyle(color: Colors.cyanAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.military_tech_rounded, color: Colors.amberAccent, size: 14),
+                          SizedBox(width: 6),
+                          Text('DİNLEYİCİ RÜTBESİ', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _rank,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.amberAccent, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // AKSİYON BUTONU (İstatistikler)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (context) => SiberIstatistikSheet(themeColor: _auraColor),
+                );
+              },
+              icon: const Icon(Icons.bar_chart_rounded, size: 20),
+              label: const Text('MÜZİK İSTATİSTİKLERİ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.8)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isMinimal ? const Color(0xFF222228) : Colors.cyanAccent.shade700,
+                foregroundColor: Colors.white,
+                elevation: isMinimal ? 0 : 2,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: isMinimal ? const BorderSide(color: Colors.white12) : BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 🎯 YENİ SİBER HAMLE: Otonom Sanatçı Podyumu (YouTube Entegrasyonlu)
   Widget _buildArtistPodium() {
       if (_topArtists.isEmpty) {
@@ -1162,7 +1915,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Icon(Icons.mic_off, color: Colors.white24, size: 40),
               const SizedBox(height: 12),
-              const Text('SİBER PODYUM BOŞ', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              const Text('SANATÇI LİSTESİ BOŞ', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               const SizedBox(height: 8),
               const Text('Sanatçı podyumu için henüz yeterli veri yok. Ritimleri keşfetmeye başla!', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12)),
             ],
@@ -1174,7 +1927,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         const Align(
           alignment: Alignment.centerLeft,
-          child: Text('🏆 SİBER SANATÇI PODYUMU',
+          child: Text('🏆 SANATÇI PODYUMU',
               style: TextStyle(
                   color: Colors.amber,
                   fontWeight: FontWeight.bold,
@@ -1301,7 +2054,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('SİBER KARARGAH',
+        title: Text('HESAP & PROFİL',
             style: TextStyle(
                 color: _auraColor,
                 fontWeight: FontWeight.bold,
@@ -1310,26 +2063,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: Icon(Icons.auto_awesome_rounded, color: _auraColor),
+            tooltip: '2026 Siber Özet & Hikaye Stüdyosu',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SiberWrappedScreen(
+                    initialCardType: CyberStoryCardType.siberAnaliz,
+                    autoOpenStudio: true,
+                  ),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.bar_chart_rounded, color: _auraColor),
             tooltip: 'Dinleme İstatistikleri',
-            onPressed: () async {
-              final subManager = SubscriptionManager();
-              if (!await subManager.canViewStatsReport()) {
-                if (mounted) {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => SiberPaymentScreen(themeColor: _auraColor)));
-                }
-                return;
-              }
-              await subManager.updateStatsReportDate();
-
-              if (mounted) {
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  isScrollControlled: true,
-                  builder: (context) => SiberIstatistikSheet(themeColor: _auraColor),
-                );
-              }
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                isScrollControlled: true,
+                builder: (context) => SiberIstatistikSheet(themeColor: _auraColor),
+              );
             },
           ),
           IconButton(
@@ -1358,108 +2115,274 @@ class _ProfileScreenState extends State<ProfileScreen> {
           )
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_auraColor.withValues(alpha: 0.15), Colors.black],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                // 🎯 PROFİL AVATARI VE BİLGİLERİ
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: _getRankColor().withValues(alpha: 0.5), width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                          color: _getRankColor().withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          spreadRadius: 5),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _showEditProfileDialog,
-                        child: Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _auraColor.withValues(alpha: 0.8),
-                                    blurRadius: 25,
-                                    spreadRadius: 5,
-                                  ),
-                                  BoxShadow(
-                                    color: _auraColor.withValues(alpha: 0.4),
-                                    blurRadius: 50,
-                                    spreadRadius: 10,
-                                  ),
+      body: ValueListenableBuilder<bool>(
+        valueListenable: SiberThemeService.instance.isMinimalMode,
+        builder: (context, isMinimal, _) {
+          return Container(
+            decoration: BoxDecoration(
+              color: isMinimal ? const Color(0xFF121214) : null,
+              gradient: isMinimal
+                  ? null
+                  : LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [_auraColor.withValues(alpha: 0.15), Colors.black],
+                    ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // 🎯 AMBİYANS / SADE PROFİL KARTI
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+                      decoration: BoxDecoration(
+                        color: isMinimal ? const Color(0xFF18181C) : null,
+                        gradient: isMinimal
+                            ? null
+                            : LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  const Color(0xFF141A29).withValues(alpha: 0.95),
+                                  const Color(0xFF0D111A).withValues(alpha: 0.98),
+                                  _auraColor.withValues(alpha: 0.12),
                                 ],
                               ),
-                              child: CircleAvatar(
-                                radius: 55,
-                                backgroundColor: Colors.white10,
-                                backgroundImage: _avatarUrl.startsWith('http') 
-                                    ? NetworkImage(_avatarUrl) as ImageProvider
-                                    : FileImage(File(_avatarUrl)),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isMinimal ? Colors.white12 : _auraColor.withValues(alpha: 0.35),
+                          width: 1.5,
+                        ),
+                        boxShadow: isMinimal
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: _auraColor.withValues(alpha: 0.18),
+                                  blurRadius: 30,
+                                  spreadRadius: 2,
+                                  offset: const Offset(0, 8),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Üst Durum Rozeti (Çevrimdışı / Bulut)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _isAccountLinked
+                                      ? Colors.greenAccent.withValues(alpha: 0.12)
+                                      : (isMinimal ? Colors.white.withValues(alpha: 0.05) : _auraColor.withValues(alpha: 0.12)),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: _isAccountLinked
+                                        ? Colors.greenAccent.withValues(alpha: 0.4)
+                                        : (isMinimal ? Colors.white12 : _auraColor.withValues(alpha: 0.4)),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _isAccountLinked
+                                          ? Icons.cloud_done_rounded
+                                          : Icons.music_note_rounded,
+                                      size: 14,
+                                      color: _isAccountLinked
+                                          ? Colors.greenAccent
+                                          : (isMinimal ? Colors.white70 : _auraColor),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _isAccountLinked
+                                          ? 'BULUT SENKRONİZE'
+                                          : 'YEREL PROFİL • ÇEVRİMDİŞİ',
+                                      style: TextStyle(
+                                        color: _isAccountLinked
+                                            ? Colors.greenAccent
+                                            : (isMinimal ? Colors.white70 : _auraColor),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Avatar Çerçevesi
+                          GestureDetector(
+                            onTap: _showEditProfileDialog,
+                            child: Stack(
+                              alignment: Alignment.bottomRight,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isMinimal ? const Color(0xFF222228) : null,
+                                    gradient: isMinimal
+                                        ? null
+                                        : LinearGradient(
+                                            colors: [
+                                              _auraColor,
+                                              _getRankColor(),
+                                            ],
+                                          ),
+                                    border: isMinimal ? Border.all(color: Colors.white24, width: 2) : null,
+                                    boxShadow: isMinimal
+                                        ? null
+                                        : [
+                                            BoxShadow(
+                                              color: _auraColor.withValues(alpha: 0.5),
+                                              blurRadius: 24,
+                                              spreadRadius: 3,
+                                            ),
+                                          ],
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF0D111A),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 52,
+                                      backgroundColor: Colors.white10,
+                                      backgroundImage: _avatarUrl.startsWith('http')
+                                          ? NetworkImage(_avatarUrl) as ImageProvider
+                                          : FileImage(File(_avatarUrl)),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: isMinimal ? const Color(0xFF2C2C34) : _auraColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.black, width: 2),
+                                    boxShadow: isMinimal
+                                        ? null
+                                        : [
+                                            BoxShadow(
+                                              color: _auraColor.withValues(alpha: 0.6),
+                                              blurRadius: 8,
+                                            ),
+                                          ],
+                                  ),
+                                  child: Icon(
+                                    Icons.edit_rounded,
+                                    color: isMinimal ? Colors.white : Colors.black,
+                                    size: 15,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                  color: _auraColor, shape: BoxShape.circle),
-                              child: const Icon(Icons.edit,
-                                  color: Colors.black, size: 16),
-                            )
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      GestureDetector(
-                        onTap: _showEditProfileDialog,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_username,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 8),
-                            Icon(Icons.edit, color: _auraColor, size: 18),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(_email,
-                          style: TextStyle(
-                              color: _isAccountLinked
-                                  ? _auraColor
-                                  : Colors.white54,
-                              fontSize: 13)),
-                      const SizedBox(height: 15),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Kullanıcı Adı & Düzenleme Butonu
+                          GestureDetector(
+                            onTap: _showEditProfileDialog,
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _username,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: isMinimal ? Colors.white24 : _auraColor.withValues(alpha: 0.3),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.edit_rounded,
+                                            color: isMinimal ? Colors.white70 : _auraColor,
+                                            size: 12,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Düzenle',
+                                            style: TextStyle(
+                                              color: isMinimal ? Colors.white70 : _auraColor,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _isAccountLinked
+                                      ? _email
+                                      : 'Müziklerin ve ayarların cihazında saklanır',
+                                  style: TextStyle(
+                                    color: _isAccountLinked
+                                        ? (isMinimal ? Colors.white70 : _auraColor)
+                                        : Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                      // Müzik Seviyesi ve Terfi İlerleme Kartı
                       Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.only(top: 10),
-                        padding: const EdgeInsets.all(15),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.black45,
-                          borderRadius: BorderRadius.circular(15),
+                          color: isMinimal ? const Color(0xFF1E1E24) : null,
+                          gradient: isMinimal
+                              ? null
+                              : LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.6),
+                                    _getRankColor().withValues(alpha: 0.1),
+                                  ],
+                                ),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                              color: _getRankColor().withValues(alpha: 0.5)),
+                            color: isMinimal ? Colors.white10 : _getRankColor().withValues(alpha: 0.35),
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -1468,46 +2391,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.military_tech,
-                                        color: _getRankColor(), size: 24),
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: _getRankColor()
+                                            .withValues(alpha: 0.15),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.workspace_premium_rounded,
+                                          color: _getRankColor(), size: 20),
+                                    ),
                                     const SizedBox(width: 8),
-                                    Text(_rank,
-                                        style: TextStyle(
-                                            color: _getRankColor(),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16)),
+                                    Text(
+                                      _rank,
+                                      style: TextStyle(
+                                        color: _getRankColor(),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 if (_nextRank != 'MAX SEVİYE')
-                                  Text('Hedef: $_nextRank',
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.06),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Sonraki: $_nextRank',
                                       style: const TextStyle(
-                                          color: Colors.white54, fontSize: 12)),
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
-                            const SizedBox(height: 15),
+                            const SizedBox(height: 14),
+                            // İlerleme Çubuğu
                             Stack(
                               children: [
                                 Container(
                                   height: 8,
                                   decoration: BoxDecoration(
-                                    color: Colors.white10,
+                                    color: Colors.white.withValues(alpha: 0.08),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
                                 FractionallySizedBox(
                                   alignment: Alignment.centerLeft,
-                                  widthFactor: _rankProgress,
+                                  widthFactor: _rankProgress.clamp(0.0, 1.0),
                                   child: Container(
                                     height: 8,
                                     decoration: BoxDecoration(
-                                      color: _getRankColor(),
+                                      color: isMinimal ? _getRankColor() : null,
+                                      gradient: isMinimal
+                                          ? null
+                                          : LinearGradient(
+                                              colors: [
+                                                _getRankColor().withValues(alpha: 0.7),
+                                                _getRankColor(),
+                                              ],
+                                            ),
                                       borderRadius: BorderRadius.circular(10),
-                                      boxShadow: [
-                                        BoxShadow(
-                                            color: _getRankColor()
-                                                .withValues(alpha: 0.5),
-                                            blurRadius: 8)
-                                      ],
+                                      boxShadow: isMinimal
+                                          ? null
+                                          : [
+                                              BoxShadow(
+                                                color: _getRankColor()
+                                                    .withValues(alpha: 0.6),
+                                                blurRadius: 8,
+                                              ),
+                                            ],
                                     ),
                                   ),
                                 ),
@@ -1515,25 +2474,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             const SizedBox(height: 10),
                             if (_nextRank != 'MAX SEVİYE')
-                              Text(
-                                  'Terfi için $_hoursForNextRank saat daha dinlemelisin.',
-                                  style: const TextStyle(
-                                      color: Colors.white70, fontSize: 11))
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.schedule_rounded,
+                                      size: 13, color: Colors.white54),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Terfi için $_hoursForNextRank saat daha dinlemelisin',
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 11),
+                                  ),
+                                ],
+                              )
                             else
-                              const Text("SİBER KARARGAH'IN ZİRVESİNDESİN",
-                                  style: TextStyle(
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.stars_rounded,
+                                      color: Colors.amber, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    "ÖZSES'İN ZİRVESİNDESİN 👑",
+                                    style: TextStyle(
                                       color: Colors.amber,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold)),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 15),
-
                 // 🎯 YENİ: Rütbe ve Ödüller Butonu
                 GestureDetector(
                   onTap: () => _showRankDetailsBottomSheet(context),
@@ -1541,17 +2519,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(
                         vertical: 12, horizontal: 20),
                     decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: isMinimal ? const Color(0xFF18181C) : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
-                        border:
-                            Border.all(color: _getRankColor().withValues(alpha: 0.5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _getRankColor().withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          )
-                        ]),
+                        border: Border.all(
+                          color: isMinimal ? Colors.white12 : _getRankColor().withValues(alpha: 0.5),
+                        ),
+                        boxShadow: isMinimal
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: _getRankColor().withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                )
+                              ]),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1597,7 +2578,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Icon(Icons.cloud_done,
                                     color: _auraColor, size: 20),
                                 const SizedBox(width: 8),
-                                const Text('Siber Bulut Mührü',
+                                const Text('Bulut Senkronizasyonu',
                                     style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold)),
@@ -1631,22 +2612,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                 // 🎯 İŞLEM BUTONLARI (KONTROL PANELİ)
-                if (!_isAccountLinked)
-                  _buildProfileButton(
-                    title: 'SİBER HESABI BAĞLA',
-                    subtitle: 'Sisteme giriş yap ve profilini mühürle',
-                    icon: Icons.link,
-                    color: _auraColor,
-                    onTap: _showLinkAccountDialog,
-                  )
-                else
-                  _buildProfileButton(
-                    title: 'HESABIN BAĞINI KOPAR',
-                    subtitle: 'Sistemden güvenli şekilde çıkış yap',
-                    icon: Icons.link_off,
-                    color: Colors.redAccent,
-                    onTap: _unlinkAccount,
-                  ),
+                _buildConnectedAccountsHub(),
+
+                const SizedBox(height: 20),
+
+                _buildAnalysisAndStatsCard(),
+
+                const SizedBox(height: 20),
+
+                // 🎯 MAĞAZA UYUMLULUK: Yasal Belgeler
+                _buildProfileButton(
+                  title: 'GİZLİLİK POLİTİKASI & KULLANIM KOŞULLARI',
+                  subtitle: 'Yasal haklarınızı ve veri politikamızı inceleyin',
+                  icon: Icons.policy,
+                  color: Colors.blueAccent,
+                  onTap: () => showLegalDocsModal(context, themeColor: _auraColor),
+                ),
 
                 const SizedBox(height: 15),
 
@@ -1662,8 +2643,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // 👑 SİBER KARARGAH (PREMIUM)
                 _buildProfileButton(
-                  title: 'SİBER KARARGAH (PREMİUM)',
-                  subtitle: 'Özel Ayrıcalıklar ve Siber Ligler',
+                  title: 'ÖZSES PREMİUM',
+                  subtitle: 'Sınırsız Ayrıcalıklar ve Özel Paketler',
                   icon: Icons.workspace_premium,
                   color: Colors.amber,
                   onTap: () {
@@ -1672,24 +2653,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       backgroundColor: Colors.transparent,
                       isScrollControlled: true,
                       builder: (context) => SiberPremiumSheet(themeColor: _auraColor),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 15),
-
-                // 🚀 YILLIK SİBER ÖZETİN
-                _buildProfileButton(
-                  title: 'YILLIK SİBER ÖZETİN (YENİ!)',
-                  subtitle: 'Spotify Wrapped tarzı yıllık müzik karnen hazır!',
-                  icon: Icons.auto_awesome,
-                  color: Colors.purpleAccent,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SiberWrappedScreen(),
-                      ),
                     );
                   },
                 ),
@@ -1711,6 +2674,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
 
+
+
                 const SizedBox(height: 25),
 
                 // İstihbarat Özet Kartı
@@ -1721,9 +2686,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
+                      color: isMinimal ? const Color(0xFF18181C) : Colors.black.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _auraColor.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: isMinimal ? Colors.white12 : _auraColor.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -1766,7 +2733,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Icon(Icons.psychology,
                                     color: _auraColor, size: 20),
                                 const SizedBox(width: 8),
-                                const Text('Haftalık Siber Ruh Hali Raporu',
+                                const Text('Haftalık Müzik ve Ruh Hali Raporu',
                                     style: TextStyle(
                                         color: Colors.white70,
                                         fontWeight: FontWeight.bold)),
@@ -1787,7 +2754,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 Icon(Icons.radar, color: Colors.white24, size: 40),
                                 const SizedBox(height: 12),
-                                const Text('SİBER AĞDA VERİ YOK', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                                const Text('VERİ BULUNAMADI', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                                 const SizedBox(height: 8),
                                 const Text('Son 7 günde yeterli dinleme verisi toplanmadı. Müzik dinlemeye devam et.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12)),
                               ],
@@ -1884,8 +2851,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     )
                                   ],
                                 ),
-                                // 🎯 SİBER TEŞHİS KUTUSU
-                                _buildCyberDiagnosisBox(),
+                                 // 🎯 SİBER TEŞHİS KUTUSU
+                                 _buildCyberDiagnosisBox(),
+                                 // 🔮 SİBER SES İZİ VE FREKANS ANALİZİ
+                                 _buildSonicAuraSection(),
                               ],
                             ),
                           ),
@@ -1907,30 +2876,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
+      );
+    },
+  ),
+);
+}
+
+  // 📸 SİBER HAMLE: Sosyal Medya Paylaşım Motoru - 2026 Hikaye Stüdyosu
+  Future<void> _shareCyberIdentity() async {
+    HapticFeedback.heavyImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SiberWrappedScreen(
+          initialCardType: CyberStoryCardType.siberAnaliz,
+          autoOpenStudio: true,
+        ),
       ),
     );
-  }
-
-  // 📸 YENİ SİBER HAMLE: Sosyal Medya Paylaşım Motoru (Wrapped)
-  Future<void> _shareCyberIdentity() async {
-    try {
-      final directory = await getTemporaryDirectory();
-      final imagePath = '${directory.path}/siber_kimlik.png';
-
-      final imageBytes = await _screenshotController.capture(
-          delay: const Duration(milliseconds: 20));
-      if (imageBytes != null) {
-        final file = File(imagePath);
-        await file.writeAsBytes(imageBytes);
-
-        await Share.shareXFiles(
-          [XFile(imagePath)],
-          text: 'ÖZSES Müzik Karnem! 🎵 Sen de keşfetmek için indir.',
-        );
-      }
-    } catch (e) {
-      debugPrint('Siber Kimlik Paylaşım Hatası: $e');
-    }
   }
 
   Widget _buildProfileButton(
@@ -1939,18 +2902,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       required IconData icon,
       required Color color,
       required VoidCallback onTap}) {
+    final isMinimal = SiberThemeService.instance.isMinimalMode.value;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: isMinimal ? const Color(0xFF18181C) : Colors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: color.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.1), blurRadius: 10),
-            ]),
+            border: Border.all(
+              color: isMinimal ? Colors.white12 : color.withValues(alpha: 0.5),
+            ),
+            boxShadow: isMinimal
+                ? null
+                : [
+                    BoxShadow(color: color.withValues(alpha: 0.1), blurRadius: 10),
+                  ]),
         child: Row(
           children: [
             Icon(icon, color: color, size: 28),
@@ -1995,298 +2963,410 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // 🎯 YENİ: Rütbe ve Ödüller Detay Sayfası (Canavar Sistem - Kümülatif Ödüller)
+  // 🎯 YENİ: Rütbe ve Ödüller Detay Sayfası (Kümülatif Abonelik Ayrıcalıkları)
   void _showRankDetailsBottomSheet(BuildContext context) {
-    final List<Map<String, dynamic>> rankDetails = [
-      {
-        'name': 'Yeni Dinleyici',
-        'hours': 0,
-        'icon': Icons.headphones,
-        'color': Colors.white54,
-        'perk': 'Temel Dinleme ve Keşfet Erişimi',
-        'bonus': '',
-      },
-      {
-        'name': 'Çırak Taktisyen',
-        'hours': 5,
-        'icon': Icons.music_note,
-        'color': Colors.greenAccent,
-        'perk': '30 Dk Reklamsız Dinleme',
-        'bonus': '',
-      },
-      {
-        'name': 'Müziksever',
-        'hours': 25,
-        'icon': Icons.radar,
-        'color': Colors.blueAccent,
-        'perk': 'Ruh Hali Analizi (Günde 1 Kez)',
-        'bonus': '+ 30 Dk Reklamsız Dinleme Hediye',
-      },
-      {
-        'name': 'Ritim Tutkunu',
-        'hours': 75,
-        'icon': Icons.mic_external_on,
-        'color': Colors.purpleAccent,
-        'perk': 'Özel Karaoke Modu (Günde 2 Şarkı)',
-        'bonus': '+ Ruh Hali Analizi + 30 Dk Reklamsız',
-      },
-      {
-        'name': 'Melodi Ustası',
-        'hours': 150,
-        'icon': Icons.auto_awesome,
-        'color': Colors.orangeAccent,
-        'perk': 'Şahsi Keşfet: AI Albüm (Haftalık 1)',
-        'bonus': '+ Karaoke + Ruh Hali + 1 Saat Reklamsız',
-      },
-      {
-        'name': 'Ses Gurmesi',
-        'hours': 300,
-        'icon': Icons.card_giftcard,
-        'color': Colors.redAccent,
-        'perk': 'ÖZSES Özel Gün Özetleri (Wrapped)',
-        'bonus': '+ AI Albüm + Karaoke + Ruh Hali + 2 Saat Reklamsız',
-      },
-      {
-        'name': 'ÖZSES Efsanesi',
-        'hours': 500,
-        'icon': Icons.diamond,
-        'color': Colors.amber,
-        'perk': 'Tam Yetkili Siber Ajan Sürümü',
-        'bonus':
-            '+ Haftalık 8 Saat Reklamsız + Sınırsız AI Liste + Limitsiz Karaoke',
-      },
-    ];
+    final rankIcons = {
+      SiberRank.yeniDinleyici: Icons.headphones_rounded,
+      SiberRank.cirakTaktisyen: Icons.military_tech_rounded,
+      SiberRank.muziksever: Icons.radar_rounded,
+      SiberRank.ritimTutkunu: Icons.graphic_eq_rounded,
+      SiberRank.melodiUstasi: Icons.auto_awesome_rounded,
+      SiberRank.sesGurmesi: Icons.workspace_premium_rounded,
+      SiberRank.ozsesEfsanesi: Icons.diamond_rounded,
+    };
+
+    final rankColors = {
+      SiberRank.yeniDinleyici: Colors.white54,
+      SiberRank.cirakTaktisyen: Colors.greenAccent,
+      SiberRank.muziksever: Colors.blueAccent,
+      SiberRank.ritimTutkunu: Colors.purpleAccent,
+      SiberRank.melodiUstasi: Colors.orangeAccent,
+      SiberRank.sesGurmesi: Colors.redAccent,
+      SiberRank.ozsesEfsanesi: Colors.amber,
+    };
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-              color: const Color(0xFF0F0F1A),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(25)),
-              border: Border.all(color: Colors.white10),
-              boxShadow: [
-                BoxShadow(
-                  color: _getRankColor().withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                )
-              ]),
-          child: Column(
-            children: [
-              // Çentik
-              Container(
-                margin: const EdgeInsets.only(top: 15, bottom: 10),
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Text(
-                  'SİBER KARİYER ÖDÜLLERİ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2.0,
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.88,
+              decoration: BoxDecoration(
+                  color: const Color(0xFF0F0F1A),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(25)),
+                  border: Border.all(color: Colors.white10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _getRankColor().withValues(alpha: 0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    )
+                  ]),
+              child: Column(
+                children: [
+                  // Çentik
+                  Container(
+                    margin: const EdgeInsets.only(top: 15, bottom: 10),
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                ),
-              ),
-              const Text(
-                'Dinledikçe rütbe atla, geçmişteki yeteneklerini de katlayarak taşı.',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: rankDetails.length,
-                  itemBuilder: (context, index) {
-                    final rank = rankDetails[index];
-                    bool isAchieved = _totalListenHours >= rank['hours'];
-                    bool isCurrent = _rank == rank['name'];
-                    Color activeColor =
-                        isAchieved ? rank['color'] : Colors.white24;
-
-                    return Opacity(
-                      opacity: isAchieved ? 1.0 : 0.4,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 15),
-                        padding: const EdgeInsets.all(15),
-                        decoration: BoxDecoration(
-                          color: isCurrent
-                              ? activeColor.withValues(alpha: 0.1)
-                              : Colors.white.withValues(alpha: 0.02),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: isCurrent
-                                ? activeColor.withValues(alpha: 0.5)
-                                : Colors.white10,
-                            width: isCurrent ? 2.0 : 1.0,
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.military_tech_rounded, color: Colors.amber, size: 22),
+                        SizedBox(width: 8),
+                        Text(
+                          'RÜTBE VE ÖDÜL SİSTEMİ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2.0,
                           ),
-                          boxShadow: isCurrent
-                              ? [
-                                  BoxShadow(
-                                      color: activeColor.withValues(alpha: 0.2),
-                                      blurRadius: 10)
-                                ]
-                              : [],
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Sol İkon
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isAchieved
-                                    ? activeColor.withValues(alpha: 0.2)
-                                    : Colors.black26,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isAchieved ? rank['icon'] : Icons.lock,
-                                color: activeColor,
-                                size: 24,
-                              ),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Dinledikçe rütbe atla; geçici reklamsız dinleme süreleri, ek indirme ve AI liste haklarını hesabına ücretsiz kat!',
+                      style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.4),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Bilgilendirme Kutucuğu (Abonelik Entegrasyonu)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getRankColor().withValues(alpha: 0.15),
+                          Colors.purple.withValues(alpha: 0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _getRankColor().withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.workspace_premium_rounded, color: _getRankColor(), size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Şu anki dinleme süren: $_totalListenHours Saat | Rütben: $_rank',
+                            style: TextStyle(
+                              color: _getRankColor(),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 15),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      itemCount: RankManager.allTiers.length,
+                      itemBuilder: (context, index) {
+                        final tier = RankManager.allTiers[index];
+                        bool isAchieved = _totalListenHours >= tier.hours;
+                        bool isCurrent = _rank == tier.name;
+                        Color activeColor = rankColors[tier.rank] ?? Colors.white54;
+                        IconData iconData = rankIcons[tier.rank] ?? Icons.headphones_rounded;
 
-                            // Orta Detaylar
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        rank['name'],
-                                        style: TextStyle(
-                                          color: isAchieved
-                                              ? Colors.white
-                                              : Colors.white54,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                      if (isCurrent)
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(left: 8.0),
-                                          child: Icon(Icons.my_location,
-                                              color: activeColor, size: 14),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    "Gereksinim: ${rank['hours']} Saat Dinleme",
-                                    style: TextStyle(
-                                      color: isAchieved
-                                          ? Colors.white70
-                                          : Colors.white38,
-                                      fontSize: 11,
+                        return Opacity(
+                          opacity: isAchieved ? 1.0 : 0.45,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? activeColor.withValues(alpha: 0.12)
+                                  : Colors.white.withValues(alpha: 0.02),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isCurrent
+                                    ? activeColor.withValues(alpha: 0.6)
+                                    : (isAchieved ? Colors.white24 : Colors.white10),
+                                width: isCurrent ? 2.0 : 1.0,
+                              ),
+                              boxShadow: isCurrent
+                                  ? [
+                                      BoxShadow(
+                                          color: activeColor.withValues(alpha: 0.25),
+                                          blurRadius: 12)
+                                    ]
+                                  : [],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Sol İkon Rozeti
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: isAchieved
+                                        ? activeColor.withValues(alpha: 0.2)
+                                        : Colors.black38,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isAchieved ? activeColor.withValues(alpha: 0.5) : Colors.white12,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Icon(
-                                        isAchieved
-                                            ? Icons.military_tech
-                                            : Icons.lock_outline,
-                                        size: 14,
-                                        color: activeColor.withValues(alpha: 0.8),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Expanded(
-                                        child: Text(
-                                          rank['perk'],
-                                          style: TextStyle(
-                                            color: activeColor.withValues(alpha: 0.9),
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                  child: Icon(
+                                    isAchieved ? iconData : Icons.lock_outline_rounded,
+                                    color: isAchieved ? activeColor : Colors.white38,
+                                    size: 24,
                                   ),
-                                  if (rank['bonus'] != '') ...[
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Icon(
-                                          Icons.add,
-                                          size: 12,
-                                          color: Colors.greenAccent
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Expanded(
-                                          child: Text(
-                                            rank['bonus'],
+                                ),
+                                const SizedBox(width: 14),
+
+                                // Orta Detaylar
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            tier.name,
                                             style: TextStyle(
-                                              color: Colors.greenAccent
-                                                  .withValues(alpha: 0.7),
-                                              fontSize: 10,
-                                              fontStyle: FontStyle.italic,
+                                              color: isAchieved
+                                                  ? Colors.white
+                                                  : Colors.white54,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
                                             ),
                                           ),
+                                          if (isCurrent) ...[
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: activeColor.withValues(alpha: 0.25),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: activeColor, width: 1),
+                                              ),
+                                              child: Text(
+                                                'MEVCUT RÜTBEN',
+                                                style: TextStyle(color: activeColor, fontSize: 9, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        tier.hours == 0
+                                            ? "Gereksinim: Başlangıç Seviyesi"
+                                            : "Gereksinim: ${tier.hours} Saat Dinleme",
+                                        style: TextStyle(
+                                          color: isAchieved
+                                              ? Colors.white70
+                                              : Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      // Ana Ayrıcalık
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_outline_rounded,
+                                            size: 15,
+                                            color: isAchieved ? activeColor : Colors.white38,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              tier.perk,
+                                              style: TextStyle(
+                                                color: isAchieved ? activeColor : Colors.white60,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      // Ekstra Bonus Ayrıcalık
+                                      if (tier.bonus.isNotEmpty) ...[
+                                        const SizedBox(height: 5),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(
+                                              Icons.stars_rounded,
+                                              size: 14,
+                                              color: isAchieved ? Colors.amberAccent : Colors.white30,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                tier.bonus,
+                                                style: TextStyle(
+                                                  color: isAchieved
+                                                      ? Colors.amberAccent.withValues(alpha: 0.9)
+                                                      : Colors.white38,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
+                                      // 🎯 GEÇİCİ REKLAMSIZ DİNLEME AKTİVASYON BUTONU
+                                      if (tier.adFreeMinutes > 0) ...[
+                                        const SizedBox(height: 8),
+                                        FutureBuilder<bool>(
+                                          future: SubscriptionManager().isRankAdFreeClaimed(tier.rank),
+                                          builder: (context, snapshot) {
+                                            final isClaimed = snapshot.data ?? false;
+                                            final isCurrentlyAdFree = SubscriptionManager().isAdFree;
+                                            final remainingText = SubscriptionManager().remainingAdFreeFormatted;
 
-                            // Sağ Statüs
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 4),
-                              decoration: BoxDecoration(
-                                  color: isAchieved
-                                      ? Colors.green.withValues(alpha: 0.2)
-                                      : Colors.grey.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: isAchieved
-                                        ? Colors.green.withValues(alpha: 0.5)
-                                        : Colors.grey.withValues(alpha: 0.3),
-                                  )),
-                              child: Text(
-                                isAchieved ? 'AKTİF' : 'KİLİTLİ',
-                                style: TextStyle(
-                                  color:
-                                      isAchieved ? Colors.green : Colors.grey,
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
+                                            if (SubscriptionManager().currentTier != SiberTier.free) {
+                                              return Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.amber.withValues(alpha: 0.15),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 13),
+                                                    SizedBox(width: 4),
+                                                    Text('Abonelikle Sınırsız Reklamsız', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+                                                  ],
+                                                ),
+                                              );
+                                            }
+
+                                            if (isClaimed) {
+                                              return Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: isCurrentlyAdFree ? Colors.green.withValues(alpha: 0.15) : Colors.white10,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: isCurrentlyAdFree ? Colors.greenAccent : Colors.white24),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(isCurrentlyAdFree ? Icons.timer_outlined : Icons.check_circle_outline, color: isCurrentlyAdFree ? Colors.greenAccent : Colors.white54, size: 13),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      isCurrentlyAdFree ? 'REKLAMSIZ MOD AKTİF ($remainingText)' : 'BU HEDİYE KULLANILDI',
+                                                      style: TextStyle(color: isCurrentlyAdFree ? Colors.greenAccent : Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }
+
+                                            if (isAchieved) {
+                                              return InkWell(
+                                                onTap: () async {
+                                                  final success = await SubscriptionManager().claimAdFreePass(tier.rank);
+                                                  if (success && context.mounted) {
+                                                    setModalState(() {});
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Text('🎉 ${tier.name} hediyesi: ${tier.adFreeMinutes} Dakika Reklamsız Dinleme Başlatıldı!'),
+                                                        backgroundColor: Colors.green,
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  decoration: BoxDecoration(
+                                                    gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.indigoAccent]),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    boxShadow: [
+                                                      BoxShadow(color: Colors.deepPurpleAccent.withValues(alpha: 0.4), blurRadius: 6),
+                                                    ],
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(Icons.flash_on_rounded, color: Colors.amberAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        'REKLAMSIZ MODU BAŞLAT (+${tier.adFreeMinutes} Dk)',
+                                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }
+
+                                            return const SizedBox.shrink();
+                                          },
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+
+                                // Sağ Durum Rozeti
+                                Container(
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 5),
+                                  decoration: BoxDecoration(
+                                      color: isAchieved
+                                          ? Colors.green.withValues(alpha: 0.2)
+                                          : Colors.grey.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: isAchieved
+                                            ? Colors.green.withValues(alpha: 0.5)
+                                            : Colors.grey.withValues(alpha: 0.3),
+                                      )),
+                                  child: Text(
+                                    isAchieved ? 'AÇIK' : 'KİLİTLİ',
+                                    style: TextStyle(
+                                      color:
+                                          isAchieved ? Colors.greenAccent : Colors.grey,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
-          ),
+            );
+          },
         );
       },
     );

@@ -15,18 +15,28 @@ class YtDlpService {
     if (!(!kIsWeb && Platform.isWindows)) return;
     
     try {
-      final dir = await getApplicationSupportDirectory();
-      final exePath = '${dir.path}\\yt-dlp.exe';
-      _executablePath = exePath;
-
-      final file = File(exePath);
-      if (!await file.exists()) {
-        await _downloadExecutable(file);
+      // 1. Önce çalışma dizinindeki hazır yt-dlp.exe'yi kontrol et
+      final localFile = File('${Directory.current.path}\\yt-dlp.exe');
+      if (await localFile.exists() && await localFile.length() > 10000000) {
+        _executablePath = localFile.path;
       } else {
-        final size = await file.length();
-        if (size < 10000000) {
+        final dir = await getApplicationSupportDirectory();
+        final exePath = '${dir.path}\\yt-dlp.exe';
+        _executablePath = exePath;
+
+        final file = File(exePath);
+        if (!await file.exists() || await file.length() < 10000000) {
           await _downloadExecutable(file);
         }
+      }
+
+      // 🚀 SİBER ÖN ISITMA: İlk şarkının anında açılması için yt-dlp'yi RAM'e ve işletim sistemi önbelleğine alıyoruz
+      if (_executablePath != null) {
+        Process.run(_executablePath!, ['--version']).timeout(const Duration(seconds: 5)).then((res) {
+          if (res.exitCode == 0) {
+            print('🚀 yt-dlp ön ısıtma tamamlandı: v${res.stdout.toString().trim()}');
+          }
+        }).catchError((_) {});
       }
     } catch (e) {
       print('❌ YtDlpService başlatılamadı: $e');

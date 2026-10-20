@@ -43,7 +43,7 @@ class _SiberKuyrukSheetState extends State<SiberKuyrukSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.themeColor;
+    final color = Theme.of(context).colorScheme.primary;
 
     return SafeArea(
       top: false,

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'rank_manager.dart';
 
@@ -16,7 +16,19 @@ class SubscriptionManager {
   SubscriptionManager._internal();
 
   SiberTier _currentTier = SiberTier.free;
-  SiberRank _currentRank = SiberRank.caylak;
+  SiberRank _currentRank = SiberRank.yeniDinleyici;
+  SiberRank? _manualRankForTesting;
+  DateTime? _adFreeUntil;
+  
+  /// 🔔 SİBER REKLAMSIZ MOD BİLDİRİCİSİ (Tüm ekranlar ve bannerlar anında tepki verir)
+  final ValueNotifier<bool> adFreeNotifier = ValueNotifier<bool>(false);
+
+  void _notifyAdFree() {
+    adFreeNotifier.value = isAdFree;
+  }
+  
+  // 🛡️ SİBER KALKAN: Donanımsal Şifreleme (Keystore/Keychain)
+  final _storage = const FlutterSecureStorage();
 
   // Key Constants
   static const String _keyTier = 'siber_tier';
@@ -25,29 +37,38 @@ class SubscriptionManager {
   static const String _keyVoiceCount = 'voice_command_count';
   static const String _keyVoiceDate = 'voice_command_date';
   static const String _keyLastStatsDate = 'last_stats_date';
+  static const String _keyArchiveCount = 'archive_count';
+  static const String _keyArchiveDate = 'archive_date';
+  static const String _keyAdFreeUntil = 'siber_ad_free_until';
+  static const String _keyClaimedAdFreeRanks = 'siber_claimed_ad_free_ranks';
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    // 💰 SİBER HAMLE: RevenueCat'ten en güncel abonelik durumunu al
     try {
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         CustomerInfo customerInfo = await Purchases.getCustomerInfo();
-        _updateTierFromCustomerInfo(customerInfo, prefs);
+        await _updateTierFromCustomerInfo(customerInfo);
       } else {
-        _loadLocalTier(prefs);
+        await _loadLocalTier();
       }
     } catch (e) {
-      print('❌ Siber Hata: RevenueCat bağlantısı kurulamadı. Lokal önbelleğe dönülüyor. Hata: $e');
-      _loadLocalTier(prefs);
+      print('⚡ Siber Hata: RevenueCat bağlantısı kurulamadı. Şifreli lokal belleğe dönülüyor. Hata: $e');
+      await _loadLocalTier();
     }
     
-    // Rütbeyi hesapla ve önbelleğe al
+    final untilStr = await _storage.read(key: _keyAdFreeUntil);
+    if (untilStr != null) {
+      final parsed = DateTime.tryParse(untilStr);
+      if (parsed != null && DateTime.now().isBefore(parsed)) {
+        _adFreeUntil = parsed;
+      }
+    }
+
     _currentRank = await RankManager().calculateCurrentRank();
+    _notifyAdFree();
   }
 
-  void _loadLocalTier(SharedPreferences prefs) {
-    final tierStr = prefs.getString(_keyTier) ?? 'free';
+  Future<void> _loadLocalTier() async {
+    final tierStr = await _storage.read(key: _keyTier) ?? 'free';
     if (tierStr == 'premium') {
       _currentTier = SiberTier.premium;
     } else if (tierStr == 'student') {
@@ -55,165 +76,245 @@ class SubscriptionManager {
     } else {
       _currentTier = SiberTier.free;
     }
+    _notifyAdFree();
   }
 
-  void _updateTierFromCustomerInfo(CustomerInfo customerInfo, SharedPreferences prefs) async {
-    // ⚠️ NOT: "premium" ve "student", RevenueCat panelinde oluşturacağın Entitlement (Hak) ID'leridir.
+  Future<void> _updateTierFromCustomerInfo(CustomerInfo customerInfo) async {
     if (customerInfo.entitlements.all["premium"]?.isActive == true) {
       _currentTier = SiberTier.premium;
-      await prefs.setString(_keyTier, 'premium');
+      await _storage.write(key: _keyTier, value: 'premium');
     } else if (customerInfo.entitlements.all["student"]?.isActive == true) {
       _currentTier = SiberTier.student;
-      await prefs.setString(_keyTier, 'student');
+      await _storage.write(key: _keyTier, value: 'student');
     } else {
-      // 🎯 SİBER KALKAN (Developer Mode Bypass): 
-      // Henüz Google Play hesabımız olmadığı için RevenueCat'ten paket dönmüyor.
-      // Kendi lokal telefonumuzda Premium testini yapabilmek için eğer daha önce 
-      // sahte premium aldıysak onu bozmayalım. (Canlıda bu satırlar silinebilir).
-      final local = prefs.getString(_keyTier) ?? 'free';
+      // Developer Mode Bypass
+      final local = await _storage.read(key: _keyTier) ?? 'free';
       if (local == 'premium' || local == 'student') {
-        _loadLocalTier(prefs); 
+        await _loadLocalTier(); 
       } else {
         _currentTier = SiberTier.free;
-        await prefs.setString(_keyTier, 'free');
+        await _storage.write(key: _keyTier, value: 'free');
       }
     }
+    _notifyAdFree();
   }
 
   Future<void> syncPurchases() async {
     try {
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         CustomerInfo customerInfo = await Purchases.restorePurchases();
-        final prefs = await SharedPreferences.getInstance();
-        _updateTierFromCustomerInfo(customerInfo, prefs);
+        await _updateTierFromCustomerInfo(customerInfo);
       }
     } catch (e) {
-      print('❌ Siber Hata: Alımlar senkronize edilemedi $e');
+      print('⚡ Siber Hata: Alımlar senkronize edilemedi $e');
     }
+    _notifyAdFree();
   }
 
   SiberTier get currentTier => _currentTier;
+  SiberRank get currentRank => _manualRankForTesting ?? _currentRank;
+
+  void setCurrentRankForTesting(SiberRank? rank) {
+    _manualRankForTesting = rank;
+    if (rank != null) _currentRank = rank;
+  }
 
   Future<void> setTier(SiberTier newTier) async {
-    final prefs = await SharedPreferences.getInstance();
     _currentTier = newTier;
-    await prefs.setString(_keyTier, newTier.name);
+    await _storage.write(key: _keyTier, value: newTier.name);
+    _notifyAdFree();
   }
 
   // --- SİBER LİMİT KONTROLLERİ ---
 
-  /// Yapay Zeka Çalma Listesi Limiti
+  // --- SİBER LİMİT VE RÜTBE AYRICALIKLARI KONTROLLERİ ---
+
   Future<bool> canUseAiPlaylist() async {
     if (_currentTier == SiberTier.premium) return true;
+    _currentRank = _manualRankForTesting ?? await RankManager().calculateCurrentRank();
+    final rankInfo = RankManager().getTierInfo(_currentRank);
+    if (rankInfo.extraAiListQuota >= 999) return true; // Efsane rütbesi sınırsız!
 
-    final prefs = await SharedPreferences.getInstance();
-    final lastDate = prefs.getString(_keyAiDate) ?? '';
+    final lastDate = await _storage.read(key: _keyAiDate) ?? '';
     final today = DateTime.now().toIso8601String().substring(0, 10);
 
     int count = 0;
     if (lastDate == today) {
-      count = prefs.getInt(_keyAiCount) ?? 0;
+      count = int.tryParse(await _storage.read(key: _keyAiCount) ?? '0') ?? 0;
     } else {
-      await prefs.setString(_keyAiDate, today);
-      await prefs.setInt(_keyAiCount, 0);
+      await _storage.write(key: _keyAiDate, value: today);
+      await _storage.write(key: _keyAiCount, value: '0');
     }
 
-    // Rank Bonusları
     int baseLimit = _currentTier == SiberTier.student ? 5 : 1;
-    if (_currentTier == SiberTier.free && _currentRank.index >= SiberRank.er.index) {
-      baseLimit += 1; // Siber Er ve üstüne ekstra 1 hak
-    }
-
-    return count < baseLimit;
+    return count < (baseLimit + rankInfo.extraAiListQuota);
   }
 
   Future<void> incrementAiPlaylistUsage() async {
     if (_currentTier == SiberTier.premium) return;
-    final prefs = await SharedPreferences.getInstance();
-    final count = prefs.getInt(_keyAiCount) ?? 0;
-    await prefs.setInt(_keyAiCount, count + 1);
+    final count = int.tryParse(await _storage.read(key: _keyAiCount) ?? '0') ?? 0;
+    await _storage.write(key: _keyAiCount, value: (count + 1).toString());
   }
 
-  /// Sesli Komut Limiti
-  Future<bool> canUseVoiceCommand() async {
-    if (_currentTier == SiberTier.free) return false;
-    if (_currentTier == SiberTier.premium) return true; // Limitsiz
+  static const String _keyArchiveBonus = 'archive_bonus';
 
-    // Student limit check
-    final prefs = await SharedPreferences.getInstance();
-    final lastDate = prefs.getString(_keyVoiceDate) ?? '';
+  Future<bool> canAddArchive() async {
+    if (_currentTier == SiberTier.premium) return true;
+    _currentRank = _manualRankForTesting ?? await RankManager().calculateCurrentRank();
+    final rankInfo = RankManager().getTierInfo(_currentRank);
+    if (rankInfo.extraArchiveQuota >= 999) return true; // Efsane rütbesi sınırsız!
+
+    final lastDate = await _storage.read(key: _keyArchiveDate) ?? '';
     final today = DateTime.now().toIso8601String().substring(0, 10);
 
     int count = 0;
+    int bonus = 0;
     if (lastDate == today) {
-      count = prefs.getInt(_keyVoiceCount) ?? 0;
+      count = int.tryParse(await _storage.read(key: _keyArchiveCount) ?? '0') ?? 0;
+      bonus = int.tryParse(await _storage.read(key: _keyArchiveBonus) ?? '0') ?? 0;
     } else {
-      await prefs.setString(_keyVoiceDate, today);
-      await prefs.setInt(_keyVoiceCount, 0);
+      await _storage.write(key: _keyArchiveDate, value: today);
+      await _storage.write(key: _keyArchiveCount, value: '0');
+      await _storage.write(key: _keyArchiveBonus, value: '0');
     }
 
-    // Öğrenci için günde 20 sesli komut limiti
-    return count < 20; 
+    int baseLimit = _currentTier == SiberTier.student ? 15 : 5;
+    return count < (baseLimit + bonus + rankInfo.extraArchiveQuota);
   }
 
-  Future<void> incrementVoiceCommandUsage() async {
-    if (_currentTier == SiberTier.premium || _currentTier == SiberTier.free) return;
-    final prefs = await SharedPreferences.getInstance();
-    final count = prefs.getInt(_keyVoiceCount) ?? 0;
-    await prefs.setInt(_keyVoiceCount, count + 1);
+  Future<void> incrementArchiveUsage() async {
+    if (_currentTier == SiberTier.premium) return;
+    final count = int.tryParse(await _storage.read(key: _keyArchiveCount) ?? '0') ?? 0;
+    await _storage.write(key: _keyArchiveCount, value: (count + 1).toString());
   }
 
-  /// İstatistik Raporu Tarih Kontrolü
+  /// 🎬 REKLAM İLE EKSTRA İNDİRME HAKKI KAZANMA (+2 Hak)
+  Future<void> grantBonusArchiveDownloads({int amount = 2}) async {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final lastDate = await _storage.read(key: _keyArchiveDate) ?? '';
+    if (lastDate != today) {
+      await _storage.write(key: _keyArchiveDate, value: today);
+      await _storage.write(key: _keyArchiveCount, value: '0');
+      await _storage.write(key: _keyArchiveBonus, value: '0');
+    }
+    final bonus = int.tryParse(await _storage.read(key: _keyArchiveBonus) ?? '0') ?? 0;
+    await _storage.write(key: _keyArchiveBonus, value: (bonus + amount).toString());
+  }
+
+  Future<int> getRemainingArchiveDownloads() async {
+    if (_currentTier == SiberTier.premium) return 999;
+    _currentRank = _manualRankForTesting ?? await RankManager().calculateCurrentRank();
+    final rankInfo = RankManager().getTierInfo(_currentRank);
+    if (rankInfo.extraArchiveQuota >= 999) return 999;
+
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final lastDate = await _storage.read(key: _keyArchiveDate) ?? '';
+    int count = 0;
+    int bonus = 0;
+    if (lastDate == today) {
+      count = int.tryParse(await _storage.read(key: _keyArchiveCount) ?? '0') ?? 0;
+      bonus = int.tryParse(await _storage.read(key: _keyArchiveBonus) ?? '0') ?? 0;
+    }
+    int baseLimit = _currentTier == SiberTier.student ? 15 : 5;
+    return ((baseLimit + bonus + rankInfo.extraArchiveQuota) - count).clamp(0, 999);
+  }
+
   Future<bool> canViewStatsReport() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastDateStr = prefs.getString(_keyLastStatsDate);
+    if (_currentTier == SiberTier.premium) return true;
+    _currentRank = _manualRankForTesting ?? await RankManager().calculateCurrentRank();
+    final rankInfo = RankManager().getTierInfo(_currentRank);
+    if (rankInfo.rank == SiberRank.ozsesEfsanesi) return true;
 
-    if (lastDateStr == null) return true; // Hiç bakılmamışsa izin ver
+    final lastDateStr = await _storage.read(key: _keyLastStatsDate);
+    if (lastDateStr == null) return true;
 
     final lastDate = DateTime.parse(lastDateStr);
     final now = DateTime.now();
     final diffDays = now.difference(lastDate).inDays;
 
-    if (_currentTier == SiberTier.premium) {
-      // 2 Haftada 1 (14 gün)
-      return diffDays >= 14;
-    } else if (_currentTier == SiberTier.student) {
-      // Ayda 1 (30 gün)
-      return diffDays >= 30;
+    if (_currentTier == SiberTier.student) {
+      return diffDays >= 60; // 2 Ayda 1 kez
     } else {
-      // Yılda 3 kez demek, ortalama 4 ayda bir (120 gün) demek.
-      return diffDays >= 120;
+      if (rankInfo.rank == SiberRank.sesGurmesi) return diffDays >= 15;
+      if (rankInfo.rank == SiberRank.melodiUstasi) return diffDays >= 30;
+      if (rankInfo.rank == SiberRank.ritimTutkunu) return diffDays >= 60;
+      if (rankInfo.rank == SiberRank.muziksever) return diffDays >= 90;
+      return diffDays >= 180; // Yılda 2 kez (6 ayda 1)
     }
   }
 
   Future<void> updateStatsReportDate() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyLastStatsDate, DateTime.now().toIso8601String());
+    if (_currentTier == SiberTier.premium) return;
+    await _storage.write(key: _keyLastStatsDate, value: DateTime.now().toIso8601String());
   }
 
-  // SİBER KEŞFET & METAMORFOZ
-  bool canUsePersonalDiscovery() {
-    // Çavuş ve üzeri ranklara özel erişim
+  Future<bool> isRankAdFreeClaimed(SiberRank rank) async {
+    final claimedStr = await _storage.read(key: _keyClaimedAdFreeRanks) ?? '';
+    final claimedList = claimedStr.split(',').where((s) => s.isNotEmpty).toList();
+    return claimedList.contains(rank.name);
+  }
+
+  Future<bool> claimAdFreePass(SiberRank rank) async {
+    final tierInfo = RankManager().getTierInfo(rank);
+    if (tierInfo.adFreeMinutes <= 0) return false;
+
+    final isClaimed = await isRankAdFreeClaimed(rank);
+    if (isClaimed) return false;
+
+    final now = DateTime.now();
+    DateTime baseTime = now;
+    if (_adFreeUntil != null && _adFreeUntil!.isAfter(now)) {
+      baseTime = _adFreeUntil!;
+    }
+    _adFreeUntil = baseTime.add(Duration(minutes: tierInfo.adFreeMinutes));
+    await _storage.write(key: _keyAdFreeUntil, value: _adFreeUntil!.toIso8601String());
+
+    final claimedStr = await _storage.read(key: _keyClaimedAdFreeRanks) ?? '';
+    final claimedList = claimedStr.split(',').where((s) => s.isNotEmpty).toList();
+    if (!claimedList.contains(rank.name)) {
+      claimedList.add(rank.name);
+      await _storage.write(key: _keyClaimedAdFreeRanks, value: claimedList.join(','));
+    }
+    _notifyAdFree();
+    return true;
+  }
+
+  bool get isAdFree {
     if (_currentTier != SiberTier.free) return true;
-    if (_currentRank.index >= SiberRank.komando.index) return true; 
+    if (_adFreeUntil != null && DateTime.now().isBefore(_adFreeUntil!)) return true;
     return false;
   }
-  
-  bool canUseAutoMix() => _currentTier != SiberTier.free;
-  
+
+  Duration? get remainingAdFreeTime {
+    if (_adFreeUntil == null) return null;
+    final diff = _adFreeUntil!.difference(DateTime.now());
+    return diff.isNegative ? null : diff;
+  }
+
+  String get remainingAdFreeFormatted {
+    final d = remainingAdFreeTime;
+    if (d == null) return '';
+    if (d.inHours > 0) {
+      return '${d.inHours} sa ${d.inMinutes % 60} dk';
+    }
+    return '${d.inMinutes} dk';
+  }
+
+  void setAdFreeUntilForTesting(DateTime? until) {
+    _adFreeUntil = until;
+    _notifyAdFree();
+  }
+
   bool canUseMetamorphosis() {
-    // İlah rütbesine premium olmasa da açık
-    if (_currentTier == SiberTier.premium) return true;
-    if (_currentRank == SiberRank.ilah) return true;
-    return false;
+    return _currentTier == SiberTier.premium;
+  }
+
+  // 🌤️ SİBER ATMOSFER: Hava Durumu Mixi Siber Öğrenci ve Imperium Premium üyelerine özeldir
+  bool canUseWeatherMix() {
+    return _currentTier == SiberTier.student || _currentTier == SiberTier.premium;
   }
   
-  // KARAOKE EFEKTLERİ
-  bool canUseAdvancedKaraoke() => _currentTier != SiberTier.free;
-
-  // AURA TEMALARI
-  bool canChangeAuraTheme() => _currentTier != SiberTier.free;
-
-  // SİBER SES STÜDYOSU (GELİŞMİŞ EFEKTLER)
-  bool canUseAdvancedCyberStudio() => _currentTier != SiberTier.free;
+  bool canUseAdvancedKaraoke() => true;
+  bool canChangeAuraTheme() => true; // 🎨 Herkes tema rengini özgürce değiştirebilir
+  bool canUseAdvancedCyberStudio() => true;
 }

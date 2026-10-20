@@ -6,10 +6,11 @@ abstract class SiberPlatform {
   static SiberPlatform get instance => getPlatform();
 
   Future<Map<String, dynamic>> fetchKesfet({String? pageToken});
-  Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1});
+  Future<List<dynamic>> searchMusic(String query, {int limit = 15, int page = 1, bool onlyMusic = true});
   Future<List<String>> getSearchSuggestions(String query);
   Future<Map<String, dynamic>> getStreamUrl(String videoId);
   Future<String> getDownloadPath();
   Future<List<String>> scanMusicFolders();
   bool get supportsHardwareDSP;
+  void preWarm(String videoId) {}
 }

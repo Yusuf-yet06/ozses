@@ -14,4 +14,7 @@ abstract class AdPlatform {
   
   /// Banner'ı bellekten temizler
   void disposeBannerAd();
+
+  /// 🎬 Ödüllü Reklam (Kullanıcı izleyince onReward callback'i tetiklenir)
+  void showRewardedAd({required VoidCallback onReward, VoidCallback? onFailed});
 }

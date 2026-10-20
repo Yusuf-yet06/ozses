@@ -144,7 +144,7 @@ class _DesktopCinematicViewState extends State<DesktopCinematicView> with Single
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    item?.artist ?? 'Siber Karargah',
+                    item?.artist ?? 'ÖZSES',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 18,

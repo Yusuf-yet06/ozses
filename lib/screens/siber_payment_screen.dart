@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../services/subscription_manager.dart';
 import '../widgets/siber_premium_sheet.dart'; // SiberPremiumSheet için
+import '../widgets/legal_sheets.dart'; // 🎯 MAĞAZA UYUMLULUK: Gizlilik ve EULA
 
 class SiberPaymentScreen extends StatefulWidget {
   final Color themeColor;
@@ -132,9 +133,10 @@ class _SiberPaymentScreenState extends State<SiberPaymentScreen> {
     required String title,
     required String price,
     required SiberTier tier,
-    required List<String> features,
+    required List<Map<String, dynamic>> features,
     required Color accentColor,
     required IconData icon,
+    bool isCurrentPlan = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -178,30 +180,34 @@ class _SiberPaymentScreenState extends State<SiberPaymentScreen> {
                   padding: EdgeInsets.symmetric(vertical: 15.0),
                   child: Divider(color: Colors.white24),
                 ),
-                ...features.map((f) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: accentColor, size: 16),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(f, style: const TextStyle(color: Colors.white70, fontSize: 13))),
-                    ],
-                  ),
-                )),
+                ...features.map((f) {
+                  bool isIncluded = f['included'];
+                  String text = f['text'];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      children: [
+                        Icon(isIncluded ? Icons.check_circle : Icons.cancel, color: isIncluded ? accentColor : Colors.redAccent.withOpacity(0.5), size: 16),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(text, style: TextStyle(color: isIncluded ? Colors.white70 : Colors.white38, fontSize: 13, decoration: isIncluded ? TextDecoration.none : TextDecoration.lineThrough))),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: Colors.black,
+                      backgroundColor: isCurrentPlan ? Colors.grey.withOpacity(0.3) : accentColor,
+                      foregroundColor: isCurrentPlan ? Colors.white70 : Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 15),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 10,
+                      elevation: isCurrentPlan ? 0 : 10,
                       shadowColor: accentColor,
                     ),
-                    onPressed: () => _processPurchase(tier, title, tier == SiberTier.student ? 'student' : 'premium'),
-                    child: const Text('ŞİMDİ AKTİF ET', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 1.5)),
+                    onPressed: isCurrentPlan ? null : () => _processPurchase(tier, title, tier == SiberTier.student ? 'student' : 'premium'),
+                    child: Text(isCurrentPlan ? 'MEVCUT PLAN' : 'ŞİMDİ AKTİF ET', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 1.5)),
                   ),
                 ),
               ],
@@ -243,16 +249,16 @@ class _SiberPaymentScreenState extends State<SiberPaymentScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
                 children: [
-                  Icon(Icons.lock_clock, color: widget.themeColor, size: 50),
+                  Icon(Icons.workspace_premium, color: widget.themeColor, size: 50),
                   const SizedBox(height: 15),
                   const Text(
-                    'LİMİTLERE TAKILMA',
+                    'SİBER LİG\'E KATIL',
                     style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 2),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'Bu özellik Siber Lig ayrıcalığıdır. Kesintisiz müzik deneyimi ve otonom zeka gücü için hemen aramıza katıl.',
+                    'Otonom müzik deneyimini sınırların ötesine taşı.',
                     style: TextStyle(color: Colors.white60, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
@@ -260,48 +266,106 @@ class _SiberPaymentScreenState extends State<SiberPaymentScreen> {
 
                   // Plans
                   _buildPlanCard(
-                    title: 'AKADEMİK LİG',
-                    price: '55 ₺ / Ay',
-                    tier: SiberTier.student,
-                    accentColor: Colors.cyanAccent,
-                    icon: Icons.school,
+                    title: 'ÜCRETSİZ',
+                    price: '0 ₺ / Ay',
+                    tier: SiberTier.free,
+                    accentColor: Colors.grey,
+                    icon: Icons.headphones,
+                    isCurrentPlan: true, // Şimdilik varsayılan
                     features: [
-                      'Sıfır Reklam, Kesintisiz Müzik',
-                      'Günde 5 Kez Yapay Zeka Liste Üretimi',
-                      'Günde 20 Kez Sesli Asistan',
-                      'Aylık İstatistik Raporu',
-                      'Neon Karaoke Efektleri',
+                      {'text': 'Sınırsız Müzik Dinleme', 'included': true},
+                      {'text': 'Reklamsız Deneyim', 'included': false},
+                      {'text': 'Günde 5 Şarkı Arşivleme', 'included': true},
+                      {'text': 'Reklamla Ekstra İndirme (+2)', 'included': true},
+                      {'text': 'Günde 1 Kez AI Listeleme', 'included': true},
+                      {'text': 'Yılda 2 Kez İstatistik Raporu', 'included': true},
+                      {'text': 'Atmosferik Hava Mixi', 'included': false},
+                      {'text': 'Siber Metamorfoz', 'included': false},
                     ],
                   ),
 
                   _buildPlanCard(
-                    title: 'SİBER LORD',
-                    price: '90 ₺ / Ay',
+                    title: 'SİBER ÖĞRENCİ',
+                    price: '54.99 ₺ / Ay',
+                    tier: SiberTier.student,
+                    accentColor: Colors.cyanAccent,
+                    icon: Icons.school,
+                    features: [
+                      {'text': 'Sınırsız Müzik Dinleme', 'included': true},
+                      {'text': 'Reklamsız Deneyim', 'included': true},
+                      {'text': 'Günde 15 Şarkı Arşivleme', 'included': true},
+                      {'text': 'Günde 5 Kez AI Listeleme', 'included': true},
+                      {'text': '2 Ayda 1 İstatistik Raporu', 'included': true},
+                      {'text': 'Atmosferik Hava Mixi Açık', 'included': true},
+                      {'text': 'Siber Metamorfoz', 'included': false},
+                    ],
+                  ),
+
+                  _buildPlanCard(
+                    title: 'IMPERIUM PREMIUM',
+                    price: '89.99 ₺ / Ay',
                     tier: SiberTier.premium,
                     accentColor: Colors.amber,
-                    icon: Icons.workspace_premium,
+                    icon: Icons.diamond,
                     features: [
-                      'Tamamen Sınırsız Yapay Zeka',
-                      'Limitsiz Siber Sesli Asistan',
-                      '14 Günde 1 İstatistik Raporu',
-                      'Siber Metamorfoz Modu',
-                      'Limitsiz Aura Renkleri',
-                      'Özel İmparator Rozeti',
+                      {'text': 'Sınırsız Müzik Dinleme', 'included': true},
+                      {'text': 'Reklamsız Deneyim', 'included': true},
+                      {'text': 'Limitsiz Şarkı Arşivleme', 'included': true},
+                      {'text': 'Limitsiz AI Listeleme', 'included': true},
+                      {'text': 'Limitsiz İstatistik Raporu', 'included': true},
+                      {'text': 'Atmosferik Hava Mixi Açık', 'included': true},
+                      {'text': 'Siber Metamorfoz Açık', 'included': true},
                     ],
                   ),
                   
                   const SizedBox(height: 20),
-                  TextButton(
-                    onPressed: () {
-                       showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        isScrollControlled: true,
-                        builder: (context) => SiberPremiumSheet(themeColor: widget.themeColor),
-                      );
+
+                  // 🎯 MAĞAZA UYUMLULUK: Satın Alımları Geri Yükle
+                  TextButton.icon(
+                    onPressed: () async {
+                      _showLoadingDialog();
+                      await _subManager.syncPurchases();
+                      if (mounted) {
+                        Navigator.pop(context); // Dialogu kapat
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Satın alımlarınız başarıyla kontrol edildi ve senkronize edildi.'),
+                            backgroundColor: widget.themeColor,
+                          ),
+                        );
+                        setState(() {}); // Durumu güncelle
+                      }
                     },
-                    child: const Text('Tüm Özellikleri Karşılaştır', style: TextStyle(color: Colors.white54, decoration: TextDecoration.underline)),
+                    icon: Icon(Icons.restore, color: widget.themeColor, size: 18),
+                    label: Text('Satın Alımları Geri Yükle', style: TextStyle(color: widget.themeColor, fontWeight: FontWeight.bold, fontSize: 13)),
                   ),
+
+                  // 🎯 MAĞAZA UYUMLULUK: Otomatik Yenileme ve Yasal Bilgilendirme
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 10),
+                    child: Text(
+                      'Abonelikler, mevcut dönemin bitiminden en az 24 saat önce iptal edilmediği sürece otomatik olarak yenilenir. Ödeme, satın alma onayında Apple ID / Google Hesabınızdan tahsil edilir. Aboneliğinizi mağaza hesap ayarlarınızdan yönetebilir veya dilediğiniz an iptal edebilirsiniz.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white54, fontSize: 10, height: 1.4),
+                    ),
+                  ),
+
+                  // 🎯 MAĞAZA UYUMLULUK: EULA ve Gizlilik Linkleri
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () => showLegalDocsModal(context, themeColor: widget.themeColor, initialTab: 0),
+                        child: const Text('Kullanım Koşulları', style: TextStyle(color: Colors.white70, fontSize: 11, decoration: TextDecoration.underline)),
+                      ),
+                      const Text(' | ', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      TextButton(
+                        onPressed: () => showLegalDocsModal(context, themeColor: widget.themeColor, initialTab: 1),
+                        child: const Text('Gizlilik Politikası', style: TextStyle(color: Colors.white70, fontSize: 11, decoration: TextDecoration.underline)),
+                      ),
+                    ],
+                  ),
+                  
                   const SizedBox(height: 30),
                 ],
               ),

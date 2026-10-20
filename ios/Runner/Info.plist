@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Ozses V7 Imperium</string>
+		<string>ÖZSES</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -71,8 +71,9 @@
 		<!-- 🛡 Lokasyon (geolocator için ZORUNLU, yoksa crash olur) -->
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>ÖZSES, hava durumu temalarını (Siber Aura) ayarlamak için konumunuza ihtiyaç duyar.</string>
-		<key>NSLocationAlwaysUsageDescription</key>
-		<string>ÖZSES, arka planda bile siber aurayı korumak için konumunuza ihtiyaç duyar.</string>
+		<!-- 🛡 AdMob ve İzleme İzni (ATT) -->
+		<key>NSUserTrackingUsageDescription</key>
+		<string>Size özel müzik deneyimi ve daha alakalı içerikler sunabilmek için izninize ihtiyaç duyuyoruz.</string>
 		<!-- 🍎 Apple Sign In: Xcode'da Signing & Capabilities → + → Sign in with Apple eklenmeli -->
 		<!-- 🔐 Google Sign-In: iOS URL Scheme (Firebase Console > iOS App > GoogleService-Info.plist'ten REVERSED_CLIENT_ID al) -->
 		<key>CFBundleURLTypes</key>

@@ -152,7 +152,7 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
                   children: [
                     Icon(Icons.bar_chart_rounded, color: widget.themeColor, size: 22),
                     const SizedBox(width: 10),
-                    Text('SİBER İSTATİSTİK RADARI',
+                    Text('DİNLEME İSTATİSTİKLERİ',
                         style: TextStyle(
                             color: widget.themeColor,
                             fontWeight: FontWeight.bold,
@@ -246,6 +246,37 @@ class _SiberIstatistikSheetState extends State<SiberIstatistikSheet>
                       ),
                     ),
                   ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: widget.themeColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: widget.themeColor.withValues(alpha: 0.3))),
+                    child: Row(
+                      children: [
+                        Icon(Icons.graphic_eq_rounded, color: widget.themeColor, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('SES İZİ (REZONANS)',
+                                  style: TextStyle(color: widget.themeColor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                              Text(
+                                _topArtistName != '—' ? '$_topArtistName Ekolü & Frekansı' : 'Karanlık Pop / Lo-Fi Akışı',
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ],
           ),

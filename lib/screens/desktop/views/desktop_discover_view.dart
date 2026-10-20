@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../services/siber_theme_service.dart';
 import '../../discover_screen.dart';
 import '../../profile_screen.dart';
@@ -36,7 +37,7 @@ class DesktopDiscoverView extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: 5,
         itemBuilder: (context, index) {
-          final titles = ['Lo-Fi Study Beats', 'Derin Kodlama Akışı', 'Gece Modu - Ambient', 'Odak Odası', 'Siber Mix'];
+          final titles = ['Lo-Fi Study Beats', 'Derin Kodlama Akışı', 'Gece Modu - Ambient', 'Odak Odası', 'Özel Mix'];
           final subtitles = ['Chillwave', 'Coding Rhythms', 'Ambient', 'Focus', 'Electronic'];
           
           return Container(
@@ -139,9 +140,14 @@ class DesktopDiscoverView extends StatelessWidget {
               _buildContentTitle(pageTitle, themeColor),
               
               if (selectedIndex == 0) ...[
-                // Anasayfa (İndirilenler / Kütüphane)
+                // Anasayfa (Web'de çevrimiçi keşfet, Masaüstünde yerel indirilenler)
                 Expanded(
-                  child: DesktopHomeView(themeColor: themeColor),
+                  child: kIsWeb
+                      ? DiscoverScreen(
+                          themeColor: themeColor,
+                          isPersonalMode: false,
+                        )
+                      : DesktopHomeView(themeColor: themeColor),
                 ),
               ] else if (selectedIndex == 1) ...[
                 // Keşfet (Siber Klon)

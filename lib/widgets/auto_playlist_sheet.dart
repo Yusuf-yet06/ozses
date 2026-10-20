@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../services/subscription_manager.dart';
+import 'siber_premium_sheet.dart';
 
 class AutoPlaylistBottomSheet extends StatefulWidget {
   final Color themeColor;
@@ -43,10 +45,19 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
     {'name': 'Türkü / Özgün', 'icon': Icons.landscape, 'color': Colors.brown},
   ];
 
+  final List<Map<String, dynamic>> artists = [
+    {'name': 'Ceza', 'icon': Icons.mic_external_on, 'color': Colors.redAccent},
+    {'name': 'Sagopa Kajmer', 'icon': Icons.psychology, 'color': Colors.blueGrey},
+    {'name': 'Müslüm Gürses', 'icon': Icons.favorite, 'color': Colors.purpleAccent},
+    {'name': 'Sezen Aksu', 'icon': Icons.auto_awesome, 'color': Colors.pinkAccent},
+    {'name': 'Duman', 'icon': Icons.electric_bolt, 'color': Colors.orangeAccent},
+    {'name': 'Barış Manço', 'icon': Icons.star, 'color': Colors.amberAccent},
+  ];
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -142,6 +153,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                 tabs: const [
                   Tab(icon: Icon(Icons.mood), text: 'Ruh Hali'),
                   Tab(icon: Icon(Icons.library_music), text: 'Müzik Türü'),
+                  Tab(icon: Icon(Icons.person_search_rounded), text: 'Sanatçı'),
                 ],
               ),
               
@@ -152,6 +164,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                   children: [
                     _buildGrid(moods, 'Mood'),
                     _buildGrid(genres, 'Genre'),
+                    _buildGrid(artists, 'Artist'),
                   ],
                 ),
               ),
@@ -170,7 +183,30 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                     elevation: selectedSelection != null ? 10 : 0,
                   ),
                   onPressed: selectedSelection != null
-                      ? () {
+                      ? () async {
+                          final canUse = await SubscriptionManager().canUseAiPlaylist();
+                          if (!canUse) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                    '⚠️ Günlük AI Listeleme hakkınız doldu. Sınırsız liste için Imperium Premium\'a geçin!'),
+                                backgroundColor: Colors.deepOrangeAccent,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                            Navigator.pop(context); // Bu sheet'i kapat
+                            showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              isScrollControlled: true,
+                              builder: (context) => SiberPremiumSheet(themeColor: widget.themeColor),
+                            );
+                            return;
+                          }
+
+                          await SubscriptionManager().incrementAiPlaylistUsage();
+                          if (!context.mounted) return;
                           Navigator.pop(context, {'type': selectedType!, 'selection': selectedSelection!});
                         }
                       : null, // 🎯 SİBER KALKAN: Seçim yoksa butona basılamaz
@@ -183,7 +219,7 @@ class _AutoPlaylistBottomSheetState extends State<AutoPlaylistBottomSheet>
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        selectedSelection != null ? 'SİBER ZEKAYI BAŞLAT' : 'BİR KATEGORİ SEÇİN',
+                        selectedSelection != null ? 'LİSTEYİ BAŞLAT' : 'BİR KATEGORİ SEÇİN',
                         style: TextStyle(
                           color: selectedSelection != null ? Colors.white : Colors.white54, 
                           fontSize: 16, 

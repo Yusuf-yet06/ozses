@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -7,11 +10,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    // 🛡️ Siber Kimlik: Paket adınla eşleştiğinden emin ol
-    namespace = "com.example.ozses_v7_imperium"
-    compileSdk = 36 // 🎯 SİBER ŞAPLAK 1: Android SDK 36 Zırhı
-    ndkVersion = "28.2.13676358" // 🎯 SİBER ŞAPLAK 2: Yeni Nesil NDK Motoru
+    // 🛡️ Siber Kimlik: Firebase ve Google Play için benzersiz mühür
+    namespace = "com.ozses.imperium"
+    compileSdk = 36 // 🎯 Android SDK 36 Zırhı
+    ndkVersion = "28.2.13676358" // 🎯 Yeni Nesil NDK Motoru
 
     sourceSets {
         getByName("main").java.srcDirs("src/main/kotlin")
@@ -19,16 +28,29 @@ android {
 
     defaultConfig {
         // Bu ID, Google Play ve telefonun için benzersiz mühürdür
-        applicationId = "com.example.ozses_v7_imperium"
+        applicationId = "com.ozses.imperium"
         
-        // 🚀 Siber Güvenlik Sınırı: Telefonunun istediği minimum seviye
+        // 🚀 Siber Güvenlik Sınırı: Google Play 2026 zorunlu hedef seviyesi
         minSdk = 24 
-        targetSdk = 35
+        targetSdk = 36
         
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 19
+        versionName = "1.0.16"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                val storeFilePath = keystoreProperties["storeFile"] as String
+                val resolvedFile = file(storeFilePath)
+                storeFile = if (resolvedFile.exists()) resolvedFile else rootProject.file(storeFilePath)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
     }
 
     // ⚡ Java ve Kotlin Senkronizasyonu
@@ -39,10 +61,13 @@ android {
 
     buildTypes {
         getByName("release") {
-            // İleride imzalama (signing) ayarlarını buraya ekleyeceğiz gardaşım
             isMinifyEnabled = false
             isShrinkResources = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (keystorePropertiesFile.exists() && signingConfigs.getByName("release").storeFile?.exists() == true) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
         getByName("debug") {
             isMinifyEnabled = false

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'siber_theme_service.dart';
 
 class VibePackage {
   final Color themeColor;
@@ -65,12 +66,13 @@ class VibeEngine {
           animationSpeed: const Duration(milliseconds: 400),
           sharpness: 1.0,
         );
-      default: // Standart Imperium Modu
+      default: // Standart Imperium Modu - Tema Merkezinden seçilen rengi kullan
+        final baseColor = SiberThemeService.instance.currentThemeColor.value;
         return VibePackage(
-          themeColor: Colors.deepPurpleAccent,
+          themeColor: baseColor,
           gradientColors: [
             Colors.black,
-            Colors.purple.withValues(alpha: 0.15),
+            baseColor.withValues(alpha: 0.15),
             Colors.black
           ],
           animationSpeed: const Duration(milliseconds: 1300),

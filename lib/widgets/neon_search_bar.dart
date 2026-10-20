@@ -15,7 +15,7 @@ class NeonSearchBar extends StatelessWidget {
         onChanged: onChanged,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'İmparatorlukta Ara...',
+          hintText: 'Şarkı, sanatçı veya albüm ara...',
           hintStyle: const TextStyle(color: Colors.white24),
           prefixIcon: Icon(Icons.search, color: themeColor),
           filled: true,

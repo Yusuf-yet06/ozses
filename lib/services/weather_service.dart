@@ -1,6 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/platform/siber_platform.dart';
+import 'history_service.dart';
 
 class Temperature {
   final double? celsius;
@@ -90,4 +94,199 @@ class WeatherService {
     
     return 'Genel';
   }
+
+  // 🎯 SİBER ATMOSFER & KİŞİSEL MÜZİK ZEVKİ FÜZYONU (Hava Durumu Mix Motoru)
+  static Future<WeatherMixBundle> generateWeatherMix({Weather? weather, String? currentMood}) async {
+    weather ??= await getCurrentWeather();
+    String mood = currentMood ?? getAtmosphereMood(weather);
+
+    final hour = DateTime.now().hour;
+    final isNight = hour >= 22 || hour <= 5;
+    if (isNight && mood == 'Genel') {
+      mood = 'Gece';
+    }
+
+    // 🎧 Dinleme geçmişinden en çok dinlenen sanatçıları süz
+    List<String> userTaste = [];
+    try {
+      final history = await HistoryService.getHistory();
+      if (history.isNotEmpty) {
+        history.sort((a, b) => b.totalListenSeconds.compareTo(a.totalListenSeconds));
+        for (var rec in history.take(8)) {
+          String clean = rec.name.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '').trim();
+          String artist = '';
+          if (clean.contains('-')) {
+            artist = clean.split('-').first.trim();
+          } else if (clean.contains('–')) {
+            artist = clean.split('–').first.trim();
+          } else if (clean.contains(':')) {
+            artist = clean.split(':').first.trim();
+          }
+          if (artist.isNotEmpty && artist.length <= 25 && !userTaste.contains(artist)) {
+            userTaste.add(artist);
+          }
+        }
+      }
+    } catch (e) {
+      print('Siber Hava Durumu: Dinleme geçmişi okunamadı: $e');
+    }
+
+    // Şahsi Keşfet tercihlerine de bak
+    if (userTaste.length < 2) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final rawArtists = prefs.getString('siber_personal_artists') ?? '';
+        if (rawArtists.isNotEmpty) {
+          for (var a in rawArtists.split(',')) {
+            final tr = a.trim();
+            if (tr.isNotEmpty && !userTaste.contains(tr)) {
+              userTaste.add(tr);
+            }
+          }
+        }
+      } catch (e) {
+        print('Siber Hava Durumu: Şahsi tercihler okunamadı: $e');
+      }
+    }
+
+    final double? temp = weather?.temperature?.celsius;
+    final String tempStr = temp != null ? '${temp.toStringAsFixed(0)}°C ' : '';
+
+    String title;
+    String description;
+    IconData icon;
+    Color color;
+    List<String> queries = [];
+
+    switch (mood) {
+      case 'Melankolik':
+        title = '🌧️ Yağmurlu Gün & Melankoli Mixi';
+        description = '${tempStr}Yağmurlu havanın ritmine ve müzik zevkine özel duygusal parçalar.';
+        icon = Icons.water_drop_rounded;
+        color = Colors.blueAccent;
+        if (userTaste.isNotEmpty) {
+          queries.add('${userTaste.first} slow akustik');
+          if (userTaste.length > 1) queries.add('${userTaste[1]} duygusal');
+        }
+        queries.add('yağmurlu hava şarkıları');
+        queries.add('türkçe lofi yağmur');
+        break;
+
+      case 'Akustik':
+        title = '❄️ Karlı Hava & Sıcak Akustik Mix';
+        description = '${tempStr}Soğuk havada içini ısıtacak akustik ve sakin tınılar.';
+        icon = Icons.ac_unit_rounded;
+        color = Colors.tealAccent;
+        if (userTaste.isNotEmpty) {
+          queries.add('${userTaste.first} akustik gitar');
+          if (userTaste.length > 1) queries.add('${userTaste[1]} akustik');
+        }
+        queries.add('karlı hava akustik şarkılar');
+        queries.add('türkçe sakin akustik');
+        break;
+
+      case 'Enerjik':
+        title = '☀️ Güneşli Gün & Enerji Patlaması';
+        description = '${tempStr}Güneşin altında enerjini zirveye taşıyacak hareketli parçalar.';
+        icon = Icons.wb_sunny_rounded;
+        color = Colors.amberAccent;
+        if (userTaste.isNotEmpty) {
+          queries.add('${userTaste.first} hareketli remix');
+          if (userTaste.length > 1) queries.add('${userTaste[1]} hit');
+        }
+        queries.add('türkçe enerjik pop');
+        queries.add('yaz şarkıları hareketli');
+        break;
+
+      case 'Odaklanma':
+        title = '☁️ Bulutlu Hava & Derin Odak Mixi';
+        description = '${tempStr}Gri bulutların altında derinleşen beatler ve ritimler.';
+        icon = Icons.cloud_rounded;
+        color = Colors.lightBlueAccent;
+        if (userTaste.isNotEmpty) {
+          queries.add('${userTaste.first} beat');
+        }
+        queries.add('türkçe lofi beat');
+        queries.add('deep house chill mix');
+        break;
+
+      case 'Gece':
+      default:
+        if (isNight) {
+          title = '🌙 Gece Sürüşü & Neon Yıldızlar';
+          description = 'Gecenin sessizliğinde müzik zevkine eşlik eden derin akış.';
+          icon = Icons.nightlight_round;
+          color = Colors.deepPurpleAccent;
+          if (userTaste.isNotEmpty) {
+            queries.add('${userTaste.first} slowed reverb');
+          }
+          queries.add('gece sürüşü şarkıları');
+          queries.add('synthwave chill night');
+        } else {
+          title = '🌤️ Atmosfer Miksi';
+          description = '${tempStr}Günün akışına ve dinleme alışkanlıklarına özel akıllı seçki.';
+          icon = Icons.album_rounded;
+          color = Colors.cyanAccent;
+          if (userTaste.isNotEmpty) {
+            queries.add('${userTaste.first} en çok dinlenen');
+          }
+          queries.add('trend türkçe müzikler');
+        }
+        break;
+    }
+
+    final List<Map<String, dynamic>> tracks = [];
+    final Set<String> seenIds = {};
+
+    for (var q in queries.take(3)) {
+      try {
+        final res = await SiberPlatform.instance.searchMusic(q, limit: 8);
+        for (var item in res) {
+          if (item is Map) {
+            final id = (item['videoId'] ?? item['id'] ?? item['video_id'])?.toString();
+            if (id != null && id.isNotEmpty && !seenIds.contains(id)) {
+              seenIds.add(id);
+              tracks.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+      } catch (e) {
+        print('Siber Hava Mix Arama Hatası ($q): $e');
+      }
+    }
+
+    return WeatherMixBundle(
+      title: title,
+      description: description,
+      mood: mood,
+      icon: icon,
+      themeColor: color,
+      temp: temp,
+      userTaste: userTaste,
+      tracks: tracks,
+    );
+  }
+}
+
+// 🎯 SİBER PAKET: Hava Durumu Mix Paketi
+class WeatherMixBundle {
+  final String title;
+  final String description;
+  final String mood;
+  final IconData icon;
+  final Color themeColor;
+  final double? temp;
+  final List<String> userTaste;
+  final List<Map<String, dynamic>> tracks;
+
+  WeatherMixBundle({
+    required this.title,
+    required this.description,
+    required this.mood,
+    required this.icon,
+    required this.themeColor,
+    this.temp,
+    required this.userTaste,
+    required this.tracks,
+  });
 }

@@ -16,25 +16,33 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="ÖZSES IMPERIUM - Yeni Nesil Müzik ve Ses Deneyimi">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="ozses_v7_imperium">
+  <meta name="apple-mobile-web-app-title" content="ÖZSES">
   
   <!-- 🎯 SİBER KALKAN: Google Sign-In Web İstemci Kimliği -->
-  <meta name="google-signin-client_id" content="661550093863-ftcq2gpij6q2hg4bakigt92tqv1fvcu9.apps.googleusercontent.com">
+  <meta name="google-signin-client_id" content="533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png">
 
-  <title>ozses_v7_imperium</title>
+  <title>ÖZSES IMPERIUM</title>
   <link rel="manifest" href="manifest.json">
   
   
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+  
+  
+  
+  
+  
+  
+  
+  
   <style id="splash-screen-style">
     html {
       height: 100%
@@ -108,7 +116,17 @@
       <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
   </picture>
   
+  
+  
+  
   <script src="flutter_bootstrap.js" async=""></script>
+<script>
+  // Ensure splash is removed after the page fully loads
+  window.addEventListener('load', () => {
+    // Slight delay to give Flutter a chance to render the first frame
+    setTimeout(removeSplashFromWeb, 100);
+  });
+</script>
 
 
 </body></html>

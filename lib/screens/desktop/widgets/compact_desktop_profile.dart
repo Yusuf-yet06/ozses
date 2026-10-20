@@ -3,8 +3,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/history_service.dart';
 import '../../../services/siber_theme_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/rank_manager.dart';
+import '../../../services/subscription_manager.dart';
 import '../../siber_wrapped_screen.dart';
 import '../../../widgets/siber_premium_sheet.dart';
+import '../../../widgets/legal_sheets.dart'; // 🎯 MAĞAZA UYUMLULUK
 
 class CompactDesktopProfile extends StatefulWidget {
   final VoidCallback onClose;
@@ -16,13 +19,14 @@ class CompactDesktopProfile extends StatefulWidget {
 }
 
 class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
-  String _username = 'Siber Ajan';
+  String _username = 'Müziksever';
   String _rank = 'Yeni Dinleyici';
   String _avatarUrl = 'https://robohash.org/siber_ajan.png?set=set3';
   int _totalListenHours = 0;
   double _rankProgress = 0.0;
   bool _isLoading = true;
   Color _auraColor = Colors.cyanAccent;
+  bool _isAccountLinked = false; // 🎯 MAĞAZA UYUMLULUK
 
   @override
   void initState() {
@@ -32,8 +36,9 @@ class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
 
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString('siber_username') ?? 'Siber Ajan';
+    final name = prefs.getString('siber_username') ?? 'Müziksever';
     final avatar = prefs.getString('siber_avatar_url');
+    final isLinked = prefs.getBool('siber_is_linked') ?? false; // 🎯 MAĞAZA UYUMLULUK
     
     final historyList = await HistoryService.getHistory();
     int totalSeconds = 0;
@@ -45,22 +50,13 @@ class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
     String rank = 'Yeni Dinleyici';
     double rankProgress = 0.0;
     
-    final List<Map<String, dynamic>> rankTiers = [
-      {'name': 'Yeni Dinleyici', 'hours': 0},
-      {'name': 'Amatör', 'hours': 5},
-      {'name': 'Müziksever', 'hours': 25},
-      {'name': 'Ritim Tutkunu', 'hours': 75},
-      {'name': 'Melodi Ustası', 'hours': 150},
-      {'name': 'Ses Gurmesi', 'hours': 300},
-      {'name': 'ÖZSES Efsanesi', 'hours': 500},
-    ];
-
-    for (int i = 0; i < rankTiers.length; i++) {
-      if (totalHours >= rankTiers[i]['hours']) {
-        rank = rankTiers[i]['name'];
-        if (i < rankTiers.length - 1) {
-          int currentTierHours = rankTiers[i]['hours'];
-          int nextTierHours = rankTiers[i + 1]['hours'];
+    final tiers = RankManager.allTiers;
+    for (int i = 0; i < tiers.length; i++) {
+      if (totalHours >= tiers[i].hours) {
+        rank = tiers[i].name;
+        if (i < tiers.length - 1) {
+          int currentTierHours = tiers[i].hours;
+          int nextTierHours = tiers[i + 1].hours;
           int hoursInCurrentTier = totalHours - currentTierHours;
           int tierSpan = nextTierHours - currentTierHours;
           rankProgress = (hoursInCurrentTier / tierSpan).clamp(0.0, 1.0);
@@ -82,6 +78,7 @@ class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
           _avatarUrl = "https://robohash.org/${name.replaceAll(' ', '_')}?set=set3";
         }
         _isLoading = false;
+        _isAccountLinked = isLinked;
       });
     }
   }
@@ -109,6 +106,79 @@ class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
         filled: true,
         fillColor: Colors.black45,
       ),
+    );
+  }
+
+  void _unlinkAccount() async {
+    await AuthService().signOut();
+    _loadProfileData();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Hesap siber ağdan koparıldı.'),
+        backgroundColor: Colors.orangeAccent,
+      ));
+    }
+  }
+
+  void _deleteAccount() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+            side: const BorderSide(color: Colors.redAccent, width: 1.5),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Expanded(child: Text('Hesabımı Sil', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16))),
+            ],
+          ),
+          content: const Text(
+            'Bu işlem geri alınamaz. Bulut arşivinizdeki tüm şarkılar, oynatma listeleriniz, dinleme geçmişiniz ve profil verileriniz kalıcı olarak silinecektir.\n\nEmin misiniz?',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Vazgeç', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await AuthService().deleteAccount();
+                  _loadProfileData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Hesabınız ve verileriniz başarıyla silindi.'), backgroundColor: Colors.green),
+                    );
+                  }
+                } catch (e) {
+                  if (e.toString().contains('requires-recent-login')) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Güvenlik nedeniyle hesabı silmeden önce tekrar giriş yapmalısınız.'), backgroundColor: Colors.orangeAccent),
+                      );
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Hesap silme başarısız: $e'), backgroundColor: Colors.redAccent),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text('Kalıcı Olarak Sil', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -286,262 +356,393 @@ class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
   }
 
   void _showRankDetailsDialog() {
-    final List<Map<String, dynamic>> rankDetails = [
-      {
-        'name': 'Yeni Dinleyici',
-        'hours': 0,
-        'icon': Icons.headphones,
-        'color': Colors.white54,
-        'perk': 'Temel Dinleme ve Keşfet Erişimi',
-        'bonus': '',
-      },
-      {
-        'name': 'Çırak Taktisyen',
-        'hours': 5,
-        'icon': Icons.music_note,
-        'color': Colors.greenAccent,
-        'perk': '30 Dk Reklamsız Dinleme',
-        'bonus': '',
-      },
-      {
-        'name': 'Müziksever',
-        'hours': 25,
-        'icon': Icons.radar,
-        'color': Colors.blueAccent,
-        'perk': 'Ruh Hali Analizi (Günde 1 Kez)',
-        'bonus': '+ 30 Dk Reklamsız Dinleme Hediye',
-      },
-      {
-        'name': 'Ritim Tutkunu',
-        'hours': 75,
-        'icon': Icons.mic_external_on,
-        'color': Colors.purpleAccent,
-        'perk': 'Özel Karaoke Modu (Günde 2 Şarkı)',
-        'bonus': '+ Ruh Hali Analizi + 30 Dk Reklamsız',
-      },
-      {
-        'name': 'Melodi Ustası',
-        'hours': 150,
-        'icon': Icons.auto_awesome,
-        'color': Colors.orangeAccent,
-        'perk': 'Şahsi Keşfet: AI Albüm (Haftalık 1)',
-        'bonus': '+ Karaoke + Ruh Hali + 1 Saat Reklamsız',
-      },
-      {
-        'name': 'Ses Gurmesi',
-        'hours': 300,
-        'icon': Icons.card_giftcard,
-        'color': Colors.redAccent,
-        'perk': 'ÖZSES Özel Gün Özetleri (Wrapped)',
-        'bonus': '+ AI Albüm + Karaoke + Ruh Hali + 2 Saat Reklamsız',
-      },
-      {
-        'name': 'ÖZSES Efsanesi',
-        'hours': 500,
-        'icon': Icons.diamond,
-        'color': Colors.amber,
-        'perk': 'Tam Yetkili Siber Ajan Sürümü',
-        'bonus':
-            '+ Haftalık 8 Saat Reklamsız + Sınırsız AI Liste + Limitsiz Karaoke',
-      },
-    ];
+    final rankIcons = {
+      SiberRank.yeniDinleyici: Icons.headphones_rounded,
+      SiberRank.cirakTaktisyen: Icons.military_tech_rounded,
+      SiberRank.muziksever: Icons.radar_rounded,
+      SiberRank.ritimTutkunu: Icons.graphic_eq_rounded,
+      SiberRank.melodiUstasi: Icons.auto_awesome_rounded,
+      SiberRank.sesGurmesi: Icons.workspace_premium_rounded,
+      SiberRank.ozsesEfsanesi: Icons.diamond_rounded,
+    };
+
+    final rankColors = {
+      SiberRank.yeniDinleyici: Colors.white54,
+      SiberRank.cirakTaktisyen: Colors.greenAccent,
+      SiberRank.muziksever: Colors.blueAccent,
+      SiberRank.ritimTutkunu: Colors.purpleAccent,
+      SiberRank.melodiUstasi: Colors.orangeAccent,
+      SiberRank.sesGurmesi: Colors.redAccent,
+      SiberRank.ozsesEfsanesi: Colors.amber,
+    };
 
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            width: 600,
-            height: MediaQuery.of(context).size.height * 0.8,
-            decoration: BoxDecoration(
-                color: const Color(0xFF0F0F1A),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white10),
-                boxShadow: [
-                  BoxShadow(
-                    color: SiberThemeService.instance.currentThemeColor.value.withValues(alpha: 0.2),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  )
-                ]),
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Text(
-                    'SİBER KARİYER ÖDÜLLERİ',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-                const Text(
-                  'Dinledikçe rütbe atla, geçmişteki yeteneklerini de katlayarak taşı.',
-                  style: TextStyle(color: Colors.white54, fontSize: 11),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: rankDetails.length,
-                    itemBuilder: (context, index) {
-                      final rank = rankDetails[index];
-                      bool isAchieved = _totalListenHours >= rank['hours'];
-                      bool isCurrent = _rank == rank['name'];
-                      Color activeColor = isAchieved ? rank['color'] : Colors.white24;
-
-                      return Opacity(
-                        opacity: isAchieved ? 1.0 : 0.4,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 15),
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: isCurrent
-                                ? activeColor.withValues(alpha: 0.1)
-                                : Colors.white.withValues(alpha: 0.02),
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: isCurrent
-                                  ? activeColor.withValues(alpha: 0.5)
-                                  : Colors.white10,
-                              width: isCurrent ? 2.0 : 1.0,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: 600,
+                height: MediaQuery.of(context).size.height * 0.85,
+                decoration: BoxDecoration(
+                    color: const Color(0xFF0F0F1A),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: SiberThemeService.instance.currentThemeColor.value.withValues(alpha: 0.2),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      )
+                    ]),
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.military_tech_rounded, color: Colors.amber, size: 22),
+                          SizedBox(width: 8),
+                          Text(
+                            'RÜTBE VE ÖDÜL SİSTEMİ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2.0,
                             ),
-                            boxShadow: isCurrent
-                                ? [
-                                    BoxShadow(
-                                        color: activeColor.withValues(alpha: 0.2),
-                                        blurRadius: 10)
-                                  ]
-                                : [],
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isAchieved
-                                      ? activeColor.withValues(alpha: 0.2)
-                                      : Colors.black26,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isAchieved ? rank['icon'] : Icons.lock,
-                                  color: activeColor,
-                                  size: 24,
-                                ),
+                        ],
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        'Dinledikçe rütbe atla; geçici reklamsız dinleme süreleri, ek indirme ve AI liste haklarını hesabına ücretsiz kat!',
+                        style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.4),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.workspace_premium_rounded, color: Colors.cyanAccent, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Şu anki dinleme süren: $_totalListenHours Saat | Rütben: $_rank',
+                              style: const TextStyle(
+                                color: Colors.cyanAccent,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(width: 15),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          rank['name'],
-                                          style: TextStyle(
-                                            color: isAchieved
-                                                ? Colors.white
-                                                : Colors.white54,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        if (isCurrent)
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 8.0),
-                                            child: Icon(Icons.my_location,
-                                                color: activeColor, size: 14),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      "Gereksinim: ${rank['hours']} Saat Dinleme",
-                                      style: TextStyle(
-                                        color: isAchieved
-                                            ? Colors.white70
-                                            : Colors.white38,
-                                        fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: RankManager.allTiers.length,
+                        itemBuilder: (context, index) {
+                          final tier = RankManager.allTiers[index];
+                          bool isAchieved = _totalListenHours >= tier.hours;
+                          bool isCurrent = _rank == tier.name;
+                          Color activeColor = rankColors[tier.rank] ?? Colors.white54;
+                          IconData iconData = rankIcons[tier.rank] ?? Icons.headphones_rounded;
+
+                          return Opacity(
+                            opacity: isAchieved ? 1.0 : 0.45,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isCurrent
+                                    ? activeColor.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.02),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: isCurrent
+                                      ? activeColor.withValues(alpha: 0.6)
+                                      : (isAchieved ? Colors.white24 : Colors.white10),
+                                  width: isCurrent ? 2.0 : 1.0,
+                                ),
+                                boxShadow: isCurrent
+                                    ? [
+                                        BoxShadow(
+                                            color: activeColor.withValues(alpha: 0.25),
+                                            blurRadius: 10)
+                                      ]
+                                : [],
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isAchieved
+                                          ? activeColor.withValues(alpha: 0.2)
+                                          : Colors.black38,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isAchieved ? activeColor.withValues(alpha: 0.5) : Colors.white12,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
-                                    Row(
+                                    child: Icon(
+                                      isAchieved ? iconData : Icons.lock_outline_rounded,
+                                      color: isAchieved ? activeColor : Colors.white38,
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Icon(
-                                          isAchieved
-                                              ? Icons.military_tech
-                                              : Icons.lock_outline,
-                                          size: 14,
-                                          color: activeColor.withValues(alpha: 0.8),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Expanded(
-                                          child: Text(
-                                            rank['perk'],
-                                            style: TextStyle(
-                                              color: activeColor.withValues(alpha: 0.9),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (rank['bonus'] != '') ...[
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Icon(
-                                            Icons.add,
-                                            size: 12,
-                                            color: Colors.greenAccent.withValues(alpha: 0.7),
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Expanded(
-                                            child: Text(
-                                              rank['bonus'],
+                                        Row(
+                                          children: [
+                                            Text(
+                                              tier.name,
                                               style: TextStyle(
-                                                color: Colors.greenAccent.withValues(alpha: 0.8),
-                                                fontSize: 11,
+                                                color: isAchieved
+                                                    ? Colors.white
+                                                    : Colors.white54,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
                                               ),
                                             ),
+                                            if (isCurrent) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: activeColor.withValues(alpha: 0.25),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                  border: Border.all(color: activeColor, width: 1),
+                                                ),
+                                                child: Text(
+                                                  'MEVCUT RÜTBEN',
+                                                  style: TextStyle(color: activeColor, fontSize: 9, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          tier.hours == 0
+                                              ? "Gereksinim: Başlangıç Seviyesi"
+                                              : "Gereksinim: ${tier.hours} Saat Dinleme",
+                                          style: TextStyle(
+                                            color: isAchieved
+                                                ? Colors.white70
+                                                : Colors.white38,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(
+                                              Icons.check_circle_outline_rounded,
+                                              size: 15,
+                                              color: isAchieved ? activeColor : Colors.white38,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                tier.perk,
+                                                style: TextStyle(
+                                                  color: isAchieved ? activeColor : Colors.white60,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        if (tier.bonus.isNotEmpty) ...[
+                                          const SizedBox(height: 5),
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(
+                                                Icons.stars_rounded,
+                                                size: 14,
+                                                color: isAchieved ? Colors.amberAccent : Colors.white30,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  tier.bonus,
+                                                  style: TextStyle(
+                                                    color: isAchieved
+                                                        ? Colors.amberAccent.withValues(alpha: 0.9)
+                                                        : Colors.white38,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
+                                        // 🎯 GEÇİCİ REKLAMSIZ DİNLEME AKTİVASYON BUTONU
+                                        if (tier.adFreeMinutes > 0) ...[
+                                          const SizedBox(height: 8),
+                                          FutureBuilder<bool>(
+                                            future: SubscriptionManager().isRankAdFreeClaimed(tier.rank),
+                                            builder: (context, snapshot) {
+                                              final isClaimed = snapshot.data ?? false;
+                                              final isCurrentlyAdFree = SubscriptionManager().isAdFree;
+                                              final remainingText = SubscriptionManager().remainingAdFreeFormatted;
+
+                                              if (SubscriptionManager().currentTier != SiberTier.free) {
+                                                return Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.amber.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                                                  ),
+                                                  child: const Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 13),
+                                                      SizedBox(width: 4),
+                                                      Text('Abonelikle Sınırsız Reklamsız', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+
+                                              if (isClaimed) {
+                                                return Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: isCurrentlyAdFree ? Colors.green.withValues(alpha: 0.15) : Colors.white10,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(color: isCurrentlyAdFree ? Colors.greenAccent : Colors.white24),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(isCurrentlyAdFree ? Icons.timer_outlined : Icons.check_circle_outline, color: isCurrentlyAdFree ? Colors.greenAccent : Colors.white54, size: 13),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        isCurrentlyAdFree ? 'REKLAMSIZ MOD AKTİF ($remainingText)' : 'BU HEDİYE KULLANILDI',
+                                                        style: TextStyle(color: isCurrentlyAdFree ? Colors.greenAccent : Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+
+                                              if (isAchieved) {
+                                                return InkWell(
+                                                  onTap: () async {
+                                                    final success = await SubscriptionManager().claimAdFreePass(tier.rank);
+                                                    if (success && context.mounted) {
+                                                      setDialogState(() {});
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text('🎉 ${tier.name} hediyesi: ${tier.adFreeMinutes} Dakika Reklamsız Dinleme Başlatıldı!'),
+                                                          backgroundColor: Colors.green,
+                                                        ),
+                                                      );
+                                                    }
+                                                  },
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      gradient: const LinearGradient(colors: [Colors.deepPurple, Colors.indigoAccent]),
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      boxShadow: [
+                                                        BoxShadow(color: Colors.deepPurpleAccent.withValues(alpha: 0.4), blurRadius: 6),
+                                                      ],
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(Icons.flash_on_rounded, color: Colors.amberAccent, size: 14),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          'REKLAMSIZ MODU BAŞLAT (+${tier.adFreeMinutes} Dk)',
+                                                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              }
+
+                                              return const SizedBox.shrink();
+                                            },
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                        color: isAchieved
+                                            ? Colors.green.withValues(alpha: 0.2)
+                                            : Colors.white.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isAchieved
+                                              ? Colors.green.withValues(alpha: 0.5)
+                                              : Colors.grey.withValues(alpha: 0.3),
+                                        )),
+                                    child: Text(
+                                      isAchieved ? 'AÇIK' : 'KİLİTLİ',
+                                      style: TextStyle(
+                                        color: isAchieved ? Colors.greenAccent : Colors.grey,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ]
-                                  ],
-                                ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('KAPAT', style: TextStyle(color: Colors.white54)),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('KAPAT', style: TextStyle(color: Colors.white54)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -890,11 +1091,34 @@ class _CompactDesktopProfileState extends State<CompactDesktopProfile> {
                       },
                     ),
                     const SizedBox(height: 12),
+                    if (!_isAccountLinked)
+                      _buildMenuButton(
+                        icon: Icons.link_rounded,
+                        title: 'Hesap Bağla',
+                        color: Colors.cyanAccent,
+                        onTap: _showLinkAccountDialog,
+                      )
+                    else ...[
+                      _buildMenuButton(
+                        icon: Icons.link_off_rounded,
+                        title: 'Hesabın Bağını Kopar',
+                        color: Colors.orangeAccent,
+                        onTap: _unlinkAccount,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildMenuButton(
+                        icon: Icons.delete_forever_rounded,
+                        title: 'Hesabımı ve Verilerimi Sil',
+                        color: Colors.redAccent,
+                        onTap: _deleteAccount,
+                      ),
+                    ],
+                    const SizedBox(height: 12),
                     _buildMenuButton(
-                      icon: Icons.link_rounded,
-                      title: 'Hesap Bağla',
-                      color: Colors.cyanAccent,
-                      onTap: _showLinkAccountDialog,
+                      icon: Icons.policy_rounded,
+                      title: 'Gizlilik ve Kullanım Koşulları',
+                      color: Colors.blueAccent,
+                      onTap: () => showLegalDocsModal(context, themeColor: themeColor),
                     ),
                     const SizedBox(height: 12),
                     _buildMenuButton(

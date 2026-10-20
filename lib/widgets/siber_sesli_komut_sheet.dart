@@ -205,7 +205,7 @@ class _SiberSesliKomutSheetState extends State<SiberSesliKomutSheet>
                 children: [
                   Icon(Icons.mic_rounded, color: color, size: 22),
                   const SizedBox(width: 10),
-                  Text('SİBER SESLİ KOMUT',
+                  Text('SESLİ KOMUT',
                       style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1.2)),
                 ],
               ),

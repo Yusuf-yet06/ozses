@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import '../widgets/legal_sheets.dart'; // 🎯 MAĞAZA UYUMLULUK
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -187,6 +188,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // 🎯 MAĞAZA UYUMLULUK: Kayıt şartı
+                  Column(
+                    children: [
+                      const Text(
+                        'Kayıt olarak Kullanım Koşullarını (EULA) ve Gizlilik Politikasını kabul etmiş sayılırsınız.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () => showLegalDocsModal(context, themeColor: Colors.purpleAccent, initialTab: 0),
+                            child: const Text('Kullanım Koşulları', style: TextStyle(color: Colors.purpleAccent, fontSize: 11, decoration: TextDecoration.underline)),
+                          ),
+                          const Text(' | ', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                          TextButton(
+                            onPressed: () => showLegalDocsModal(context, themeColor: Colors.purpleAccent, initialTab: 1),
+                            child: const Text('Gizlilik Politikası', style: TextStyle(color: Colors.purpleAccent, fontSize: 11, decoration: TextDecoration.underline)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

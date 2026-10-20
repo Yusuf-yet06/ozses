@@ -1,34 +1,47 @@
-const ytdl = require('@distube/ytdl-core');
-
-module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    const videoId = req.query.id;
-    if (!videoId) {
-        return res.status(400).json({ error: "Missing 'id' parameter" });
-    }
-
-    try {
-        const url = `https://www.youtube.com/watch?v=${videoId}`;
-        const info = await ytdl.getInfo(url);
-        
-        const audioFormat = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
-        
-        if (audioFormat && audioFormat.url) {
-            return res.status(200).json({
-                status: 'basarili',
-                stream_url: audioFormat.url,
-                title: info.videoDetails.title
-            });
-        } else {
-            return res.status(404).json({ error: "No audio format found" });
-        }
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+export const config = {
+  runtime: 'edge',
 };
+
+export default async function handler(req) {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      },
+    });
+  }
+
+  const url = new URL(req.url);
+  const videoId = url.searchParams.get('id');
+
+  if (!videoId) {
+    return new Response(JSON.stringify({ error: "Missing 'id' parameter" }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    // Proxy to VPS using nip.io to bypass Vercel's direct IP block
+    const vpsUrl = `http://167-172-190-129.nip.io:3000/api/stream?id=${videoId}`;
+    
+    // Fetch from VPS
+    const response = await fetch(vpsUrl);
+    
+    // Create response with same headers
+    const headers = new Headers(response.headers);
+    headers.set('Access-Control-Allow-Origin', '*');
+    
+    return new Response(response.body, {
+      status: response.status,
+      headers: headers
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}

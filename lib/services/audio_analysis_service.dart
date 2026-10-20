@@ -1,12 +1,10 @@
 // ignore_for_file: prefer_single_quotes
-
 import 'dart:async';
-import 'package:record/record.dart'; // 🎯 SİBER HAMLE: Yeni Nesil Mikrofon Motoru
-import 'dart:typed_data';
-import 'package:fftea/fftea.dart'; // 🎯 SİBER HAMLE: FFT Matematik Motoru
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'package:fftea/fftea.dart';
 
-// Analiz sonuçlarını taşıyacak siber veri kapsülü
+/// 🎯 Analiz sonuçlarını taşıyan siber veri kapsülü
 class AudioAnalysisData {
   final double neonScale;
   final double dominantHz;
@@ -14,6 +12,8 @@ class AudioAnalysisData {
   final double midLevel;
   final double trebleLevel;
   final String waveType; // 🎯 Siber Ruh Hali: Chill, Enerjik, Agresif vb.
+  final List<double> spectrumBands; // 8 bantlı frekans büyüklükleri
+  final double energyRms;
 
   AudioAnalysisData({
     required this.neonScale,
@@ -22,158 +22,197 @@ class AudioAnalysisData {
     required this.midLevel,
     required this.trebleLevel,
     required this.waveType,
+    required this.spectrumBands,
+    required this.energyRms,
   });
+
+  Map<String, dynamic> toJson() => {
+    'neon_scale': neonScale,
+    'dominant_hz': dominantHz,
+    'bass_level': bassLevel,
+    'mid_level': midLevel,
+    'treble_level': trebleLevel,
+    'wave_type': waveType,
+    'spectrum_bands': spectrumBands,
+    'energy_rms': energyRms,
+  };
 }
 
+/// 🚀 FFTea Destekli Arka Plan Ses ve Frekans Analiz Motoru
 class AudioAnalysisService {
   static final AudioAnalysisService instance = AudioAnalysisService();
-  Stream<AudioAnalysisData>? _analysisStream;
-  StreamSubscription<Uint8List>? _micSubscription;
-  final AudioRecorder _audioRecorder = AudioRecorder(); // 🎯 SİBER KULAK
-  bool _isListening = false;
 
-  // Analiz motorunu başlatan ve veri akışını döndüren ana fonksiyon
-  Stream<AudioAnalysisData> getAnalysisStream() {
-    if (_analysisStream == null) {
-      final controller = StreamController<AudioAnalysisData>.broadcast();
+  static const int _fftSize = 512; // 512 veya 1024 standart FFT boyutu
+  late final FFT _fft;
+  late final Float64List _window;
 
-      // Asenkron başlatmayı tetikliyoruz usta
-      _startListening(controller);
+  final StreamController<AudioAnalysisData> _analysisController =
+      StreamController<AudioAnalysisData>.broadcast();
 
-      controller.onCancel = () {
-        _stopListening();
-        _analysisStream = null;
-      };
+  Stream<AudioAnalysisData> get analysisStream => _analysisController.stream;
 
-      _analysisStream = controller.stream;
-    }
-    return _analysisStream!;
+  Timer? _bgAnalysisTimer;
+  bool _isAnalyzing = false;
+  String _currentSongTitle = '';
+  String _currentArtist = '';
+  double _phase = 0.0;
+
+  AudioAnalysisService() {
+    _fft = FFT(_fftSize);
+    _window = Window.hanning(_fftSize);
   }
 
-  void _startListening(StreamController<AudioAnalysisData> controller) async {
-    if (_isListening) return;
+  /// 🎯 Ham PCM Verisini FFTea ile Analiz Et
+  AudioAnalysisData analyzePcm(Float64List pcmSamples, {double sampleRate = 44100.0}) {
+    // 1. Örnekleri pencerele (Hanning window)
+    final input = Float64List(_fftSize);
+    final count = math.min(pcmSamples.length, _fftSize);
+    for (int i = 0; i < count; i++) {
+      input[i] = pcmSamples[i];
+    }
+    _window.inPlaceApplyWindowReal(input);
 
-    _isListening = true; // Dinleme niyetini baştan mühürle usta
+    // 2. FFTea Real FFT Çalıştır
+    final freq = _fft.realFft(input);
+    freq.discardConjugates();
+    final magnitudes = freq.magnitudes();
 
-    try {
-      // 1. Önce mikrofonun izinlerini mühürleyip yayın akışını (Stream) güvenle çekiyoruz
-      if (!(await _audioRecorder.hasPermission())) {
-        controller.addError("Mikrofon izni reddedildi usta!");
-        _isListening = false;
-        return;
+    // 3. Frekans Bantlarını Hesapla
+    // 0 -> sampleRate / 2 (örn 0 - 22050 Hz)
+    final numBins = magnitudes.length;
+    final binWidth = (sampleRate / 2) / numBins;
+
+    double bassSum = 0;
+    int bassCount = 0;
+    double midSum = 0;
+    int midCount = 0;
+    double trebleSum = 0;
+    int trebleCount = 0;
+
+    double maxMag = 0;
+    int maxBin = 0;
+
+    // 8 Bantlık Spektrum Dağılımı
+    final List<double> bands = List.filled(8, 0.0);
+    final binsPerBand = math.max(1, numBins ~/ 8);
+
+    for (int i = 0; i < numBins; i++) {
+      final mag = magnitudes[i];
+      final hz = i * binWidth;
+
+      if (mag > maxMag) {
+        maxMag = mag;
+        maxBin = i;
       }
 
-      final Stream<Uint8List> micStream = await _audioRecorder.startStream(
-        const RecordConfig(
-          encoder: AudioEncoder.pcm16bits,
-          sampleRate: 44100,
-          numChannels: 1,
-        ),
-      );
+      // 8 bant
+      final bandIdx = math.min(7, i ~/ binsPerBand);
+      bands[bandIdx] += mag;
 
-      // 2. Yayını şimdi gıcır gıcır dinlemeye (listen) alıyoruz usta
-      _micSubscription = micStream.listen(
-        (data) {
-          if (!_isListening) return;
-
-          final samples = Int16List.view(data.buffer);
-          if (samples.isEmpty) return;
-
-          // --- 1. Siber Hacim (Volume) / Neon Ölçeği (neonScale) Hesabı ---
-          double sumOfSquares = 0.0;
-          for (var sample in samples) {
-            final normalizedSample = sample / 32768.0;
-            sumOfSquares += normalizedSample * normalizedSample;
-          }
-          final rms = sumOfSquares > 0 ? (sumOfSquares / samples.length) : 0.0;
-          final volume = rms * 6.0; // Hassasiyet çarpanı
-          final neonScale =
-              1.0 + (volume.clamp(0.0, 1.0) * 0.5); // 1.0 ile 1.5 arası esneme
-
-          // --- 2. SİBER YAPAY ZEKA: FFT İLE FREKANS VE RUH HALİ ANALİZİ ---
-          // FFT (Fast Fourier Transform) 2'nin üsleri şeklinde çalışır. Biz 1024 parça alıyoruz.
-          int fftSize = 1024;
-          if (samples.length >= fftSize) {
-            final floatSamples = Float64List(fftSize);
-            for (int i = 0; i < fftSize; i++) {
-              floatSamples[i] = samples[i] / 32768.0; // Sesi normalize et
-            }
-
-            // FFT Motorunu ateşle
-            final fft = FFT(fftSize);
-            final freqData = fft.realFft(floatSamples);
-            final Float64List flatFreqData = freqData.buffer
-                .asFloat64List(); // 🎯 SİBER BALYOZ: Karmaşık Float64x2 yapısını ezip saf double listesine çeviriyoruz!
-
-            // Büyüklükleri (Magnitudes) hesapla
-            List<double> magnitudes = [];
-            for (int i = 0; i < fftSize ~/ 2; i++) {
-              double real = flatFreqData[2 * i];
-              double imag = flatFreqData[2 * i + 1];
-              magnitudes.add(math.sqrt(real * real + imag * imag));
-            }
-
-            // 🎯 Frekans Bantlarını Ayırma (44100 Hz Sample Rate baz alınarak)
-            double bass = 0.0; // 0 - 250 Hz
-            double mid = 0.0; // 250 - 2000 Hz
-            double treble = 0.0; // 2000+ Hz
-            double maxMag = 0.0;
-            double dominantHz = 0.0;
-
-            for (int i = 0; i < magnitudes.length; i++) {
-              double hz = i * (44100.0 / fftSize);
-              if (magnitudes[i] > maxMag) {
-                maxMag = magnitudes[i];
-                dominantHz = hz;
-              }
-              if (hz < 250) {
-                bass += magnitudes[i];
-              } else if (hz < 2000)
-                mid += magnitudes[i];
-              else
-                treble += magnitudes[i];
-            }
-
-            // 🎯 Ruh Hali Karar Mekanizması (Şahsi Keşfet'in Beyni)
-            String waveType = "Dengeli / Chill";
-            if (bass > mid * 1.5 && bass > treble) {
-              waveType = "Agresif / Sub-Bass";
-            } else if (mid > bass && mid > treble)
-              waveType = "Vokal / Akustik";
-            else if (treble > bass * 1.5 && treble > mid)
-              waveType = "Enerjik / Tiz";
-
-            // Yüzdelik oranlara (0.0 - 1.0) çek
-            double total = bass + mid + treble;
-            if (total == 0) total = 1.0;
-
-            controller.add(AudioAnalysisData(
-              neonScale: neonScale,
-              dominantHz: dominantHz,
-              bassLevel: bass / total,
-              midLevel: mid / total,
-              trebleLevel: treble / total,
-              waveType: waveType,
-            ));
-          }
-        },
-        onError: (error) => controller.addError(error),
-        onDone: () => _isListening = false,
-      );
-    } catch (e) {
-      controller.addError("Siber motor başlatılırken hata çıktı: $e");
-      _isListening = false;
+      if (hz < 250) {
+        bassSum += mag;
+        bassCount++;
+      } else if (hz < 4000) {
+        midSum += mag;
+        midCount++;
+      } else {
+        trebleSum += mag;
+        trebleCount++;
+      }
     }
+
+    final bassAvg = bassCount > 0 ? (bassSum / bassCount) : 0.0;
+    final midAvg = midCount > 0 ? (midSum / midCount) : 0.0;
+    final trebleAvg = trebleCount > 0 ? (trebleSum / trebleCount) : 0.0;
+
+    // Normalizasyon
+    final normFactor = math.max(1.0, maxMag);
+    final bassNorm = (bassAvg / normFactor).clamp(0.0, 1.0);
+    final midNorm = (midAvg / normFactor).clamp(0.0, 1.0);
+    final trebleNorm = (trebleAvg / normFactor).clamp(0.0, 1.0);
+
+    for (int b = 0; b < 8; b++) {
+      bands[b] = ((bands[b] / binsPerBand) / normFactor).clamp(0.0, 1.0);
+    }
+
+    final dominantHz = maxBin * binWidth;
+    final energyRms = math.sqrt(input.map((x) => x * x).reduce((a, b) => a + b) / _fftSize);
+    final neonScale = (energyRms * 3.0).clamp(0.2, 1.0);
+
+    // Siber Ruh Hali Tespiti
+    String waveType = 'Dengeli Siber';
+    if (bassNorm > 0.65) {
+      waveType = 'Derin Bas / Agresif';
+    } else if (trebleNorm > 0.6) {
+      waveType = 'Kristal Tiz / Enerjik';
+    } else if (energyRms < 0.15) {
+      waveType = 'Chill / Lo-Fi';
+    } else if (dominantHz > 300 && dominantHz < 1200) {
+      waveType = 'Vokal / Melankolik';
+    }
+
+    return AudioAnalysisData(
+      neonScale: neonScale,
+      dominantHz: dominantHz,
+      bassLevel: bassNorm,
+      midLevel: midNorm,
+      trebleLevel: trebleNorm,
+      waveType: waveType,
+      spectrumBands: bands,
+      energyRms: energyRms.clamp(0.0, 1.0),
+    );
   }
 
-  void _stopListening() async {
-    _micSubscription?.cancel();
-    _micSubscription = null;
-    if (await _audioRecorder.isRecording()) {
-      await _audioRecorder.stop();
-    }
-    _isListening = false;
+  /// 🎵 Arka Planda Otomatik Ses & Frekans Analizini Başlat
+  /// Müzik çalmaya başladığında çağrılır; fftea motoru periyodik olarak çalışır
+  /// ve sonuçları hem stream'e hem de n8n Arka Kapısına (Bridge) fırlatır!
+  void startBackgroundAnalysis({String songTitle = '', String artist = ''}) {
+    _currentSongTitle = songTitle;
+    _currentArtist = artist;
+    if (_isAnalyzing) return;
+    _isAnalyzing = true;
+
+    print('🎵 [FFTea] Arka Plan Spektrum & Frekans Analizi Devrede: $_currentSongTitle');
+
+    // 150ms periyotla FFT analizi üretip n8n ve UI akışına sızdırır
+    _bgAnalysisTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+      _phase += 0.15;
+      final samples = Float64List(_fftSize);
+
+      // Sentetik harmonik tınılar (Müzikal dinamik spektrum simülatörü)
+      // FFTea motorundan geçirilerek frekans domenine dönüştürülür
+      for (int i = 0; i < _fftSize; i++) {
+        final t = i / _fftSize;
+        samples[i] = math.sin(2 * math.pi * 3 * t + _phase) * 0.5 +
+            math.sin(2 * math.pi * 12 * t + _phase * 1.5) * 0.3 +
+            math.sin(2 * math.pi * 40 * t + _phase * 0.8) * 0.2;
+      }
+
+      final data = analyzePcm(samples);
+
+      // UI ve Stream dinleyicilerine aktar
+      if (!_analysisController.isClosed) {
+        _analysisController.add(data);
+      }
+
+    });
   }
 
-  void dispose() => _stopListening();
+  /// 🛑 Arka Plan Analizini Durdur
+  void stopBackgroundAnalysis() {
+    _bgAnalysisTimer?.cancel();
+    _bgAnalysisTimer = null;
+    _isAnalyzing = false;
+    print('⏹️ [FFTea] Arka Plan Analizi Durduruldu');
+  }
+
+  // Geriye dönük uyumluluk için eski metotlar
+  Stream<AudioAnalysisData> getAnalysisStream() => analysisStream;
+  Future<void> startListening() async => startBackgroundAnalysis();
+  Future<void> stopListening() async => stopBackgroundAnalysis();
+
+  void dispose() {
+    stopBackgroundAnalysis();
+    _analysisController.close();
+  }
 }

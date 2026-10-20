@@ -162,7 +162,7 @@ class _MusicListScreenState extends State<MusicListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ÖZSES V7 - MÜZİK MERKEZİ'),
+        title: const Text('ÖZSES - MÜZİK MERKEZİ'),
         centerTitle: true,
         actions: [
           IconButton(

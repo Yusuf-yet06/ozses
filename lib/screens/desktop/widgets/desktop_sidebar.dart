@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/siber_theme_service.dart';
-import 'compact_desktop_profile.dart'; // Yeni oluşturduğumuz kompakt profil
+import 'compact_desktop_profile.dart';
+import '../../../widgets/siber_theme_sheet.dart'; // Yeni oluşturduğumuz kompakt profil
 
 class DesktopSidebar extends StatefulWidget {
   final int selectedIndex;
@@ -19,7 +20,7 @@ class DesktopSidebar extends StatefulWidget {
 
 class _DesktopSidebarState extends State<DesktopSidebar> {
   bool _isProfileOpen = false;
-  String _username = 'Siber Ajan';
+  String _username = 'Müziksever';
   String _avatarUrl = 'https://robohash.org/siber_ajan.png?set=set3';
 
   @override
@@ -30,7 +31,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 
   Future<void> _loadMiniProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString('siber_username') ?? 'Siber Ajan';
+    final name = prefs.getString('siber_username') ?? 'Müziksever';
     final avatar = prefs.getString('siber_avatar_url');
 
     if (mounted) {
@@ -43,6 +44,59 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         }
       });
     }
+  }
+
+  
+  Widget _buildActionItem(IconData icon, String title, Color themeColor, VoidCallback onTap) {
+    bool isHovered = false;
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return MouseRegion(
+          onEnter: (_) => setLocalState(() => isHovered = true),
+          onExit: (_) => setLocalState(() => isHovered = false),
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: isHovered 
+                        ? themeColor.withValues(alpha: 0.1) 
+                        : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isHovered 
+                          ? themeColor.withValues(alpha: 0.3) 
+                          : Colors.transparent,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: isHovered ? themeColor : Colors.white60,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isHovered ? Colors.white : Colors.white60,
+                      fontSize: 15,
+                      fontWeight: isHovered ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    );
   }
 
   Widget _buildMenuItem(IconData icon, String title, int index, Color themeColor) {
@@ -232,8 +286,18 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
               _buildMenuItem(Icons.home_outlined, 'Anasayfa', 0, themeColor),
               _buildMenuItem(Icons.explore_outlined, 'Keşfet', 1, themeColor),
               _buildMenuItem(Icons.library_music_outlined, 'Kütüphanem', 2, themeColor),
-              _buildMenuItem(Icons.smart_toy_outlined, 'AI Modülü', 4, themeColor),
               _buildMenuItem(Icons.settings_outlined, 'Ayarlar', 5, themeColor),
+              _buildActionItem(Icons.palette_outlined, 'Tema Merkezi', themeColor, () {
+                showModalBottomSheet(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (context) => Padding(
+                    padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.2), // masaüstünde tam ekran kaplamasın
+                    child: SiberThemeSheet(),
+                  ),
+                );
+              }),
             ],
           ),
         ),

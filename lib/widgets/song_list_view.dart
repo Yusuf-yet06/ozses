@@ -113,7 +113,7 @@ class SongListView extends StatelessWidget {
                 size: 80, color: themeColor.withValues(alpha: 0.5)),
           ),
           const SizedBox(height: 20),
-          Text('ÖZSES V7 HENÜZ SESSİZ',
+          Text('ÖZSES HENÜZ SESSİZ',
               style: TextStyle(
                   color: themeColor,
                   fontSize: 18,

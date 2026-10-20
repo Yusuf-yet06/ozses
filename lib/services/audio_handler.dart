@@ -1,5 +1,7 @@
+import 'dart:io';
 import '../core/platform/siber_platform.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart'; // 🎯 SİBER HAMLE: Donanım (DSP) Destekli Yeni Nesil Motor
 import 'dart:math';
 import 'dart:async';
@@ -16,6 +18,8 @@ import 'dart:convert'; // JSON İÇİN
 import 'package:youtube_explode_dart/youtube_explode_dart.dart'; // 🎯 NÜKLEER ÇÖZÜM V2 İÇİN
 import '../services/analytics_service.dart'; // 📈 SİBER ANALİTİK İÇİN
 import '../services/subscription_manager.dart';
+import 'audio_analysis_service.dart';
+import 'lyrics_service.dart';
 
 class MyAudioHandler extends BaseAudioHandler {
   late final AudioPlayer
@@ -27,7 +31,12 @@ class MyAudioHandler extends BaseAudioHandler {
   List<MediaItem> _playlist = [];
   int _currentIndex = -1;
   int _consecutiveErrors = 0;
+  int _songsPlayedSinceLastAd = 0; // 🎯 SİBER REKLAM SAYACI (4-5 şarkıda bir reklam)
+  DateTime? _lastInterstitialAdTime; // 🎯 SİBER ZAMANLAYICI: İki reklam arası asgari bekleme süresi (Cooldown)
+  bool _adWarningToastShown = false; // 🎯 SİBER KALKAN: Bildirimin mükerrer çıkmasını önler (1-2 defa uyarır)
   bool _analyticsLogged = false; // 📊 SİBER ANALİTİK: Kayıt atıldı mı?
+  bool _isTransitioning = false; // 🛡️ SİBER KALKAN: Şarkı geçiş kilidi (Arka planda çökme ve mükerrer tetiklemeyi önler)
+  Duration _maxObservedPosition = Duration.zero; // ⏱️ SİBER KRONOMETRE: Şarkının gerçekten dinlendiğini kanıtlayan zirve süre
 
   // 🎯 SİBER HAMLE: Android DSP Ekolayzır ve Bas Güçlendirici
   final AndroidEqualizer siberEqualizer = AndroidEqualizer();
@@ -66,33 +75,33 @@ class MyAudioHandler extends BaseAudioHandler {
           : null,
     );
 
+    _initAudioSession();
+
     // 🎯 SİBER DİNLEYİCİ: Şarkı pozisyonu (saniye saniye) değiştikçe Slider'a sinyal gönder
     _player.positionStream.listen((position) {
-      // 🎯 SİBER KALKAN: Şarkı 30 dakikayı devirirse (1800 sn) araya serpmeli reklam (Interstitial) tetikle
-      if (position.inSeconds == 1770) {
-        _safeShowToast('🎧 Birazdan Siber Keşiflere ufak bir reklam molası vereceğiz...', toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.deepPurple, textColor: Colors.white);
-      }
-      if (position.inSeconds == 1800) {
-        final isOffline = mediaItem.value?.id.startsWith('yt:') != true;
-        AdManager.showInterstitialAdIfReady(isOfflineMode: isOffline, forceShow: true);
+      if (position > _maxObservedPosition) {
+        _maxObservedPosition = position;
       }
       
-      // 🎯 SİBER REKLAM BİLDİRİMİ: Şarkı bitimine 30 saniye kala eğer reklam çıkacaksa uyar
+      // 🎯 SİBER REKLAM BİLDİRİMİ: Şarkı bitimine 30 saniye kala eğer reklam çıkacaksa tek seferlik uyar
       if (mediaItem.value != null && _player.duration != null) {
         final remaining = _player.duration!.inSeconds - position.inSeconds;
-        if (remaining == 30) {
+        if (remaining == 30 && !_adWarningToastShown) {
           final isOffline = !mediaItem.value!.id.startsWith('yt:');
           final prevDuration = mediaItem.value!.duration?.inMinutes ?? 0;
           final forceAd = prevDuration >= 10;
           
-          if (forceAd || AdManager.willShowAd(isOfflineMode: isOffline)) {
-            _safeShowToast('🎧 Sonraki şarkıya geçerken ufak bir reklam molamız olacak...', toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.deepPurple, textColor: Colors.white);
+          if (_willNextSongTriggerAd(isOffline: isOffline, forceAd: forceAd)) {
+            _adWarningToastShown = true;
+            _safeShowToast('🎧 Sonraki şarkıya geçerken ufak bir reklam molamız olacak...', toastLength: Toast.LENGTH_SHORT, backgroundColor: Colors.deepPurple, textColor: Colors.white);
           }
         }
       }
 
-      // 📊 SİBER ANALİTİK: Şarkı 30 saniye boyunca çalarsa dinleme olarak kaydet!
-      if (position.inSeconds == 30 && !_analyticsLogged && mediaItem.value != null) {
+      // 📊 SİBER ANALİTİK: Şarkı 30 saniye (veya kısa şarkılarda yarısı) çalarsa dinleme olarak kaydet!
+      final totalSec = mediaItem.value?.duration?.inSeconds ?? 0;
+      final threshold = (totalSec > 0 && totalSec < 60) ? (totalSec ~/ 2) : 30;
+      if (position.inSeconds >= threshold && !_analyticsLogged && mediaItem.value != null) {
         _analyticsLogged = true;
         final item = mediaItem.value!;
         final duration = item.duration?.inSeconds ?? 0;
@@ -151,13 +160,28 @@ class MyAudioHandler extends BaseAudioHandler {
         _bioPlayer.pause();
       }
 
+      // 🎵 FFTea Yerel Görselleştirici Entegrasyonu
+      if (playing) {
+        AudioAnalysisService.instance.startBackgroundAnalysis(
+          songTitle: mediaItem.value?.title ?? '',
+          artist: mediaItem.value?.artist ?? '',
+        );
+      } else {
+        AudioAnalysisService.instance.stopBackgroundAnalysis();
+      }
+
       playbackState.add(playbackState.value.copyWith(
         controls: [
           MediaControl.skipToPrevious,
           playing ? MediaControl.pause : MediaControl.play,
-          MediaControl.stop,
           MediaControl.skipToNext,
+          const MediaControl(
+            androidIcon: 'drawable/ic_close',
+            label: 'Kapat',
+            action: MediaAction.stop,
+          ),
         ],
+        androidCompactActionIndices: const [0, 1, 2],
         systemActions: const {
           MediaAction.seek,
           MediaAction.seekForward,
@@ -181,6 +205,47 @@ class MyAudioHandler extends BaseAudioHandler {
         applySiberDSP();
       }
     });
+  }
+
+  Future<void> _initAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+
+      session.interruptionEventStream.listen((event) {
+        if (event.begin) {
+          switch (event.type) {
+            case AudioInterruptionType.duck:
+              _player.setVolume(0.2);
+              break;
+            case AudioInterruptionType.pause:
+            case AudioInterruptionType.unknown:
+              _player.pause();
+              break;
+          }
+        } else {
+          switch (event.type) {
+            case AudioInterruptionType.duck:
+              _player.setVolume(1.0);
+              break;
+            case AudioInterruptionType.pause:
+              if (mediaItem.value != null && !_player.playing) {
+                _player.play();
+              }
+              break;
+            case AudioInterruptionType.unknown:
+              break;
+          }
+        }
+      });
+
+      session.becomingNoisyEventStream.listen((_) {
+        _player.pause();
+      });
+      print('🎧 Siber Kalkan: AudioSession kesinti yöneticisi (Instagram & Çağrı Kalkanı) aktif!');
+    } catch (e) {
+      print('⚠️ AudioSession başlatma hatası: $e');
+    }
   }
 
   void applySiberDSP() async {
@@ -298,6 +363,12 @@ class MyAudioHandler extends BaseAudioHandler {
   AudioProcessingState _getProcessingState(ProcessingState state) {
     switch (state) {
       case ProcessingState.idle:
+        // 🛡️ SİBER KALKAN: Eğer seçili bir şarkı varsa (özellikle Keşfet çevrimiçi akışları)
+        // geçici ağ kopması veya tamponlamada ASLA AudioProcessingState.idle bildirme!
+        // Çünkü Android AudioService idle durumunu görünce otonom stop() çağırıp servisi öldürür!
+        if (mediaItem.value != null) {
+          return AudioProcessingState.buffering;
+        }
         return AudioProcessingState.idle;
       case ProcessingState.loading:
       case ProcessingState.buffering:
@@ -306,47 +377,59 @@ class MyAudioHandler extends BaseAudioHandler {
         return AudioProcessingState.ready;
       case ProcessingState.completed:
         return AudioProcessingState.completed;
-      // ignore: unreachable_switch_default
       default:
-        return AudioProcessingState.idle;
+        return mediaItem.value != null ? AudioProcessingState.buffering : AudioProcessingState.idle;
     }
   }
 
-  void _handlePlaybackComplete() {
-    // 🛡️ SİBER KALKAN: Sahte tamamlanma koruması (Çok kısa süreli çalmalar)
-    if (_player.position.inSeconds < 2) {
-      print('⚠️ SİBER KALKAN: Sahte tamamlanma algılandı (pozisyon ${_player.position.inSeconds}sn < 2sn), atlama iptal edildi.');
+  Future<void> _handlePlaybackComplete() async {
+    // 🛡️ SİBER KALKAN: Geçiş kilidini sıfırla ki şarkı bitince sıradakine geçiş ASLA tıkanmasın
+    _isTransitioning = false;
+
+    // 🛡️ SİBER KALKAN: Şarkı gerçekten çaldı mı kontrolü (0-byte / sahte tamamlanma tespiti)
+    final dur = _player.duration;
+    final bool hasActuallyPlayed = _maxObservedPosition.inSeconds >= 2 ||
+        (dur != null &&
+            dur.inSeconds >= 2 &&
+            _player.position.inSeconds >= dur.inSeconds - 3);
+
+    if (!hasActuallyPlayed) {
+      print(
+          '⚠️ SİBER KALKAN: Erken/sahte tamamlanma sinyali (çalınma: ${_maxObservedPosition.inSeconds}sn), sıradakine atlanıyor.');
       _consecutiveErrors++;
-      if (_consecutiveErrors > 3) {
+      if (_consecutiveErrors > 4) {
         print('🛑 SİBER KALKAN: Üst üste sahte tamamlanma! Oynatma durduruldu.');
         _consecutiveErrors = 0;
-        stop();
+        _safeShowToast('Şarkı açılamadı veya dosya bozuk.',
+            backgroundColor: Colors.redAccent, textColor: Colors.white);
         return;
       }
-      Future.delayed(Duration(milliseconds: 1500 * _consecutiveErrors), skipToNext);
+      await skipToNext();
       return;
     }
 
-    // 🛡️ SİBER KALKAN V2: Erken kesilme koruması (YouTube Throttling)
-    final duration = _player.duration;
-    if (duration != null) {
-      final difference = duration.inSeconds - _player.position.inSeconds;
-      if (difference > 4) {
-        print('⚠️ SİBER KALKAN: Şarkı $difference saniye erken kesildi! (Büyük ihtimalle YouTube bağlantıyı kopardı)');
-        // Şarkı yarıda kesildiği için atlama yapmak en sağlıklısı, ancak hata kaydı düşüyoruz.
-        _safeShowToast('Bağlantı zayıfladı, sıradakine geçiliyor...', backgroundColor: Colors.orange, textColor: Colors.white);
-      }
-    }
-    
-    // 🎛️ SİBER DJ: Metamorfoz - Şarkı tam bitmeden (son saniyelerde) sonraki şarkıya pürüzsüz geç
     _consecutiveErrors = 0; // Başarılı çalma, hata sayacını sıfırla
     final repeatMode = playbackState.value.repeatMode;
+
+    // 🔂 1. TEKLİ DÖNGÜ (Repeat One)
     if (repeatMode == AudioServiceRepeatMode.one) {
-      seek(Duration.zero);
-      play();
-    } else {
-      skipToNext();
+      print('🔂 SİBER TEKLİ DÖNGÜ: Şarkı baştan başlatılıyor...');
+      _maxObservedPosition = Duration.zero;
+      try {
+        await _player.setLoopMode(LoopMode.one);
+        await _player.seek(Duration.zero);
+        await _player.play();
+      } catch (e) {
+        print('⚠️ Tekli döngü seek hatası, parça yenileniyor: $e');
+        await skipToQueueItem(_currentIndex);
+      }
+      return;
     }
+
+    // ⏭️ 2. SIRADAKİ ŞARKIYA GEÇİŞ (Normal veya Liste Tekrarı)
+    print('⏭️ SİBER DJ: Şarkı tamamlandı, sıradakine pürüzsüz geçiliyor...');
+    _maxObservedPosition = Duration.zero;
+    await skipToNext();
   }
 
   @override
@@ -385,16 +468,53 @@ class MyAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> stop() async {
-    await _player.stop();
+    try {
+      await _player.stop();
+    } catch (_) {}
+    mediaItem.add(null); // 🛑 SİBER KALKAN: BehaviorSubject sıfırla → player bar kapandıktan sonra yeniden açılmaz
     playbackState.add(playbackState.value.copyWith(
       playing: false,
+      controls: [],
       processingState: AudioProcessingState.idle,
     ));
+    try {
+      await super.stop();
+    } catch (_) {}
+  }
+
+  @override
+  Future<void> onTaskRemoved() async {
+    // 🛡️ SİBER KALKAN: Uygulama arka plandan/son uygulamalardan kapatılsa bile
+    // müzik ASLA durdurulmaz, bildirim paneli ve ses motoru arka planda çalmaya devam eder!
+    // super.onTaskRemoved() çağrılmaz çünkü servisi öldürür.
+    return;
+  }
+
+  @override
+  Future<void> onNotificationDeleted() async {
+    // 🛡️ SİBER KALKAN: Bildirim temizlense dahi müzik çalıyorsa durdurma!
+    if (_player.playing) {
+      print('🛡️ Siber Kalkan: onNotificationDeleted yakalandı ama müzik çalıyor. Durdurma engellendi!');
+      return;
+    }
+    await stop();
   }
 
   @override
   Future<void> seek(Duration position) async {
     await _player.seek(position);
+  }
+
+  @override
+  Future<void> setSpeed(double speed) async {
+    AudioEngine.manualTempo = speed;
+    try {
+      await _player.setSpeed(speed);
+      playbackState.add(playbackState.value.copyWith(speed: speed));
+      print('🚀 SİBER DJ: Oynatma hızı $speed x olarak ayarlandı!');
+    } catch (e) {
+      print('⚠️ Hız ayar hatası: $e');
+    }
   }
 
   @override
@@ -423,53 +543,150 @@ class MyAudioHandler extends BaseAudioHandler {
     _consecutiveErrors = 0; // 🎯 SİBER HAMLE: Yeni liste geldiğinde hataları sıfırla
     _playlist = newQueue;
     queue.add(newQueue);
+
+    // 🚀 SİBER ÖN ISITMA: Kuyruktaki ilk 2 çevrimiçi parçayı hemen arka planda çöz
+    for (int i = 0; i < min(2, newQueue.length); i++) {
+      final item = newQueue[i];
+      if (item.id.startsWith('yt:')) {
+        OzsesBridge().preWarm(item.id.substring(3));
+      }
+    }
+  }
+
+
+  // 🎯 SİBER ÖNCÜ KONTROL: Sıradaki şarkıya geçişte reklam çıkacak mı?
+  bool _willNextSongTriggerAd({required bool isOffline, bool forceAd = false}) {
+    if (SubscriptionManager().isAdFree) return false;
+    if (forceAd) return true;
+
+    final now = DateTime.now();
+    final minMinutes = isOffline ? 25 : 15;
+    final minSongs = isOffline ? 5 : 4;
+
+    bool timePassed = false;
+    if (_lastInterstitialAdTime == null) {
+      timePassed = true;
+    } else {
+      final elapsed = now.difference(_lastInterstitialAdTime!);
+      timePassed = elapsed.inMinutes >= minMinutes;
+    }
+
+    // Gelecek geçişte _songsPlayedSinceLastAd + 1 olacak
+    final willReachLimit = (_songsPlayedSinceLastAd + 1) >= minSongs;
+    return willReachLimit && timePassed;
+  }
+
+  // 🎯 SİBER REKLAM MOTORU: 4-5 Şarkı Sayacı + Gerçek Zamanlayıcı (Cooldown) + Switch-Case Mod Kontrolü
+  void _checkAndTriggerAd({required bool isOffline, bool forceAd = false}) {
+    // 1. Reklamsız yetki kontrolü (Abonelik veya Geçici Reklamsız Pass)
+    if (SubscriptionManager().isAdFree) return;
+
+    _songsPlayedSinceLastAd++;
+    final now = DateTime.now();
+
+    // 2. Modlara göre asgari bekleme süresi ve şarkı limiti (Switch-Case)
+    int minMinutesBetweenAds = 15; // Varsayılan: 15 dakika geçmeden asla reklam yok
+    int minSongsLimit = 4;        // En az 4 şarkı dinlenmeli
+
+    final currentMode = isOffline ? 'offline' : 'online';
+    switch (currentMode) {
+      case 'offline':
+        minMinutesBetweenAds = 25; // Çevrimdışı modda daha seyrek (25 dk)
+        minSongsLimit = 5;         // Çevrimdışında en az 5 şarkı
+        break;
+      case 'online':
+      default:
+        minMinutesBetweenAds = 15; // Çevrimiçi modda 15 dk
+        minSongsLimit = 4;         // 4 şarkı
+        break;
+    }
+
+    // 3. Zamanlayıcı ve sayaç sorgusu
+    bool timePassed = false;
+    if (_lastInterstitialAdTime == null) {
+      timePassed = true; // İlk açılışta süre şartı aranmaz
+    } else {
+      final elapsed = now.difference(_lastInterstitialAdTime!);
+      timePassed = elapsed.inMinutes >= minMinutesBetweenAds;
+    }
+
+    bool songLimitReached = _songsPlayedSinceLastAd >= minSongsLimit;
+
+    if (forceAd || (songLimitReached && timePassed)) {
+      print('🚀 Siber Reklam Tetiklendi: Şarkı Sayısı=$_songsPlayedSinceLastAd, Zaman Uygun=$timePassed');
+      AdManager.showInterstitialAdIfReady(isOfflineMode: isOffline, forceShow: forceAd);
+      _songsPlayedSinceLastAd = 0;
+      _lastInterstitialAdTime = now;
+      _adWarningToastShown = false; // Reklam tetiklendi, uyarı bayrağını sıfırla
+    }
   }
 
   @override
   Future<void> skipToQueueItem(int index) async {
-    // 🎯 SİBER REKLAM KONTROLÜ: Geçişlerde reklam patlat
-    if (mediaItem.value != null) {
-      final prevDuration = mediaItem.value!.duration?.inMinutes ?? 0;
-      final isOffline = !mediaItem.value!.id.startsWith('yt:');
-      final forceAd = prevDuration >= 10; // Son şarkı 10 dk'dan uzunsa kesin reklam
-      AdManager.showInterstitialAdIfReady(isOfflineMode: isOffline, forceShow: forceAd);
-    }
-
     if (index < 0 || index >= _playlist.length) return;
-    _currentIndex = index;
-    _analyticsLogged = false; // 📊 Yeni şarkı, kayıt bayrağını sıfırla
-    final item = _playlist[index];
-    mediaItem.add(item);
 
-    // 🛡️ SİBER KALKAN: Kuyruk sırasını sisteme mühürle ki araya şarkı ekleyebilelim
-    playbackState.add(playbackState.value.copyWith(
-      queueIndex: _currentIndex,
-    ));
+    _isTransitioning = true;
+    _adWarningToastShown = false; // Yeni şarkıya geçildi, uyarı bayrağını sıfırla
+    try {
+      // 🎯 SİBER REKLAM KONTROLÜ: Sadece uygulama ÖN PLANDAYSA reklam tetikle (Arka planda Android Activity çökmesini önler)
+      if (mediaItem.value != null &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        final prevDuration = mediaItem.value!.duration?.inMinutes ?? 0;
+        final isOffline = !mediaItem.value!.id.startsWith('yt:');
+        final forceAd = prevDuration >= 10; // 10 dk üzeri uzun videolarda zorla
+        _checkAndTriggerAd(isOffline: isOffline, forceAd: forceAd);
+      }
 
-    // 🛡️ SİBER KALKAN: Yeni şarkı gelirken Android motorunu bodoslama boğmamak için pause yapıyoruz (Stop tamamen kapatır)
-    if (_player.playing) {
-      await _player.pause();
-    }
+      _currentIndex = index;
+      _maxObservedPosition = Duration.zero; // ⏱️ Yeni şarkıya geçildi, pozisyon hafızasını sıfırla
+      final currentRepeat = playbackState.value.repeatMode;
+      try {
+        if (currentRepeat == AudioServiceRepeatMode.one) {
+          await _player.setLoopMode(LoopMode.one);
+        } else {
+          await _player.setLoopMode(LoopMode.off);
+        }
+      } catch (_) {}
+      _analyticsLogged = false; // 📊 Yeni şarkı, kayıt bayrağını sıfırla
+      final item = _playlist[index];
+      mediaItem.add(item);
 
-    // 🛡️ SİBER KALKAN: Geçersiz yollar Android motorunu çökertmesin!
-    if (item.id == 'bilinmeyen_yol' ||
-        item.id.isEmpty ||
-        item.id.startsWith('downloading:')) {
-      return;
-    }
+      // 🧠 SÖZ RADARI: Şarkı başladığı an arka planda sözleri sessizce RAM'e hazırla
+      LyricsService.preloadLyrics(
+        item.id,
+        item.title,
+        item.artist ?? '',
+        duration: item.duration,
+        videoId: item.extras?['videoId']?.toString(),
+      );
 
-    if (!kIsWeb) {
-      if (!item.id.startsWith('http') &&
-          !item.id.startsWith('yt:')) {
+      // 🛡️ SİBER KALKAN: Kuyruk sırasını sisteme mühürle ki araya şarkı ekleyebilelim
+      playbackState.add(playbackState.value.copyWith(
+        queueIndex: _currentIndex,
+        playing: true,
+        processingState: AudioProcessingState.loading,
+      ));
+
+      // 🛡️ SİBER KALKAN: Geçersiz yollar Android motorunu çökertmesin!
+      if (item.id == 'bilinmeyen_yol' ||
+          item.id.isEmpty ||
+          item.id.startsWith('downloading:')) {
+        print('⚠️ Geçersiz şarkı ID / yolu: ${item.id}, sıradakine geçiliyor...');
+        Future.delayed(const Duration(milliseconds: 300), skipToNext);
+        return;
+      }
+
+      // 🛡️ Yerel dosya kontrolü (HATA FIRLATMAZ, SIRADAKİNE ATLAR)
+      if (!kIsWeb && !item.id.startsWith('http') && !item.id.startsWith('yt:')) {
         final file = File(item.id);
         if (!file.existsSync() || file.lengthSync() < 1024) {
-          print('❌ Yerel dosya bulunamadı veya bozuk (0 byte): ${item.id}');
-          throw Exception('Dosya bozuk veya bulunamadı.');
+          print('⚠️ Yerel dosya bulunamadı veya bozuk (0 byte): ${item.id}');
+          _safeShowToast('Dosya açılamadı, sıradakine geçiliyor...', backgroundColor: Colors.orange, textColor: Colors.white);
+          Future.delayed(const Duration(milliseconds: 400), skipToNext);
+          return;
         }
       }
-    }
 
-    try {
       String resolvedUrl = item.id;
 
       // 🎯 SİBER OPERASYON: DİNAMİK AKIŞ ÇÖZÜCÜ
@@ -479,7 +696,7 @@ class MyAudioHandler extends BaseAudioHandler {
         final bridge = OzsesBridge();
 
         playbackState.add(playbackState.value.copyWith(
-          playing: false,
+          playing: true,
           processingState: AudioProcessingState.loading,
         ));
 
@@ -505,28 +722,29 @@ class MyAudioHandler extends BaseAudioHandler {
             _lastVolume = -1.0;
             applySiberDSP();
             await _player.play();
+            _consecutiveErrors = 0;
             return;
           }
 
-          // 🚀 Doğrudan URL geldi, kullan
+          // 🎯 Doğrudan URL geldi, kullan
           print('🎯 Doğrudan Akış URL: $resolvedUrl');
         } else {
           throw Exception("Siber Kalkan: Akış çözülemedi (${res['mesaj']})");
         }
       }
 
+      // ⚡ FAST-START: Oynatıcıya hemen çalma yetkisi (playWhenReady) veriyoruz.
+      // İlk ses paketi indiğinde ExoPlayer ekstra beklemeden derhal çalmaya başlar!
+      final Future<void>? playFuture = (!kIsWeb) ? _player.play() : null;
+
       if (resolvedUrl.startsWith('http://') ||
           resolvedUrl.startsWith('https://')) {
         await _player
             .setAudioSource(AudioSource.uri(
           Uri.parse(resolvedUrl),
-          headers: {
-            // 🛡️ SİBER KALKAN: YouTube'un stream'i yarıda kesmesini (throttling) engellemek için tarayıcı kimliği eklendi!
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          }
         ))
             .timeout(
-          const Duration(seconds: 60),
+          const Duration(seconds: 45),
           onTimeout: () {
             throw TimeoutException(
                 'Akış yüklenemedi veya dosya bağlantısı koptu.');
@@ -553,18 +771,32 @@ class MyAudioHandler extends BaseAudioHandler {
 
       applySiberDSP();
 
-      await _player.play();
+      if (playFuture != null) {
+        await playFuture;
+      } else {
+        await _player.play();
+      }
+      _consecutiveErrors = 0; // 🎯 SİBER KALKAN: Başarılı çalma, hata sayacını anında sıfırla
+
+      // 🚀 SİBER RADAR: Sıradaki 2 şarkıyı arka planda önceden çöz (Kuyruk geçişi 0 ms olsun)
+      _preloadNextQueueTracks(index);
     } catch (e) {
+      // 🚨 SİBER KALKAN HATA YAKALAMA (ÇİFT ATLAMA FİXİ)
+      if (_currentIndex != index) {
+        print('⏭️ Kullanıcı zaten başka şarkıya geçti, iptal işleminden kaynaklı hata yoksayılıyor.');
+        return;
+      }
+      
       print('HATA: Platform oynatma hatası -> $e');
       _consecutiveErrors++;
 
-      try { await _player.stop(); } catch (_) {} // 🛡️ SİBER KALKAN: Sıkışmış player state'i temizle
+      try { await _player.pause(); } catch (_) {} // 🛡️ SİBER KALKAN: Servisi kapatma, duraklat
 
-      if (_consecutiveErrors > 3) {
-        print('🛑 Siber Kalkan: Üst üste 3 defa hata alındı! Oynatma sonsuz döngüye girmemesi için durduruldu.');
-        _consecutiveErrors = 0; // Sonraki elle oynatmada tekrar deneyebilsin diye sıfırlıyoruz.
+      if (_consecutiveErrors > 4) {
+        print('🛑 Siber Kalkan: Üst üste hatalar alındı! Oynatma duraklatıldı.');
+        _consecutiveErrors = 0;
         _safeShowToast(
-          'Bağlantı koptu veya şarkı bozuk. Oynatma durduruldu.',
+          'Bağlantı koptu veya şarkı açılamadı.',
           backgroundColor: Colors.redAccent,
           textColor: Colors.white,
           toastLength: Toast.LENGTH_LONG,
@@ -573,9 +805,27 @@ class MyAudioHandler extends BaseAudioHandler {
       }
 
       // 🛡️ SİBER KALKAN: Akış hatasında otonom geçiş (ardışık hata sayısına göre artan gecikme)
-      final delayMs = 1500 * _consecutiveErrors;
+      final delayMs = 1200 * _consecutiveErrors;
       print('⚠️ Hata yakalandı, ${delayMs}ms sonra sıradaki şarkıya geçiliyor... (ardışık hata: $_consecutiveErrors)');
       Future.delayed(Duration(milliseconds: delayMs), skipToNext);
+    } finally {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _isTransitioning = false;
+      });
+    }
+  }
+
+  // 🚀 SİBER RADAR: Sıradaki şarkıları arka planda önceden çöz (0 ms geçiş için)
+  void _preloadNextQueueTracks(int currentIndex) {
+    for (int offset = 1; offset <= 2; offset++) {
+      final nextIdx = currentIndex + offset;
+      if (nextIdx < _playlist.length) {
+        final nextItem = _playlist[nextIdx];
+        if (nextItem.id.startsWith('yt:')) {
+          final nextVId = nextItem.id.substring(3);
+          OzsesBridge().preWarm(nextVId);
+        }
+      }
     }
   }
 
@@ -596,70 +846,83 @@ class MyAudioHandler extends BaseAudioHandler {
         } else {
           // 🛡️ SİBER KALKAN: Otonom Sonsuz Radyo! Eğer yt: akışıysa bitince yeni şarkılar ekle
           if (_playlist.isNotEmpty && _playlist.last.id.startsWith('yt:')) {
-            final lastVideoId = _playlist.last.id.substring(3);
+            final lastItem = _playlist.last;
+            final lastVideoId = lastItem.id.substring(3);
+            final lastTitle = lastItem.title;
+            final lastArtist = lastItem.artist;
             
             _safeShowToast(
-              '📻 Otonom Radyo Devrede: Sonsuz akış uzatılıyor...',
+              '📻 Otonom Akış Devrede: Benzer şarkılar ekleniyor...',
               backgroundColor: Colors.deepPurple,
               textColor: Colors.white,
             );
             
-            final bridge = OzsesBridge();
-            final radioSongs = await bridge.getRadio(lastVideoId);
-            
-            if (radioSongs.isNotEmpty) {
-              final newItems = <MediaItem>[];
-              for (var rSong in radioSongs) {
-                final rTitle = rSong['title'] ?? 'Bilinmeyen';
-                final rVId = rSong['id'];
-                final rImgUrl = rSong['thumbnail'];
-                final rArtist = rSong['channel'] ?? 'Victus V7';
-                final rDur = rSong['duration'] ?? 0;
-                
-                int rFinalDur = 0;
-                if (rDur is int) {
-                  rFinalDur = rDur;
-                } else if (rDur is String) {
-                  final parts = rDur.split(':');
-                  if (parts.length == 2) {
-                    rFinalDur = (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
-                  } else if (parts.length == 3) {
-                    rFinalDur = (int.tryParse(parts[0]) ?? 0) * 3600 + (int.tryParse(parts[1]) ?? 0) * 60 + (int.tryParse(parts[2]) ?? 0);
+            try {
+              final bridge = OzsesBridge();
+              final radioSongs = await bridge.getRadio(
+                lastVideoId,
+                title: lastTitle,
+                artist: lastArtist,
+              );
+              
+              if (radioSongs.isNotEmpty) {
+                final newItems = <MediaItem>[];
+                for (var rSong in radioSongs) {
+                  final rTitle = rSong['title'] ?? 'Bilinmeyen';
+                  final rVId = rSong['id'];
+                  final rImgUrl = rSong['thumbnail'];
+                  final rArtist = rSong['channel'] ?? 'Victus V7';
+                  final rDur = rSong['duration'] ?? 0;
+                  
+                  int rFinalDur = 0;
+                  if (rDur is int) {
+                    rFinalDur = rDur;
+                  } else if (rDur is String) {
+                    final parts = rDur.split(':');
+                    if (parts.length == 2) {
+                      rFinalDur = (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+                    } else if (parts.length == 3) {
+                      rFinalDur = (int.tryParse(parts[0]) ?? 0) * 3600 + (int.tryParse(parts[1]) ?? 0) * 60 + (int.tryParse(parts[2]) ?? 0);
+                    }
+                  }
+
+                  // Önceden eklenen şarkıları tekrar ekleme ihtimalini azaltalım
+                  if (rVId != null && !_playlist.any((item) => item.id == 'yt:$rVId')) {
+                    newItems.add(MediaItem(
+                      id: 'yt:$rVId',
+                      album: 'Siber Keşfet Akışı',
+                      title: rTitle,
+                      artist: rArtist,
+                      duration: Duration(seconds: rFinalDur),
+                      artUri: safeParseUri(rImgUrl),
+                    ));
                   }
                 }
-
-                // Önceden eklenen şarkıları tekrar ekleme ihtimalini azaltalım
-                if (rVId != null && !_playlist.any((item) => item.id == 'yt:$rVId')) {
-                  newItems.add(MediaItem(
-                    id: 'yt:$rVId',
-                    album: 'Siber Keşfet Akışı',
-                    title: rTitle,
-                    artist: rArtist,
-                    duration: Duration(seconds: rFinalDur),
-                    artUri: safeParseUri(rImgUrl),
-                  ));
-                }
-              }
-              
-              if (newItems.isNotEmpty) {
-                _playlist.addAll(newItems);
-                queue.add(_playlist);
                 
-                _safeShowToast(
-                  '✅ Radyo Güncellendi: ${newItems.length} yeni parça eklendi!',
-                  backgroundColor: Colors.green,
-                  textColor: Colors.white,
-                );
+                if (newItems.isNotEmpty) {
+                  final prevLen = _playlist.length;
+                  _playlist.addAll(newItems);
+                  queue.add(_playlist);
+                  _currentIndex = prevLen; // Yeni eklenen ilk parçaya pürüzsüz geç
+                  
+                  _safeShowToast(
+                    '✅ Otonom Akış: ${newItems.length} yeni parça eklendi!',
+                    backgroundColor: Colors.green,
+                    textColor: Colors.white,
+                  );
+                } else {
+                  _currentIndex = 0; // Şarkı bulunamazsa başa dön, ASLA durma!
+                }
               } else {
-                _currentIndex = 0; // Hata veya boşsa başa dön
+                _currentIndex = 0; // Boşsa başa dön
               }
-            } else {
-              _currentIndex = 0; // Hata veya boşsa başa dön
+            } catch (e) {
+              print('⚠️ Radyo uzatma hatası, başa sarılıyor: $e');
+              _currentIndex = 0;
             }
           } else {
-            _currentIndex = _playlist.length - 1;
-            await stop(); // Tekrar kapalıysa bitir
-            return;
+            // 🛡️ İndirilen şarkılar ve yerel arşiv: Liste bittiğinde başa dön (otonom siber döngü, ASLA stop() çağrılmaz!)
+            _currentIndex = 0;
           }
         }
       }
@@ -681,6 +944,17 @@ class MyAudioHandler extends BaseAudioHandler {
   @override
   Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
     playbackState.add(playbackState.value.copyWith(repeatMode: repeatMode));
+    try {
+      if (repeatMode == AudioServiceRepeatMode.one) {
+        await _player.setLoopMode(LoopMode.one);
+        print('🔂 SİBER MOTOR: Donanım LoopMode.one (Tekli Döngü) aktif!');
+      } else {
+        await _player.setLoopMode(LoopMode.off);
+        print('🔁 SİBER MOTOR: Donanım LoopMode.off (Liste/Kapalı) aktif!');
+      }
+    } catch (e) {
+      print('⚠️ Siber LoopMode ayar hatası: $e');
+    }
   }
 
   @override

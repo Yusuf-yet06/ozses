@@ -106,7 +106,7 @@ class BottomPlayerBar extends StatelessWidget {
                     children: [
                       Text(
                         songName == 'Müzik Seçilmedi'
-                            ? 'Siber Bağlantı Bekleniyor...'
+                            ? 'Müzik Bekleniyor...'
                             : isBuffering
                                 ? 'Yükleniyor: $songName...' // 🎯 Şarkı hazır olana kadar bilgi ver
                                 : songName,
@@ -148,37 +148,40 @@ class BottomPlayerBar extends StatelessWidget {
             value: currentVal,
             onChanged: onSeek,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                  icon: Icon(Icons.shuffle,
-                      color: isShuffle ? themeColor : Colors.white54),
-                  onPressed: onShuffleToggle),
-              IconButton(
-                  icon: const Icon(Icons.skip_previous, color: Colors.white),
-                  onPressed: onPrevious),
-              CircleAvatar(
-                backgroundColor: themeColor,
-                child: isBuffering
-                    ? const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
-                      )
-                    : IconButton(
-                        icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.black),
-                        onPressed: onPlayPause),
-              ),
-              IconButton(
-                  icon: const Icon(Icons.skip_next, color: Colors.white),
-                  onPressed: onNext),
-              IconButton(
-                icon: Icon(repeatMode == 1 ? Icons.repeat_one : Icons.repeat,
-                    color: repeatMode > 0 ? themeColor : Colors.white54),
-                onPressed: onRepeatToggle,
-              ),
-            ],
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                    icon: Icon(Icons.shuffle,
+                        color: isShuffle ? themeColor : Colors.white54),
+                    onPressed: onShuffleToggle),
+                IconButton(
+                    icon: const Icon(Icons.skip_previous, color: Colors.white),
+                    onPressed: onPrevious),
+                CircleAvatar(
+                  backgroundColor: themeColor,
+                  child: isBuffering
+                      ? const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
+                        )
+                      : IconButton(
+                          icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow,
+                              color: Colors.black),
+                          onPressed: onPlayPause),
+                ),
+                IconButton(
+                    icon: const Icon(Icons.skip_next, color: Colors.white),
+                    onPressed: onNext),
+                IconButton(
+                  icon: Icon(repeatMode == 1 ? Icons.repeat_one : Icons.repeat,
+                      color: repeatMode > 0 ? themeColor : Colors.white54),
+                  onPressed: onRepeatToggle,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -244,7 +247,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
       );
       if (mounted) {
         setState(() {
-          _dynamicColor = generator.dominantColor?.color ?? widget.themeColor;
+          _dynamicColor = generator.dominantColor?.color ?? Theme.of(context).colorScheme.primary;
         });
       }
     } catch (e) {
@@ -269,10 +272,10 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
           shape: BoxShape.circle,
           color: Colors.grey[900], // İleride Image.memory(...) gelecek
           border: Border.all(
-              color: (_dynamicColor ?? widget.themeColor), width: widget.size > 100 ? 3.0 : 1.5),
+              color: (_dynamicColor ?? Theme.of(context).colorScheme.primary), width: widget.size > 100 ? 3.0 : 1.5),
           boxShadow: [
             BoxShadow(
-              color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5),
+              color: (_dynamicColor ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.5),
               blurRadius: 8,
               spreadRadius: 1,
             )
@@ -282,7 +285,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
           alignment: Alignment.center,
           children: [
             Icon(Icons.music_note,
-                color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.4),
+                color: (_dynamicColor ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.4),
                 size: widget.size * 0.45),
 
             // 🎯 SİBER HAMLE: Gerçek Kapak Resmi
@@ -307,7 +310,7 @@ class _RotatingCDCoverState extends State<RotatingCDCover>
                 color: Colors.black,
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: (_dynamicColor ?? widget.themeColor).withValues(alpha: 0.5), width: 1),
+                    color: (_dynamicColor ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.5), width: 1),
               ),
             ),
           ],

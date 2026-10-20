@@ -251,7 +251,7 @@ class _SystemSettingsScreenState extends State<SystemSettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.cleaning_services, color: Colors.cyanAccent),
               title: const Text('Tüm Siber Önbelleği Temizle', style: TextStyle(color: Colors.white)),
-              subtitle: const Text('Eski trendleri, arama geçmişini ve bozuk akış linklerini siler. İndirme veya oynatma takılıyorsa bunu kullanın.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              subtitle: const Text('Eski trendleri, arama geçmişini ve bozuk akış linklerini siler. Arşivleme veya oynatma takılıyorsa bunu kullanın.', style: TextStyle(color: Colors.white70, fontSize: 12)),
               onTap: () async {
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.remove('siber_trend_cache');
