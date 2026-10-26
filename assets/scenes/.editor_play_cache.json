@@ -1,0 +1,360 @@
+{
+    "Entities": [
+        {
+            "BoxCollider": {
+                "HalfExtents": [
+                    0.4000000059604645,
+                    0.4000000059604645,
+                    0.4000000059604645
+                ]
+            },
+            "Material": {
+                "Preset": 1,
+                "TexturePath": "",
+                "TintColor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "UseTexture": true
+            },
+            "Mesh": {
+                "ModelPath": "",
+                "Type": 0
+            },
+            "RigidBody": {
+                "Bounciness": 0.75,
+                "Friction": 0.949999988079071,
+                "Mass": 1.0,
+                "UseGravity": true,
+                "Velocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "Tag": "Physics_Test_Cube",
+            "Transform": {
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    0.800000011920929,
+                    0.800000011920929,
+                    0.800000011920929
+                ],
+                "Translation": [
+                    0.0,
+                    4.0,
+                    2.0
+                ]
+            }
+        },
+        {
+            "BoxCollider": {
+                "HalfExtents": [
+                    1.2000000476837158,
+                    1.100000023841858,
+                    1.2000000476837158
+                ]
+            },
+            "EnemyAI": {
+                "AttackRange": 14.0,
+                "DetectionRadius": 28.0,
+                "MoveSpeed": 2.200000047683716,
+                "Name": "Titan_Muhafizi_1",
+                "SpawnPoint": [
+                    0.0,
+                    1.5,
+                    -9.0
+                ],
+                "State": 0
+            },
+            "Health": {
+                "CurrentHealth": 500.0,
+                "MaxHealth": 500.0
+            },
+            "Material": {
+                "Preset": 1,
+                "TexturePath": "",
+                "TintColor": [
+                    1.0,
+                    0.20000000298023224,
+                    0.15000000596046448
+                ],
+                "UseTexture": true
+            },
+            "Mesh": {
+                "ModelPath": "",
+                "Type": 0
+            },
+            "RigidBody": {
+                "Bounciness": 0.20000000298023224,
+                "Friction": 0.949999988079071,
+                "Mass": 12.0,
+                "UseGravity": true,
+                "Velocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "Tag": "Titan_Muhafizi_1",
+            "Transform": {
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    2.4000000953674316,
+                    2.200000047683716,
+                    2.4000000953674316
+                ],
+                "Translation": [
+                    0.0,
+                    1.5,
+                    -9.0
+                ]
+            }
+        },
+        {
+            "BoxCollider": {
+                "HalfExtents": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            },
+            "EnemyAI": {
+                "AttackRange": 8.0,
+                "DetectionRadius": 20.0,
+                "MoveSpeed": 4.0,
+                "Name": "Siber_Devriye_Beta_2",
+                "SpawnPoint": [
+                    -4.0,
+                    2.5,
+                    -3.0
+                ],
+                "State": 0
+            },
+            "Health": {
+                "CurrentHealth": 100.0,
+                "MaxHealth": 100.0
+            },
+            "Material": {
+                "Preset": 1,
+                "TexturePath": "",
+                "TintColor": [
+                    1.0,
+                    0.30000001192092896,
+                    0.30000001192092896
+                ],
+                "UseTexture": true
+            },
+            "Mesh": {
+                "ModelPath": "",
+                "Type": 2
+            },
+            "RigidBody": {
+                "Bounciness": 0.5,
+                "Friction": 0.949999988079071,
+                "Mass": 2.0,
+                "UseGravity": false,
+                "Velocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "Tag": "Siber_Devriye_Beta_2",
+            "Transform": {
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    0.8500000238418579,
+                    0.8500000238418579,
+                    0.8500000238418579
+                ],
+                "Translation": [
+                    -4.0,
+                    2.5,
+                    -3.0
+                ]
+            }
+        },
+        {
+            "BoxCollider": {
+                "HalfExtents": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            },
+            "EnemyAI": {
+                "AttackRange": 8.0,
+                "DetectionRadius": 20.0,
+                "MoveSpeed": 4.0,
+                "Name": "Siber_Devriye_Alfa_1",
+                "SpawnPoint": [
+                    4.0,
+                    2.5,
+                    -3.0
+                ],
+                "State": 0
+            },
+            "Health": {
+                "CurrentHealth": 100.0,
+                "MaxHealth": 100.0
+            },
+            "Material": {
+                "Preset": 1,
+                "TexturePath": "",
+                "TintColor": [
+                    1.0,
+                    0.30000001192092896,
+                    0.30000001192092896
+                ],
+                "UseTexture": true
+            },
+            "Mesh": {
+                "ModelPath": "",
+                "Type": 2
+            },
+            "RigidBody": {
+                "Bounciness": 0.5,
+                "Friction": 0.949999988079071,
+                "Mass": 2.0,
+                "UseGravity": false,
+                "Velocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "Tag": "Siber_Devriye_Alfa_1",
+            "Transform": {
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    0.8500000238418579,
+                    0.8500000238418579,
+                    0.8500000238418579
+                ],
+                "Translation": [
+                    4.0,
+                    2.5,
+                    -3.0
+                ]
+            }
+        },
+        {
+            "AI": {
+                "AutoRotate": true,
+                "BaseY": 1.0,
+                "BobAmplitude": 0.5,
+                "BobFrequency": 2.0,
+                "Bobbing": true,
+                "Prompt": "Merkezi Siber Cekirdek - Surekli rotasyon",
+                "RotationSpeed": 30.0
+            },
+            "Material": {
+                "Preset": 0,
+                "TexturePath": "",
+                "TintColor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "UseTexture": true
+            },
+            "Mesh": {
+                "ModelPath": "",
+                "Type": 0
+            },
+            "Tag": "Cyber_Core_Alpha",
+            "Transform": {
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    1.399999976158142,
+                    1.399999976158142,
+                    1.399999976158142
+                ],
+                "Translation": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "Material": {
+                "Preset": 2,
+                "TexturePath": "",
+                "TintColor": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "UseTexture": true
+            },
+            "Mesh": {
+                "ModelPath": "",
+                "Type": 1
+            },
+            "Tag": "Siber_Zemin_Izgarasi",
+            "Transform": {
+                "Rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "Scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "Translation": [
+                    0.0,
+                    -0.009999999776482582,
+                    0.0
+                ]
+            }
+        }
+    ],
+    "Environment": {
+        "ClearColor": [
+            0.03999999910593033,
+            0.05000000074505806,
+            0.07999999821186066
+        ],
+        "Gravity": [
+            0.0,
+            -9.8100004196167,
+            0.0
+        ],
+        "LightColor": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "LightPos": [
+            4.0,
+            10.0,
+            6.0
+        ]
+    },
+    "ImperiumEngineVersion": "1.0.0"
+}

@@ -95,3 +95,12 @@ free-claude-code
 n8n/
 scripts/
 pc_stream_server.js
+
+# Argon Fortress: Binaryler, Cache ve Ýkili Veritabanlarý
+argon_ai_fortress/tabby_server/
+argon_ai_fortress/qdrant_storage/
+argon_ai_fortress/*.db
+argon_ai_fortress/__pycache__/
+argon_ai_fortress/aider_repo/
+argon_ai_fortress/awesome-free-llm-apis/
+argon_ai_fortress/freellmapi/

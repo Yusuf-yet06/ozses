@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'radar_filter.dart';
 
 class SpotifyService {
   static final SpotifyService _instance = SpotifyService._internal();
@@ -81,6 +82,140 @@ class SpotifyService {
     return [];
   }
 
+  /// 💿 SANATÇININ SAF ALBÜMLERİNİ ÇEKER (Şahsi Keşfet Sanatçı Mix Üst Vitrini İçin)
+  Future<List<Map<String, dynamic>>> getArtistAlbums(
+    String artistName, {
+    int limit = 3,
+  }) async {
+    try {
+      final token = await _getToken();
+      final artistSearchRes = await http.get(
+        Uri.parse(
+          'https://api.spotify.com/v1/search?q=${Uri.encodeComponent(artistName.trim())}&type=artist&market=TR&limit=1',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (artistSearchRes.statusCode != 200) return [];
+
+      final artistsItems =
+          json.decode(artistSearchRes.body)['artists']?['items'] as List?;
+      if (artistsItems == null || artistsItems.isEmpty) return [];
+
+      final artistObj = artistsItems.first;
+      final String artistId = artistObj['id']?.toString() ?? '';
+      final String resolvedArtistName =
+          artistObj['name']?.toString() ?? artistName;
+      if (artistId.isEmpty) return [];
+
+      // Önce tam albümleri, yeterli değilse EP/single albümlerini dahil et
+      final albumsRes = await http.get(
+        Uri.parse(
+          'https://api.spotify.com/v1/artists/$artistId/albums?include_groups=album,single&market=TR&limit=12',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (albumsRes.statusCode != 200) return [];
+
+      final rawAlbums = json.decode(albumsRes.body)['items'] as List? ?? [];
+      final List<Map<String, dynamic>> pureAlbums = [];
+      final Set<String> seenNames = {};
+
+      // Çok parçalı saf albümlere öncelik ver
+      final sortedRaw = List<dynamic>.from(rawAlbums)
+        ..sort((a, b) {
+          final aTracks = (a['total_tracks'] ?? 1) as int;
+          final bTracks = (b['total_tracks'] ?? 1) as int;
+          return bTracks.compareTo(aTracks);
+        });
+
+      for (final alb in sortedRaw) {
+        if (pureAlbums.length >= limit) break;
+        final String name = (alb['name'] ?? '').toString().trim();
+        if (name.isEmpty) continue;
+        final String normName = SiberStreamFilterEngine.normalizeTr(name);
+        if (seenNames.contains(normName)) continue;
+        seenNames.add(normName);
+
+        final images = alb['images'] as List? ?? [];
+        final String coverUrl =
+            images.isNotEmpty ? (images[0]['url']?.toString() ?? '') : '';
+        final String releaseDate = (alb['release_date'] ?? '').toString();
+        final String year = releaseDate.length >= 4
+            ? releaseDate.substring(0, 4)
+            : releaseDate;
+        final int totalTracks = (alb['total_tracks'] ?? 1) as int;
+
+        pureAlbums.add({
+          'albumId': alb['id']?.toString() ?? '',
+          'title': name,
+          'artist': resolvedArtistName,
+          'thumbnail': coverUrl,
+          'year': year,
+          'totalTracks': totalTracks,
+          'albumType': totalTracks > 1 ? 'Albüm ($totalTracks Parça)' : 'Single / EP',
+        });
+      }
+
+      return pureAlbums;
+    } catch (e) {
+      print('Spotify Albüm Çekme Hatası ($artistName): $e');
+      return [];
+    }
+  }
+
+  /// 💿 SEÇİLEN ALBÜMÜN İÇİNDEKİ ŞARKILARI ÇEKER
+  Future<List<Map<String, dynamic>>> getAlbumTracks(
+    String albumId, {
+    String fallbackThumbnail = '',
+    String fallbackArtist = '',
+  }) async {
+    try {
+      if (albumId.isEmpty) return [];
+      final token = await _getToken();
+      final response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/albums/$albumId/tracks?market=TR&limit=25'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode != 200) return [];
+
+      final items = json.decode(response.body)['items'] as List? ?? [];
+      final List<Map<String, dynamic>> tracks = [];
+
+      for (final track in items) {
+        if (track == null) continue;
+        final String artistName =
+            (track['artists'] != null && (track['artists'] as List).isNotEmpty)
+                ? track['artists'][0]['name'].toString()
+                : (fallbackArtist.isNotEmpty ? fallbackArtist : 'Bilinmeyen');
+        final String title = (track['name'] ?? 'Bilinmeyen').toString();
+        final int durationMs = (track['duration_ms'] ?? 180000) as int;
+        final int seconds = (durationMs / 1000).round();
+        if (seconds > 0 && seconds < SiberStreamFilterEngine.minFullTrackSeconds) {
+          continue; // İntro / skit / short parçaları ele
+        }
+        final int min = seconds ~/ 60;
+        final int sec = seconds % 60;
+        final String formattedDur = '$min:${sec.toString().padLeft(2, '0')}';
+
+        final trackMap = {
+          'id': 'spotify:$artistName - $title',
+          'videoId': 'spotify:$artistName - $title',
+          'title': title,
+          'channel': artistName,
+          'thumbnail': fallbackThumbnail,
+          'duration': formattedDur,
+        };
+        if (!SiberStreamFilterEngine.isShortOrTeaserTrack(trackMap)) {
+          tracks.add(trackMap);
+        }
+      }
+      return tracks;
+    } catch (e) {
+      print('Spotify Albüm Parçaları Hatası ($albumId): $e');
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getFeaturedPlaylists() async {
     final token = await _getToken();
     final response = await http.get(
@@ -137,11 +272,14 @@ class SpotifyService {
         String artistName = (track['artists'] != null && track['artists'].isNotEmpty) ? track['artists'][0]['name'] : 'Bilinmeyen';
         String title = track['name'] ?? 'Bilinmeyen';
         int durationMs = track['duration_ms'] ?? 0;
+        int seconds = (durationMs / 1000).round();
+        if (seconds > 0 && seconds < SiberStreamFilterEngine.minFullTrackSeconds) {
+          return null; // 75sn altı skit/short elemesi
+        }
         
-        String formatDuration(int ms) {
-          int seconds = (ms / 1000).round();
-          int min = seconds ~/ 60;
-          int sec = seconds % 60;
+        String formatDuration(int secTotal) {
+          int min = secTotal ~/ 60;
+          int sec = secTotal % 60;
           return '$min:${sec.toString().padLeft(2, '0')}';
         }
 
@@ -150,13 +288,16 @@ class SpotifyService {
           thumbnail = track['album']['images'][0]['url'];
         }
 
-        return {
+        final map = {
           'id': 'spotify:$artistName - $title',
+          'videoId': 'spotify:$artistName - $title',
           'title': title,
           'channel': artistName,
           'thumbnail': thumbnail,
-          'duration': formatDuration(durationMs),
+          'duration': formatDuration(seconds),
         };
+        if (SiberStreamFilterEngine.isShortOrTeaserTrack(map)) return null;
+        return map;
       } catch (e) {
         print('Spotify Parse Error: $e');
         return null;
@@ -172,11 +313,14 @@ class SpotifyService {
         String artistName = (track['artists'] != null && track['artists'].isNotEmpty) ? track['artists'][0]['name'] : 'Bilinmeyen';
         String title = track['name'] ?? 'Bilinmeyen';
         int durationMs = track['duration_ms'] ?? 0;
+        int seconds = (durationMs / 1000).round();
+        if (seconds > 0 && seconds < SiberStreamFilterEngine.minFullTrackSeconds) {
+          return null; // 75sn altı skit/short elemesi
+        }
         
-        String formatDuration(int ms) {
-          int seconds = (ms / 1000).round();
-          int min = seconds ~/ 60;
-          int sec = seconds % 60;
+        String formatDuration(int secTotal) {
+          int min = secTotal ~/ 60;
+          int sec = secTotal % 60;
           return '$min:${sec.toString().padLeft(2, '0')}';
         }
 
@@ -185,13 +329,16 @@ class SpotifyService {
           thumbnail = track['album']['images'][0]['url'];
         }
 
-        return {
+        final map = {
           'id': 'spotify:$artistName - $title',
+          'videoId': 'spotify:$artistName - $title',
           'title': title,
           'channel': artistName,
           'thumbnail': thumbnail,
-          'duration': formatDuration(durationMs),
+          'duration': formatDuration(seconds),
         };
+        if (SiberStreamFilterEngine.isShortOrTeaserTrack(map)) return null;
+        return map;
       } catch (e) {
         print('Spotify Parse Error: $e');
         return null;

@@ -2,7 +2,7 @@ name: ozses_v7
 description: "Özses V7 - Müzik Çalar ve Güvenlik Sistemi"
 publish_to: 'none' 
 
-version: 1.0.16+19
+version: 1.0.17+20
 
 # KRİTİK DÜZELTME BURASI:
 environment:
@@ -75,6 +75,8 @@ dependencies:
   flutter_secure_storage: ^10.3.1
   record_web: ^1.3.0
   fftea: ^1.5.0+1
+  firebase_messaging: ^15.0.0 # Push bildirimleri (admin duyurulari - FCM topic)
+  flutter_local_notifications: ^17.2.4 # Yerel bildirimler (indirme yuzdesi, favori sanatci)
 
 dependency_overrides:
   # 🛡️ SİBER KALKAN: Eski bozuk paketleri bodoslama ezen nihai mühür!

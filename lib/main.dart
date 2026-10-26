@@ -17,6 +17,7 @@ import 'services/ytdlp_service.dart';
 import 'services/services.dart';
 import 'services/ad_manager.dart';
 import 'services/offline_cache_service.dart';
+import 'services/notification_service.dart';
 
 // Küresel erişim için mühürlendi
 late MyAudioHandler audioHandler;
@@ -113,6 +114,14 @@ Future<void> _initBackgroundServices() async {
       }
     }(),
   ]);
+
+  // Bildirim motoru (Firebase + Cevrimdisi Bellek hazir olduktan sonra)
+  try {
+    await NotificationService.instance.init();
+    print('Siber Durum: Bildirim Motoru Aktif!');
+  } catch (e) {
+    print('Siber Hata: Bildirim Motoru: $e');
+  }
 }
 
 class OzsesMusicApp extends StatelessWidget {

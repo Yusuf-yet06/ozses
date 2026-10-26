@@ -1,0 +1,39 @@
+{
+  "routing_mode": "hybrid",
+  "local_model": "qwen2.5-coder:7b",
+  "use_rag_by_default": true,
+  "providers": {
+    "groq": {
+      "name": "Groq (Llama 3.3 70B - Ultra Hızlı)",
+      "base_url": "https://api.groq.com/openai/v1",
+      "model": "llama-3.3-70b-versatile",
+      "api_key": "",
+      "enabled": true,
+      "get_key_url": "https://console.groq.com/keys"
+    },
+    "gemini": {
+      "name": "Google Gemini (1M Context Free Tier)",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "model": "gemini-2.5-flash",
+      "api_key": "",
+      "enabled": true,
+      "get_key_url": "https://aistudio.google.com/apikey"
+    },
+    "cerebras": {
+      "name": "Cerebras (Saniyede 800 Token)",
+      "base_url": "https://api.cerebras.ai/v1",
+      "model": "llama3.1-8b",
+      "api_key": "",
+      "enabled": true,
+      "get_key_url": "https://cloud.cerebras.ai/"
+    },
+    "openrouter": {
+      "name": "OpenRouter (Ücretsiz Modeller Havuzu)",
+      "base_url": "https://openrouter.ai/api/v1",
+      "model": "qwen/qwen-2.5-coder-32b-instruct:free",
+      "api_key": "",
+      "enabled": true,
+      "get_key_url": "https://openrouter.ai/keys"
+    }
+  }
+}

@@ -30,6 +30,8 @@ import '../services/rank_manager.dart';
 import '../services/cloud_library_service.dart';
 import '../services/analytics_service.dart';
 import '../widgets/personal_discover_setup_sheet.dart';
+import '../widgets/notification_settings_sheet.dart'; // Bildirim cekmecesi
+import '../widgets/siber_feedback_sheet.dart'; // Geri bildirim & destek cekmecesi
 
 
 class ProfileScreen extends StatefulWidget {
@@ -2627,6 +2629,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.policy,
                   color: Colors.blueAccent,
                   onTap: () => showLegalDocsModal(context, themeColor: _auraColor),
+                ),
+
+                const SizedBox(height: 15),
+
+                _buildProfileButton(
+                  title: 'BİLDİRİMLER',
+                  subtitle: 'Favori sanatçı, duyuru ve indirme bildirimleri',
+                  icon: Icons.notifications_active,
+                  color: _auraColor,
+                  onTap: () => showNotificationSettingsSheet(context, themeColor: _auraColor),
+                ),
+
+                const SizedBox(height: 15),
+
+                _buildProfileButton(
+                  title: 'GERİ BİLDİRİM & HATA BİLDİR',
+                  subtitle: 'Hata, öneri veya şarkı isteğini doğrudan ekibimize ilet',
+                  icon: Icons.support_agent_rounded,
+                  color: Colors.tealAccent,
+                  onTap: () => showSiberFeedbackSheet(context, themeColor: _auraColor),
                 ),
 
                 const SizedBox(height: 15),

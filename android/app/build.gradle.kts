@@ -57,6 +57,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        // flutter_local_notifications icin zorunlu (java.time destegi)
+        isCoreLibraryDesugaringEnabled = true
     }
 
     buildTypes {
@@ -83,6 +85,7 @@ flutter {
 dependencies {
     // Standart Kotlin kütüphanesi
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 kotlin {
