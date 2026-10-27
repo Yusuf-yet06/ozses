@@ -16,7 +16,12 @@ Bu klasör, **ÖZSES** projesinin gelecek sürümleri için tasarlanan vizyoner 
 9. [Elenen / Reddedilen Fikirler (Mimari Hijyen & Güvenlik Kalkanı)](#9-elenen--reddedilen-fikirler-mimari-hijyen--güvenlik-kalkanı)
 10. [Sanatçı & Diskografi Avcısı (Solo, Düet & Tam Albüm Koleksiyonu)](#10-sanatçı--diskografi-avcısı-solo-düet--tam-albüm-koleksiyonu)
 11. [Tablet & Katlanabilir Telefon (Foldable) Çift Panelli Adaptif Kokpit](#11-tablet--katlanabilir-telefon-foldable-çift-panelli-adaptif-kokpit)
-12. [Gelecek Fikirler Havuzu (Eklenecek Notlar)](#12-gelecek-fikirler-havuzu-eklenecek-notlar)
+12. [Tablet & Katlanabilir Telefon (Foldable) Çift Panelli Adaptif Kokpit](#11-tablet--katlanabilir-telefon-foldable-çift-panelli-adaptif-kokpit)
+13. ["Tadımlık İkram" Ödüllü Geçiş Sistemi (Rewarded Feature Pass)](#13-tadımlık-ikram-ödüllü-geçiş-sistemi-rewarded-feature-pass--viral-büyüme-modeli)
+14. [Siber Şarkı Dedektifi & Shazam Entegrasyonu (Adını Bilmediğin Şarkıyı Bul)](#14-siber-şarkı-dedektifi--shazam-entegrasyonu-adını-bilmediğin-şarkıyı-bul)
+15. [Zaman & Biyoritim İstihbarat Özeti (Dinamik Yaşam Karnesi)](#15-zaman--biyoritim-istihbarat-özeti-dinamik-yaşam-karnesi)
+16. [9 Günlük Lansman Hedefi: Birleşik Tek Keşfet & 10s Nakarat Radarı](#16-9-günlük-lansman-hedefi-birleşik-tek-keşfet--10s-nakarat-radarı)
+17. [Gelecek Fikirler Havuzu (Eklenecek Notlar)](#17-gelecek-fikirler-havuzu-eklenecek-notlar)
 
 ---
 
@@ -300,7 +305,60 @@ Kullanıcıyı hiçbir zaman katı bir "Premium dayatması" ile cezalandırmadan
 
 ---
 
-## 14. Gelecek Fikirler Havuzu (Eklenecek Notlar)
+## 14. Siber Şarkı Dedektifi & Shazam Entegrasyonu (Adını Bilmediğin Şarkıyı Bul)
+* **Durum:** Tasarım & UX Mühürlendi (V8 Gelecek Güncellemesi)
+* **Öncelik:** Çok Yüksek
+
+### 🎯 Fikrin Özü & Vizyon:
+Spotify ve YouTube Music'in en büyük kör noktası olan *"Kafamda bir melodi var ama şarkının adını ve sözlerini bilmiyorum"* çaresizliğini kökten bitirmek.
+
+### 🛠️ Geliştirme Maddeleri:
+- **Ortam Müziği Dinleme (Shazam Motoru):**
+  - Mikrofona dokunulduğunda kafede, radyoda veya sokakta çalan şarkıyı akustik parmak iziyle (Audio Fingerprint) tanıma.
+- **Akıllı Dedektif Sihirbazı (Adını Bilmediğin Parçayı Bulma):**
+  - Şarkı o an çalmıyorsa kullanıcıya adım adım soru soran neon çip sihirbazı:
+    1. *Ülke / Coğrafya:* `[Türkiye 🇹🇷]`, `[Global 🌍]`, `[Latin 💃]`, `[Kore / K-Pop 🇰🇷]`
+    2. *Müzik Türü / Konsept:* `[Pop]`, `[Rap / Trap]`, `[Dizi/Film Müziği]`, `[90'lar Nostalji]`, `[TikTok Virali]`
+    3. *Ritim & Hissiyat:* `[Ağır & Efkârlı]`, `[Gece Sürüşü]`, `[Hızlı & Kopmalık]`, `[Akustik]`
+- **Anlık 2-3 Popüler Aday Kartı (Realtime Drop):**
+  - Kullanıcı her kriteri tıkladığı milisaniyede alt kısımda 2-3 adet en popüler şarkı kartı parlar. Tek dokunuşla dinleyip aradığı şarkıyı anında keşfeder.
+
+---
+
+## 15. Zaman & Biyoritim İstihbarat Özeti (Dinamik Yaşam Karnesi)
+* **Durum:** Tasarım Mühürlendi (V8 Büyük Siber Güncellemesi)
+* **Öncelik:** Yüksek (Viral Paylaşım Odaklı)
+
+### 🎯 Fikrin Özü & Vizyon:
+Müzik özetini sadece *"Şu kadar saat dinledin"* gibi yavan istatistiklerden çıkarıp, dinleyicinin saatlik ve hava durumuna bağlı psikolojik ve biyolojik yaşam karnesine dönüştürmek.
+
+### 🛠️ Geliştirme Maddeleri:
+- **Gece Kuşu / Biyoritim Analitiği:**
+  - `"Sen tam bir Gece Avcısısın: Dinlemelerinin %64'ü Gece 01:00 - 04:00 saatleri arasında Siber Yalnızlık Radarında gerçekleşti."`
+- **Hava Durumu & Ruh Hali Korelasyonu:**
+  - `"Yağmurlu ve kapalı günlerde melankoli oranın %82'ye fırladı."`
+- **Sabah Enerjisi & Uyanış Kaynakları:**
+  - Kullanıcının sabah saatlerinde en çok sığındığı motivasyon ve tempo sanatçıları.
+- **Hikaye Formatında Tek Tık Paylaşım:**
+  - Instagram, WhatsApp ve TikTok için hazır neon çerçeveli ve scanline filtreli hikaye çıktısı.
+
+---
+
+## 16. 9 Günlük Lansman Hedefi: Birleşik Tek Keşfet & 10s Nakarat Radarı
+* **Durum:** AKTİF ÇALIŞMA MASASINDA (Lansman Sürümü V7.2)
+* **Öncelik:** ACİL / MAĞAZA ÇIKIŞ ŞARTI
+
+### 🎯 Hedefler:
+1. **2 Keşfet Karmaşasını Bitirme:** Klasik Keşfet ve Kişisel Keşfet'i tek bir süper akışta birleştirmek.
+2. **Sana Özel Mixler:** Kullanıcının dinleme alışkanlıklarına göre dinamik YouTube Music tarzı istasyonlar.
+3. **Kanal / Sanatçı Kaydetme:** Takipten ziyade sanatçı kanallarını sabitleme ve Keşfet podyumuna alma.
+4. **Keşfetten Kendi Miksini Üretme:** Tek tıkla o tarzda 15 parçalık yeni akış oluşturma.
+5. **10 Saniyelik Hızlı Nakarat Radarı (Hook Snip):** Şarkı kartına basılı tutulduğunda nakaratı kulaklıkta patlatan hızlı önizleme.
+6. **Zayıf İnternette Şarkı Atlama Kalkanı (Smart 1-Retry):** Ağ dalgalanmasında anında sonrakine atlamayan toleranslı çalma motoru.
+
+---
+
+## 17. Gelecek Fikirler Havuzu (Eklenecek Notlar)
 *Bu alan, ilerleyen seanslarda aklımıza gelen yeni fikirlerin eklenmesi için ayrılmıştır:*
 
 - [ ] **[Fikir 01]** Kulaklık & Bluetooth Otomatiği (Yumuşak Fade-in / Fade-out ses geçişleri).
@@ -308,6 +366,6 @@ Kullanıcıyı hiçbir zaman katı bir "Premium dayatması" ile cezalandırmadan
 - [ ] **[Fikir 03]** Çalma Listelerini Tek Tıkla Yedekleme / Taşıma (Export & Import).
 
 ---
-*Son Güncelleme: 14 Ekim 2026 — ÖZSES Mühendislik & İnovasyon Arşivi*
+*Son Güncelleme: 27 Ekim 2026 — ÖZSES Mühendislik & İnovasyon Arşivi*
 
 
