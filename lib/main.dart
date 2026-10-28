@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:universal_io/io.dart'; // Platform kontrolü için ŞART!
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter/foundation.dart'; // 🌐 WEB KALKANI İÇİN
@@ -124,6 +125,21 @@ Future<void> _initBackgroundServices() async {
   }
 }
 
+
+/// 🎯 SİBER MOUSE & DOKUNMATİK SÜRÜKLEME KONTROLÜ
+/// Masaüstünde (Windows/Mac/Linux) mouse ile sağa/sola ve yukarı/aşağı serbestçe sürüklemeyi sağlar.
+class AppScrollBehavior extends MaterialScrollBehavior {
+  const AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
+}
+
 class OzsesMusicApp extends StatelessWidget {
   static Future<void>? backgroundServicesFuture;
   const OzsesMusicApp({super.key});
@@ -137,6 +153,7 @@ class OzsesMusicApp extends StatelessWidget {
           builder: (context, appChild) {
             return GlobalAmbientBackground(child: appChild!);
           },
+          scrollBehavior: const AppScrollBehavior(),
           title: 'ÖZSES',
           debugShowCheckedModeBanner: false,
           theme: ThemeData.dark(useMaterial3: true).copyWith(
