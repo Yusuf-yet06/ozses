@@ -5,7 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in_dartio/google_sign_in_dartio.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart'; // 🍎 SİBER KALKAN: Apple Giriş Motoru
-import 'package:cloud_firestore/cloud_firestore.dart'; // Bulut veritabanı
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'cloud_library_service.dart'; // Bulut veritabanı
 
 import 'dart:async';
 
@@ -46,7 +47,7 @@ class AuthService {
         : '533526268311-lg797g77dbmgjjhhdvpjruhvscfqfoob.apps.googleusercontent.com', 
   );
 
-  /// Otonom Google Giriş Motoru
+  /// Otonom Google Giriş Motoru (Gerçek Firebase Auth & Cloud Firestore Entegrasyonu)
   Future<bool> signInWithGoogle() async {
     // 🛡️ Masaüstü kayıt tamamlanana kadar bekle
     await _desktopReady.future;
@@ -63,44 +64,70 @@ class AuthService {
         return false;
       }
 
-      String name = googleUser.displayName ?? 'Müziksever';
-      String email = googleUser.email;
-      String? photoUrl = googleUser.photoUrl;
+      // 2. Google kimlik belirteçlerini (token) al
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-      // 2. Firebase kimlik doğrulamasını dene (SHA-1 eksikse çökebilir)
-      try {
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-        final UserCredential userCredential = await _auth.signInWithCredential(credential);
-        final User? user = userCredential.user;
-        if (user != null) {
-          name = user.displayName ?? name;
-          email = user.email ?? email;
-          photoUrl = user.photoURL ?? photoUrl;
-        }
-      } catch (e) {
-        print('⚠️ Siber Uyarı (Firebase): Firebase bağlantısı kurulamadı (Büyük ihtimalle SHA-1 eksik). Yerel olarak Google hesabı bağlanıyor: $e');
+      // 3. GERÇEK Firebase Kimlik Doğrulaması (Asla sahte/test moduna düşürülmez)
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+      if (user == null) {
+        throw Exception('Firebase oturumu başlatılamadı.');
       }
 
-      // 🎯 SİBER KALKAN: Kullanıcı verilerini yerel hafızaya mühürle (Firebase çökse bile çalışır!)
+      final String name = user.displayName ?? googleUser.displayName ?? 'Müziksever';
+      final String email = user.email ?? googleUser.email;
+      final String? photoUrl = user.photoURL ?? googleUser.photoUrl;
+
+      // 4. Firestore Kullanıcı Profilini Mühürle
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'email': email,
+        'displayName': name,
+        'photoUrl': photoUrl ?? '',
+        'provider': 'google.com',
+        'lastLoginAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 5. Yerel Kimlik Hafızasını Güncelle
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('siber_is_linked', true);
       await prefs.setString('siber_username', name);
       await prefs.setString('siber_email', email);
-      if (photoUrl != null) {
+      if (photoUrl != null && photoUrl.isNotEmpty) {
         await prefs.setString('siber_avatar_url', photoUrl);
+      }
+      await prefs.setString('siber_uid', user.uid);
+
+      // 6. ⚡ Gerçek Mail & Bulut Hafızasını Otomatik Eşitle (Kütüphane, Listeler, Kanallar)
+      try {
+        await CloudLibraryService().fullSync();
+      } catch (e) {
+        print('⚠️ İlk bulut senkronizasyon uyarısı: $e');
       }
 
       return true;
+    } on FirebaseAuthException catch (e) {
+      print('❌ Siber Hata (FirebaseAuthException): ${e.code} - ${e.message}');
+      if (e.code == 'account-exists-with-different-credential') {
+        throw Exception('Bu e-posta adresiyle ilişkili farklı bir oturum yöntemi mevcut.');
+      } else if (e.code == 'invalid-credential') {
+        throw Exception('Google kimlik belirteci geçersiz veya süresi dolmuş.');
+      } else if (e.code == 'user-disabled') {
+        throw Exception('Bu kullanıcı hesabı askıya alınmış.');
+      } else if (e.code == 'network-request-failed') {
+        throw Exception('Ağ Hatası: Firebase sunucularına ulaşılamadı. İnternet bağlantınızı kontrol edin.');
+      }
+      throw Exception('Firebase Kimlik Hatası: [${e.code}] ${e.message ?? 'Giriş yapılamadı.'}');
     } catch (e) {
       print('❌ Siber Hata (Google Girişi): $e');
       final err = e.toString();
       if (err.contains('10') || err.contains('DEVELOPER_ERROR')) {
         throw Exception(
-          'Google Güvenlik Reddi (SHA-1 Uyuşmazlığı): Bu bir hesap banı DEĞİLDİR! Uygulamanın imza parmak izi Firebase Konsolu ile eşleşmedi. Firebase Konsoluna Release SHA-1 anahtarının eklenmesi gerekir.',
+          'Google Güvenlik Reddi (SHA-1 / SHA-256 Uyuşmazlığı): Uygulamanın imza parmak izi Firebase Konsolu ile eşleşmedi. Firebase Konsoluna SHA-1 / SHA-256 anahtarlarının eklenmesi gerekir.',
         );
       } else if (err.contains('12500')) {
         throw Exception(

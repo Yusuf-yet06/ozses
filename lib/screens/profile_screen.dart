@@ -1111,16 +1111,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 🎯 SİBER HAMLE: Bulut Senkronizasyonu (Gerçek Firestore & SQLite)
   Future<void> _startCloudSync() async {
     if (_isSyncing) return;
+    if (!CloudLibraryService().isUserLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Bulut senkronizasyonu için lütfen önce Google hesabınızı bağlayın.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSyncing = true;
       _syncProgress = 0.2;
     });
 
     try {
-      if (CloudLibraryService().isUserLoggedIn) {
-        setState(() => _syncProgress = 0.6);
-        await CloudLibraryService().fullSync();
-      }
+      setState(() => _syncProgress = 0.6);
+      await CloudLibraryService().fullSync();
       setState(() => _syncProgress = 1.0);
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now();

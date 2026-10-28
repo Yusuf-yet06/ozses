@@ -164,13 +164,23 @@ class CloudLibraryService {
 
   /// İki yönlü tam senkronizasyon (giriş yapılınca çağrılır)
   Future<void> fullSync() async {
+    if (!isUserLoggedIn) {
+      print('⚠️ Bulut Senkronizasyon: Aktif oturum yok.');
+      return;
+    }
     isSyncing.value = true;
     try {
-      await syncFromCloud(); // Önce buluttan çek
-      await syncPlaylistsFromCloud(); // Playlists buluttan çek
-      await syncToCloud();   // Sonra yereli buluta yükle
-      await syncPlaylistsToCloud(); // Playlists buluta yükle
-      print('☁️ ✅ Tam Senkronizasyon Tamamlandı!');
+      // 1. Buluttaki tüm verileri yerele çek ve birleştir
+      await syncFromCloud(); // Kütüphaneyi çek
+      await syncPlaylistsFromCloud(); // Özel çalma listelerini çek
+      await syncPreferencesFromCloud(); // Sabitlenen kanalları, türleri, favorileri çek
+
+      // 2. Yereldeki güncel verileri buluta yükle
+      await syncToCloud(); // Kütüphaneyi buluta yükle
+      await syncPlaylistsToCloud(); // Çalma listelerini buluta yükle
+      await syncPreferencesToCloud(); // Tercihleri ve kanalları buluta yükle
+
+      print('🚀 👑 Tam Siber Hesap Hafızası Eşitlendi (Kütüphane, Listeler, Kanallar, Favoriler)!');
     } finally {
       isSyncing.value = false;
     }
@@ -270,4 +280,96 @@ class CloudLibraryService {
       isSyncing.value = false;
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ⚡ SİBER TERCİH & FREKANS HAFIZASI (Sabit Kanallar & Türler & Favoriler)
+  // ═══════════════════════════════════════════════════════════════
+  DocumentReference? get _preferencesDoc {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return _firestore.collection('users').doc(user.uid).collection('settings').doc('preferences');
+  }
+
+  /// Sabitlenen kanalları, kişisel sanatçıları, türleri ve favorileri buluta yedekler
+  Future<void> syncPreferencesToCloud() async {
+    if (!isUserLoggedIn || _preferencesDoc == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pinnedArtists = prefs.getStringList('siber_pinned_artists') ?? [];
+      final personalGenres = prefs.getStringList('siber_personal_genres') ?? [];
+      final personalArtists = prefs.getString('siber_personal_artists') ?? '';
+      final favorites = prefs.getStringList('favorites') ?? [];
+      final rankExp = prefs.getInt('siber_rank_exp') ?? 0;
+      final totalListens = prefs.getInt('siber_total_listens') ?? 0;
+
+      await _preferencesDoc!.set({
+        'pinnedArtists': pinnedArtists,
+        'personalGenres': personalGenres,
+        'personalArtists': personalArtists,
+        'favorites': favorites,
+        'rankExp': rankExp,
+        'totalListens': totalListens,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      print('⚡ Siber Tercihler, Kanallar ve Favoriler Buluta Mühürlendi!');
+    } catch (e) {
+      print('⚠️ Tercih Bulut Yedekleme Hatası: ');
+    }
+  }
+
+  /// Buluttaki tercihleri (sabitlenen kanallar, türler, sanatçılar, favoriler) yerele çeker
+  Future<void> syncPreferencesFromCloud() async {
+    if (!isUserLoggedIn || _preferencesDoc == null) return;
+    try {
+      final doc = await _preferencesDoc!.get();
+      if (!doc.exists) return;
+      final data = doc.data() as Map<String, dynamic>? ?? {};
+      final prefs = await SharedPreferences.getInstance();
+
+      final cloudPinned = List<String>.from(data['pinnedArtists'] ?? []);
+      if (cloudPinned.isNotEmpty) {
+        final localPinned = prefs.getStringList('siber_pinned_artists') ?? [];
+        final merged = {...localPinned, ...cloudPinned}.toList();
+        await prefs.setStringList('siber_pinned_artists', merged);
+      }
+
+      final cloudGenres = List<String>.from(data['personalGenres'] ?? []);
+      if (cloudGenres.isNotEmpty) {
+        await prefs.setStringList('siber_personal_genres', cloudGenres);
+      }
+
+      final cloudArtists = data['personalArtists'] as String?;
+      if (cloudArtists != null && cloudArtists.isNotEmpty) {
+        await prefs.setString('siber_personal_artists', cloudArtists);
+      }
+
+      final cloudFavs = List<String>.from(data['favorites'] ?? []);
+      if (cloudFavs.isNotEmpty) {
+        final localFavs = prefs.getStringList('favorites') ?? [];
+        final mergedFavs = {...localFavs, ...cloudFavs}.toList();
+        await prefs.setStringList('favorites', mergedFavs);
+      }
+
+      final cloudRankExp = data['rankExp'] as int?;
+      if (cloudRankExp != null) {
+        final localRankExp = prefs.getInt('siber_rank_exp') ?? 0;
+        if (cloudRankExp > localRankExp) {
+          await prefs.setInt('siber_rank_exp', cloudRankExp);
+        }
+      }
+
+      final cloudTotalListens = data['totalListens'] as int?;
+      if (cloudTotalListens != null) {
+        final localTotalListens = prefs.getInt('siber_total_listens') ?? 0;
+        if (cloudTotalListens > localTotalListens) {
+          await prefs.setInt('siber_total_listens', cloudTotalListens);
+        }
+      }
+
+      print('⚡ Siber Tercihler Buluttan Başarıyla Çekildi ve Mühürlendi!');
+    } catch (e) {
+      print('⚠️ Tercih Bulut Çekme Hatası: ');
+    }
+  }
+
 }
