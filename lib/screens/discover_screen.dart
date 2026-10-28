@@ -6351,59 +6351,79 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
         children: [
+          // 1. Sol Kapsül: Biyoritim & Sanatçı İstasyonu (Tıklayınca Seçim Ekranı Açılır)
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isMinimal ? const Color(0xFF16161A) : Colors.white.withAlpha(15),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: isMinimal ? Colors.white12 : widget.themeColor.withAlpha(80),
+            child: InkWell(
+              onTap: _showEditArtistsSheet,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isMinimal ? const Color(0xFF16161A) : Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isMinimal ? Colors.white12 : widget.themeColor.withValues(alpha: 0.35),
+                    width: 1.1,
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
-                    color: isNight ? Colors.indigoAccent : Colors.amberAccent,
-                    size: 17,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${_personalArtists.length} Sanatçı İstasyonu • $genresLabel',
-                      style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    Icon(
+                      isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                      color: isNight ? Colors.indigoAccent : Colors.amberAccent,
+                      size: 16,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_personalArtists.isNotEmpty ? _personalArtists.length : 3} Sanatçı • $genresLabel',
+                        style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.tune_rounded, color: widget.themeColor, size: 14),
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
+          // 2. Sağ Kapsül: ⚡ 15'li Canlı Akıllı Miks Butonu
           InkWell(
-            onTap: _showEditArtistsSheet,
-            borderRadius: BorderRadius.circular(15),
+            onTap: _generateAndPlayDiscoverMix,
+            borderRadius: BorderRadius.circular(16),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
               decoration: BoxDecoration(
-                color: isMinimal ? const Color(0xFF1E1E22) : widget.themeColor.withAlpha(40),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: isMinimal ? Colors.white24 : widget.themeColor.withAlpha(120),
+                gradient: LinearGradient(
+                  colors: [
+                    widget.themeColor,
+                    widget.themeColor.withValues(alpha: 0.82),
+                  ],
                 ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.themeColor.withValues(alpha: 0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Row(
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.tune_rounded, color: isMinimal ? Colors.white70 : widget.themeColor, size: 16),
-                  const SizedBox(width: 5),
+                  Icon(Icons.bolt_rounded, color: Colors.black, size: 16),
+                  SizedBox(width: 4),
                   Text(
-                    'Sanatçı & Tür Seç',
+                    "15'li Miks",
                     style: TextStyle(
-                      color: isMinimal ? Colors.white70 : widget.themeColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ],
@@ -6497,20 +6517,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           children: [
             const SizedBox(height: 6),
 
-            // 1. BİYORİTİM & SANATÇI/TÜR SEÇİM BARI
+            // 1. 🌌 İSTASYON & 15'Lİ CANLI MİKS KOKPİTİ
             _buildBiorhythmAndSetupBar(isMinimal, isNight, genresLabel),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
             // 2. 📌 SABİTLENEN SANATÇI KANALLARI (Pinned Channels)
             _buildPinnedChannelsBar(isMinimal),
 
-            // 3. ⚡ 15 ŞARKILIK ANLIK AKILLI MİKS ÜRET BARİ
-            _buildGenerateMixBanner(isMinimal),
+            const SizedBox(height: 8),
 
-            const SizedBox(height: 10),
-
-            // 4. 🔥 ANLIK TREND ŞARKILAR (Hook Snip / 10s Nakarat Radarı destekli)
+            // 3. 🔥 ANLIK TREND ŞARKILAR (Hook Snip / 10s Nakarat Radarı)
             if (instantTrends.isNotEmpty) _buildInstantTrendStrip(instantTrends),
 
             const SizedBox(height: 14),
