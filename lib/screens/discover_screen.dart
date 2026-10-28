@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 import 'package:flutter/foundation.dart';
 import 'package:universal_io/io.dart';
 import 'dart:math';
@@ -85,6 +87,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   static final DiscoverCache _personalCache = DiscoverCache();
 
   bool _isPersonalMode = false;
+  // 📌 SİBER SABİTLENEN SANATÇI KANALLARI
+  List<String> _pinnedArtists = [];
+
+  // 🎧 10-SANİYE NAKARAT RADARI (Hook Snip)
+  bool _isHookSnipActive = false;
+  String _hookSnipTitle = '';
+  String _hookSnipArtist = '';
+  String _hookSnipThumb = '';
+  int _hookSnipSecondsLeft = 10;
+  Timer? _hookSnipTimer;
+  ja.AudioPlayer? _hookPlayer;
+  bool _wasPlayingBeforeHook = false;
+  dynamic _activeHookItem;
+
   DiscoverCache get _currentCache => _isPersonalMode ? _personalCache : _generalCache;
 
   // 🎯 ŞAHSİ KEŞFET (KİŞİSEL KARARGAH) HAFIZASI
@@ -254,6 +270,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     final bool needsData = _isPersonalMode ? _personalCocktail.isEmpty : _trendList.isEmpty;
     if (needsData && !_isSearching) {
       _initDataAndCache();
+    _loadPinnedArtists();
     }
 
     _scrollController.addListener(_onScroll);
@@ -351,16 +368,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   // 🎯 SİBER HAMLE: Aktif Moda Göre Önbellekten Yükle ve İzole Olarak Güncelle
+  // 🛡️ BİRLEŞİK TEK KEŞFET: Tüm Önbelleği Anında Yükle ve Arka Planda Taze Verileri Çek
   Future<void> _initDataAndCache() async {
-    if (_isPersonalMode) {
-      await _loadCachedPersonalData();
-      final bool hasPersonalCache = _personalCocktail.isNotEmpty;
-      _fetchPersonalRecommendations(silent: hasPersonalCache);
-    } else {
-      await _loadCachedTrends();
-      final bool hasTrends = _trendList.isNotEmpty;
-      _fetchTrends(silent: hasTrends);
-    }
+    await _loadCachedTrends();
+    await _loadCachedPersonalData();
+    await _loadPinnedArtists();
+
+    final bool hasTrends = _trendList.isNotEmpty;
+    final bool hasPersonal = _personalCocktail.isNotEmpty || _personalArtistMixes.isNotEmpty;
+
+    _fetchTrends(silent: hasTrends);
+    _fetchPersonalRecommendations(silent: hasPersonal);
   }
 
   Future<void> _loadCachedTrends() async {
@@ -405,7 +423,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       try {
         final decoded = jsonDecode(cachedCocktail);
         _personalCache.personalCocktail = List<dynamic>.from(decoded);
-        if (_isPersonalMode && mounted) {
+        if (mounted) {
           setState(() => _personalCocktail = List<dynamic>.from(decoded));
         }
       } catch (_) {}
@@ -415,7 +433,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         final decoded = jsonDecode(cachedMixes) as Map<String, dynamic>;
         final parsed = decoded.map((k, v) => MapEntry(k, List<dynamic>.from(v)));
         _personalCache.personalArtistMixes = parsed;
-        if (_isPersonalMode && mounted) {
+        if (mounted) {
           setState(() => _personalArtistMixes = parsed);
         }
       } catch (_) {}
@@ -430,7 +448,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   .toList(),
             ));
         _personalCache.personalArtistAlbums = parsed;
-        if (_isPersonalMode && mounted) {
+        if (mounted) {
           setState(() => _personalArtistAlbums = parsed);
         }
       } catch (_) {}
@@ -439,7 +457,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       try {
         final decoded = jsonDecode(cachedSimilar);
         _personalCache.similarArtistsTracks = List<dynamic>.from(decoded);
-        if (_isPersonalMode && mounted) {
+        if (mounted) {
           setState(() => _similarArtistsTracks = List<dynamic>.from(decoded));
         }
       } catch (_) {}
@@ -2904,6 +2922,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     SiberThemeService.instance.currentThemeColor.removeListener(_onThemeChanged);
     SiberThemeService.instance.isMinimalMode.removeListener(_onThemeChanged);
     _skeletonTimer?.cancel();
+    _hookSnipTimer?.cancel();
+    _hookPlayer?.dispose();
     _studioBarPageController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -2921,7 +2941,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void _onScroll() {
     final activeController = _isSearching
         ? _scrollController
-        : (_isPersonalMode ? _personalScrollController : _generalScrollController);
+        : _generalScrollController;
 
     if (activeController.hasClients &&
         activeController.position.pixels >=
@@ -2987,11 +3007,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       _hasMoreSearch = true;
     });
 
-    if (_isPersonalMode) {
-      await _fetchPersonalRecommendations(isRefresh: true);
-    } else {
-      await _fetchTrends(isRefresh: true);
-    }
+    await Future.wait([
+      _fetchTrends(isRefresh: true),
+      _fetchPersonalRecommendations(isRefresh: true),
+    ]);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3021,13 +3040,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 Ana Trendleri (mostPopular) Çek + C++ Filtre & Favori Sanatçı Piggyback Kontrolü
   Future<void> _fetchTrends({bool silent = false, bool isRefresh = false}) async {
-    if (!silent && !_isPersonalMode) {
+    if (!silent) {
       setState(() => _isLoading = true);
       _showSkeletonTimeout = false;
       _skeletonTimer?.cancel();
       // 🎯 Max 15 saniye skeleton sonra timeout mesajı göster
       _skeletonTimer = Timer(const Duration(seconds: 15), () {
-        if (mounted && _isLoading && !_isPersonalMode) {
+        if (mounted && _isLoading) {
           setState(() => _showSkeletonTimeout = true);
         }
       });
@@ -3042,7 +3061,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final res = await _bridge.fetchKesfet();
       if (mounted) {
         if (res.isEmpty || res['status'] == 'hata') {
-          if (!_isPersonalMode) {
+          if (mounted) {
             setState(() {
               _isLoading = false;
               _isOfflineMode = true; // 🎯 Siber Kalkan: Çevrimdışı modda olduğumuzu anladık
@@ -3085,7 +3104,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _generalCache.nextPageToken = res['nextPageToken'] ?? '';
         _saveTrendsCache(); // 🎯 Yeni veriyi hafızaya mühürle
 
-        if (!_isPersonalMode) {
+        if (mounted) {
           setState(() {
             _isOfflineMode = false;
             _trendList = fetchedList;
@@ -3108,7 +3127,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         }
       }
     } catch (e) {
-      if (mounted && !_isPersonalMode) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
           _isOfflineMode = true;
@@ -3164,12 +3183,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   // 🎯 SİBER HAMLE: Şahsi Keşfet Öneri Motoru (Tanımlanan Sanatçı Kadar Saf Albümlü Mix + Tür Önerileri)
   Future<void> _fetchPersonalRecommendations({bool silent = false, bool isRefresh = false}) async {
-    if (!silent && _isPersonalMode) {
+    if (!silent) {
       setState(() => _isLoading = true);
       _showSkeletonTimeout = false;
       _skeletonTimer?.cancel();
       _skeletonTimer = Timer(const Duration(seconds: 15), () {
-        if (mounted && _isLoading && _isPersonalMode) {
+        if (mounted && _isLoading) {
           setState(() => _showSkeletonTimeout = true);
         }
       });
@@ -3419,7 +3438,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       _personalCache.personalGenres = favGenres;
       _savePersonalCache();
 
-      if (mounted && _isPersonalMode) {
+      if (mounted) {
         setState(() {
           _personalCocktail = cocktail;
           _personalArtistMixes = personalArtistMixes;
@@ -3431,7 +3450,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         });
       }
     } catch (e) {
-      if (mounted && _isPersonalMode) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
           _showSkeletonTimeout = false;
@@ -3659,6 +3678,40 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       style: TextStyle(color: widget.themeColor)),
                 ),
                 const Divider(color: Colors.white24),
+                ListTile(
+                  leading: Icon(
+                    _pinnedArtists.contains(artist) ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                    color: _pinnedArtists.contains(artist) ? Colors.amberAccent : Colors.cyanAccent,
+                  ),
+                  title: Text(
+                    _pinnedArtists.contains(artist) ? '📌 Kanal Sabitlemesini Kaldır' : '📌 Kanalı / Sanatçıyı Sabitle',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    _pinnedArtists.contains(artist) ? '$artist sabitlemelerden çıkarılır' : '$artist kanalını Keşfet başına iğnele',
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _togglePinArtist(artist);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.radar_rounded, color: Colors.amberAccent),
+                  title: const Text('🎧 10s Nakarat Radarı Dinle',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  subtitle: const Text(
+                      'Şarkının nakaratını 10 saniye hızlıca önizle',
+                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _startHookSnipPreview(item);
+                  },
+                ),
                 ListTile(
                   leading:
                       const Icon(Icons.headphones, color: Colors.cyanAccent),
@@ -4456,69 +4509,55 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             backgroundColor: isMinimal ? const Color(0xFF0F0F12) : Colors.transparent,
             elevation: 0,
             centerTitle: false,
-            title: GestureDetector(
-              onTap: () => _switchMode(!_isPersonalMode),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
+            title: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isMinimal
+                    ? const Color(0xFF1C1C20)
+                    : widget.themeColor.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
                   color: isMinimal
-                      ? const Color(0xFF1C1C20)
-                      : widget.themeColor.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isMinimal
-                        ? Colors.white24
-                        : widget.themeColor.withValues(alpha: 0.65),
-                    width: 1.2,
-                  ),
-                  boxShadow: isMinimal
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: widget.themeColor.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                      ? Colors.white24
+                      : widget.themeColor.withValues(alpha: 0.5),
+                  width: 1.1,
                 ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  transitionBuilder: (child, anim) =>
-                      FadeTransition(opacity: anim, child: child),
-                  child: Row(
-                    key: ValueKey<bool>(_isPersonalMode),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isPersonalMode
-                            ? Icons.public_rounded
-                            : Icons.person_pin_circle_rounded,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.explore_rounded,
+                    color: isMinimal ? Colors.white : widget.themeColor,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 7),
+                  const Text(
+                    'ÖZSES KEŞFET',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: isMinimal ? Colors.white24 : widget.themeColor.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'UNIFIED V7',
+                      style: TextStyle(
                         color: isMinimal ? Colors.white : widget.themeColor,
-                        size: 15,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _isPersonalMode
-                            ? 'Genel Keşfet\'e Geç'
-                            : 'Şahsi Keşfet\'e Geç',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.swap_horiz_rounded,
-                        color: isMinimal ? Colors.white70 : widget.themeColor,
-                        size: 14,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
             iconTheme: const IconThemeData(color: Colors.white),
@@ -4929,13 +4968,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         ? _buildSuggestionsList()
                         : _isSearching
                                 ? _buildVerticalList(_searchResults, isScrollable: true, isSearch: true)
-                                : IndexedStack(
-                                index: _isPersonalMode ? 1 : 0,
-                                children: [
-                                  _buildYouTubeMusicHome(),
-                                  _buildPersonalDiscoverHome(),
-                                ],
-                              ),
+                                : _buildUnifiedDiscoverHome(),
 
                 // 🎯 SİBER MİNİ OYNATICI (Sadece şarkı çalarken ortaya çıkar)
                 if (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop)
@@ -5569,7 +5602,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
               return GestureDetector(
                 onTap: () => _playDirectly(item, contextList: trendItems, isMix: true),
-                onLongPress: () => _showActionSheet(item),
+                onLongPress: () => _startHookSnipPreview(item),
                 child: Container(
                   width: 124,
                   margin: const EdgeInsets.only(right: 12),
@@ -5667,6 +5700,910 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  
+  // ==========================================
+  // 📌 SİBER SABİTLENEN SANATÇI KANALLARI (Pinned Channels)
+  // ==========================================
+  Future<void> _loadPinnedArtists() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('siber_pinned_artists');
+    if (saved != null && saved.isNotEmpty) {
+      if (mounted) setState(() => _pinnedArtists = saved);
+    } else {
+      final def = _personalArtists.isNotEmpty
+          ? _personalArtists.take(4).toList()
+          : ['Ceza', 'Velet', 'Motive'];
+      if (mounted) setState(() => _pinnedArtists = def);
+      await prefs.setStringList('siber_pinned_artists', def);
+    }
+  }
+
+  Future<void> _togglePinArtist(String artist) async {
+    final clean = artist.trim();
+    if (clean.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    List<String> current = List.from(_pinnedArtists);
+    bool added = false;
+    if (current.contains(clean)) {
+      current.remove(clean);
+      added = false;
+    } else {
+      current.insert(0, clean);
+      added = true;
+    }
+    await prefs.setStringList('siber_pinned_artists', current);
+    if (mounted) {
+      setState(() => _pinnedArtists = current);
+    }
+    Fluttertoast.showToast(
+      msg: added ? '📌 $clean kanalı Keşfet başına sabitlendi!' : '📌 $clean sabitlemelerden kaldırıldı.',
+      backgroundColor: const Color(0xFF1B1B2F),
+    );
+  }
+
+  void _showAddPinnedArtistDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: widget.themeColor.withValues(alpha: 0.5)),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.push_pin_rounded, color: widget.themeColor),
+              const SizedBox(width: 8),
+              const Text('Kanal / Sanatçı Sabitle', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ],
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Sanatçı veya kanal adı girin...',
+              hintStyle: const TextStyle(color: Colors.white38),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: widget.themeColor.withValues(alpha: 0.4)),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: widget.themeColor),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.themeColor,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () {
+                final txt = controller.text.trim();
+                if (txt.isNotEmpty) {
+                  _togglePinArtist(txt);
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('Sabitle', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPinnedChannelsBar(bool isMinimal) {
+    if (_pinnedArtists.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.push_pin_rounded, color: Colors.amberAccent, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Sabitlenen Kanallar',
+                      style: TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                InkWell(
+                  onTap: _showAddPinnedArtistDialog,
+                  child: Row(
+                    children: [
+                      Icon(Icons.add_circle_outline_rounded, size: 15, color: widget.themeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Kanal Ekle',
+                        style: TextStyle(color: widget.themeColor, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _pinnedArtists.length,
+              itemBuilder: (context, index) {
+                final artist = _pinnedArtists[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      _searchController.text = artist;
+                      _performSearch('$artist en çok dinlenen şarkılar');
+                    },
+                    onLongPress: () => _togglePinArtist(artist),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isMinimal ? const Color(0xFF1E1E22) : Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: widget.themeColor.withValues(alpha: 0.5),
+                          width: 1.1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 10,
+                            backgroundColor: widget.themeColor.withValues(alpha: 0.3),
+                            child: Text(
+                              artist.isNotEmpty ? artist[0].toUpperCase() : '?',
+                              style: TextStyle(color: widget.themeColor, fontSize: 9.5, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            artist,
+                            style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => _togglePinArtist(artist),
+                            child: const Icon(Icons.close_rounded, size: 13, color: Colors.white38),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // ⚡ KEŞFETTEN 15 ŞARKILIK MİKS ÜRET (One-Tap Dynamic Mix)
+  // ==========================================
+  Future<void> _generateAndPlayDiscoverMix() async {
+    try {
+      HapticFeedback.heavyImpact();
+    } catch (_) {}
+
+    final List<dynamic> mixPool = [];
+    final Set<String> seenIds = {};
+
+    void addTracks(List<dynamic> source, int limit) {
+      for (var t in source) {
+        final id = (t['videoId'] ?? t['id'] ?? t['video_id'])?.toString();
+        if (id != null && id.isNotEmpty && !seenIds.contains(id)) {
+          seenIds.add(id);
+          mixPool.add(t);
+          if (mixPool.length >= 15) return;
+        }
+      }
+    }
+
+    addTracks(_trendList.take(6).toList(), 5);
+    for (var tracks in _personalArtistMixes.values) {
+      addTracks(tracks.take(3).toList(), 5);
+      if (mixPool.length >= 10) break;
+    }
+    addTracks(_personalCocktail.take(8).toList(), 5);
+    if (mixPool.length < 15) {
+      for (var list in _genreLists.values) {
+        addTracks(list.take(4).toList(), 15 - mixPool.length);
+        if (mixPool.length >= 15) break;
+      }
+    }
+    if (mixPool.length < 15) {
+      addTracks(_trendList.skip(6).toList(), 15 - mixPool.length);
+    }
+
+    if (mixPool.isEmpty) {
+      Fluttertoast.showToast(msg: 'Miks için şarkılar yükleniyor...');
+      _refreshData();
+      return;
+    }
+
+    mixPool.shuffle(Random());
+    final final15 = mixPool.take(15).toList();
+
+    await _playDirectly(final15.first, contextList: final15, isMix: true);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.bolt_rounded, color: widget.themeColor),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  '⚡ 15 Parçalık Siber Keşfet Miksi Başlatıldı!',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF141829),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Widget _buildGenerateMixBanner(bool isMinimal) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: InkWell(
+        onTap: _generateAndPlayDiscoverMix,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                widget.themeColor.withValues(alpha: 0.25),
+                const Color(0xFF1B1B3A),
+                Colors.deepPurple.withValues(alpha: 0.2),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: widget.themeColor.withValues(alpha: 0.5),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.themeColor.withValues(alpha: 0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: widget.themeColor.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.bolt_rounded, color: widget.themeColor, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '⚡ 15 Şarkılık Anlık Akıllı Miks',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.6), width: 0.8),
+                          ),
+                          child: const Text(
+                            'TEK TIKLA',
+                            style: TextStyle(color: Colors.amberAccent, fontSize: 8.5, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Trendler ve sevdiğin sanatçılardan canlı harmanlanan miksi başlat',
+                      style: TextStyle(color: Colors.white60, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: widget.themeColor,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 18),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // 🎧 10-SANİYE NAKARAT RADARI (Hook Snip Radar)
+  // ==========================================
+  Future<void> _startHookSnipPreview(dynamic item) async {
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
+
+    _activeHookItem = item;
+    final title = (item['title'] ?? item['baslik'] ?? 'Şarkı').toString();
+    final artist = (item['channel'] ?? item['kanal'] ?? 'Özses').toString();
+    final thumb = (item['thumbnail'] ?? '').toString();
+    final videoId = (item['videoId'] ?? item['id'] ?? item['video_id'])?.toString();
+
+    if (videoId == null || videoId.isEmpty) {
+      _showActionSheet(item);
+      return;
+    }
+
+    final isCurrentlyPlaying = audioHandler.playbackState.value.playing;
+    if (isCurrentlyPlaying) {
+      _wasPlayingBeforeHook = true;
+      try {
+        await audioHandler.pause();
+      } catch (_) {}
+    } else {
+      _wasPlayingBeforeHook = false;
+    }
+
+    _hookSnipTimer?.cancel();
+    try {
+      await _hookPlayer?.stop();
+    } catch (_) {}
+
+    setState(() {
+      _isHookSnipActive = true;
+      _hookSnipTitle = title;
+      _hookSnipArtist = artist;
+      _hookSnipThumb = thumb;
+      _hookSnipSecondsLeft = 10;
+    });
+
+    try {
+      final res = await _bridge.getStreamUrl(videoId);
+      if (!_isHookSnipActive || _activeHookItem != item) return;
+
+      if (res['status'] == 'basarili' && res['stream_url'] != null) {
+        final streamUrl = res['stream_url'] as String;
+        _hookPlayer ??= ja.AudioPlayer();
+
+        if (res['is_file'] == true) {
+          await _hookPlayer!.setAudioSource(ja.AudioSource.file(streamUrl));
+        } else {
+          await _hookPlayer!.setAudioSource(ja.AudioSource.uri(Uri.parse(streamUrl)));
+        }
+
+        int totalSec = 0;
+        final dur = item['duration'];
+        if (dur is int) {
+          totalSec = dur;
+        } else if (dur is String) {
+          final p = dur.split(':');
+          if (p.length == 2) totalSec = (int.tryParse(p[0]) ?? 0) * 60 + (int.tryParse(p[1]) ?? 0);
+          else if (p.length == 3) totalSec = (int.tryParse(p[0]) ?? 0) * 3600 + (int.tryParse(p[1]) ?? 0) * 60 + (int.tryParse(p[2]) ?? 0);
+        }
+
+        final int seekSec = totalSec > 35 ? (totalSec * 0.35).round() : 0;
+        if (seekSec > 0) {
+          await _hookPlayer!.seek(Duration(seconds: seekSec));
+        }
+
+        await _hookPlayer!.play();
+
+        _hookSnipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (!mounted || !_isHookSnipActive) {
+            timer.cancel();
+            return;
+          }
+          if (_hookSnipSecondsLeft <= 1) {
+            timer.cancel();
+            _stopHookSnipPreview();
+          } else {
+            setState(() {
+              _hookSnipSecondsLeft--;
+            });
+          }
+        });
+      } else {
+        _stopHookSnipPreview();
+        if (mounted) _showActionSheet(item);
+      }
+    } catch (e) {
+      print('Hook Snip Hatası: $e');
+      _stopHookSnipPreview();
+      if (mounted) _showActionSheet(item);
+    }
+  }
+
+  Future<void> _stopHookSnipPreview() async {
+    _hookSnipTimer?.cancel();
+    _hookSnipTimer = null;
+    try {
+      await _hookPlayer?.stop();
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() {
+        _isHookSnipActive = false;
+        _activeHookItem = null;
+      });
+    }
+
+    if (_wasPlayingBeforeHook) {
+      _wasPlayingBeforeHook = false;
+      try {
+        await audioHandler.play();
+      } catch (_) {}
+    }
+  }
+
+  Widget _buildHookSnipCapsule() {
+    if (!_isHookSnipActive) return const SizedBox.shrink();
+
+    return Positioned(
+      top: 100,
+      left: 16,
+      right: 16,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1E1035), Color(0xFF121829), Color(0xFF1E1035)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.amberAccent.withValues(alpha: 0.8),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amberAccent.withValues(alpha: 0.25),
+                blurRadius: 18,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: _hookSnipThumb.isNotEmpty
+                        ? Image.network(
+                            _hookSnipThumb,
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 44,
+                              height: 44,
+                              color: Colors.white10,
+                              child: const Icon(Icons.music_note, color: Colors.amberAccent, size: 20),
+                            ),
+                          )
+                        : Container(
+                            width: 44,
+                            height: 44,
+                            color: Colors.white10,
+                            child: const Icon(Icons.music_note, color: Colors.amberAccent, size: 20),
+                          ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.radar_rounded, color: Colors.amberAccent, size: 22),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amberAccent, width: 0.8),
+                          ),
+                          child: Text(
+                            '🎧 NAKARAT RADARI ${_hookSnipSecondsLeft}s',
+                            style: const TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _hookSnipTitle,
+                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      _hookSnipArtist,
+                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  final item = _activeHookItem;
+                  _stopHookSnipPreview();
+                  if (item != null) {
+                    _playDirectly(item);
+                  }
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: widget.themeColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.play_arrow_rounded, color: Colors.black, size: 16),
+                      SizedBox(width: 2),
+                      Text('Çal', style: TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w900)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: _stopHookSnipPreview,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // 🌌 BİRLEŞİK TEK KEŞFET ANA EKRANI (Unified Discover View)
+  // ==========================================
+  Widget _buildBiorhythmAndSetupBar(bool isMinimal, bool isNight, String genresLabel) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isMinimal ? const Color(0xFF16161A) : Colors.white.withAlpha(15),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: isMinimal ? Colors.white12 : widget.themeColor.withAlpha(80),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                    color: isNight ? Colors.indigoAccent : Colors.amberAccent,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${_personalArtists.length} Sanatçı İstasyonu • $genresLabel',
+                      style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: _showEditArtistsSheet,
+            borderRadius: BorderRadius.circular(15),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isMinimal ? const Color(0xFF1E1E22) : widget.themeColor.withAlpha(40),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: isMinimal ? Colors.white24 : widget.themeColor.withAlpha(120),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.tune_rounded, color: isMinimal ? Colors.white70 : widget.themeColor, size: 16),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Sanatçı & Tür Seç',
+                    style: TextStyle(
+                      color: isMinimal ? Colors.white70 : widget.themeColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnifiedDiscoverHome() {
+    final int total = _trendList.length;
+    List<dynamic> instantTrends = [];
+    List<dynamic> candidateMix = [];
+    List<dynamic> effectiveBottomList = [];
+
+    if (total >= 12) {
+      instantTrends = _trendList.take(6).toList();
+      candidateMix = _trendList.skip(6).take(6).toList();
+      effectiveBottomList = _trendList.skip(12).toList();
+    } else if (total >= 6) {
+      instantTrends = _trendList.take(3).toList();
+      candidateMix = _trendList.skip(3).take(3).toList();
+      effectiveBottomList = _trendList.skip(6).toList();
+    } else {
+      instantTrends = List.from(_trendList);
+      candidateMix = List.from(_trendList);
+      effectiveBottomList = [];
+    }
+
+    final List<dynamic> blendedCandidateMix = [];
+    final Set<String> seenCandidateIds = {};
+
+    for (final genre in _personalGenres) {
+      final genreTracks = _genreLists[genre] ?? [];
+      for (final gt in genreTracks.take(3)) {
+        final id = (gt['videoId'] ?? gt['id'])?.toString() ?? '';
+        if (id.isNotEmpty && !seenCandidateIds.contains(id)) {
+          seenCandidateIds.add(id);
+          blendedCandidateMix.add(gt);
+        }
+      }
+    }
+    for (final ct in candidateMix) {
+      final id = (ct['videoId'] ?? ct['id'])?.toString() ?? '';
+      if (id.isNotEmpty && !seenCandidateIds.contains(id)) {
+        seenCandidateIds.add(id);
+        blendedCandidateMix.add(ct);
+      }
+    }
+
+    final List<dynamic> combinedBottomList = [];
+    final Set<String> seenBottomIds = {};
+    for (var t in effectiveBottomList) {
+      final id = (t['videoId'] ?? t['id'] ?? t['video_id'])?.toString() ?? '';
+      if (id.isNotEmpty && !seenBottomIds.contains(id)) {
+        seenBottomIds.add(id);
+        combinedBottomList.add(t);
+      }
+    }
+    final personalTracks = _similarArtistsTracks.isNotEmpty ? _similarArtistsTracks : _personalCocktail;
+    for (var t in personalTracks) {
+      final id = (t['videoId'] ?? t['id'] ?? t['video_id'])?.toString() ?? '';
+      if (id.isNotEmpty && !seenBottomIds.contains(id)) {
+        seenBottomIds.add(id);
+        combinedBottomList.add(t);
+      }
+    }
+
+    final isMinimal = SiberThemeService.instance.isMinimalMode.value;
+    final now = DateTime.now();
+    final isNight = now.hour >= 22 || now.hour < 6;
+    final String genresLabel = _personalGenres.isNotEmpty
+        ? _personalGenres.take(3).join(' • ')
+        : _activePersonalGenre;
+    final String genreFilterLabel = _personalGenres.isNotEmpty
+        ? '${_personalGenres.take(2).join(" • ")} & Trend Filtresi'
+        : 'Seçtiğin Türler & Trend Şarkılar Filtresi';
+
+    return RefreshIndicator(
+      color: widget.themeColor,
+      backgroundColor: const Color(0xFF14142B),
+      onRefresh: _refreshData,
+      child: SingleChildScrollView(
+        controller: _generalScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop) ? 140 : 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 6),
+
+            // 1. BİYORİTİM & SANATÇI/TÜR SEÇİM BARI
+            _buildBiorhythmAndSetupBar(isMinimal, isNight, genresLabel),
+
+            const SizedBox(height: 10),
+
+            // 2. 📌 SABİTLENEN SANATÇI KANALLARI (Pinned Channels)
+            _buildPinnedChannelsBar(isMinimal),
+
+            // 3. ⚡ 15 ŞARKILIK ANLIK AKILLI MİKS ÜRET BARİ
+            _buildGenerateMixBanner(isMinimal),
+
+            const SizedBox(height: 10),
+
+            // 4. 🔥 ANLIK TREND ŞARKILAR (Hook Snip / 10s Nakarat Radarı destekli)
+            if (instantTrends.isNotEmpty) _buildInstantTrendStrip(instantTrends),
+
+            const SizedBox(height: 14),
+
+            // 5. 🎯 SANA ÖZEL SANATÇI MİKSLERİ & ALBÜMLERİ
+            if (_personalArtistMixes.isNotEmpty) ...[
+              ..._personalArtistMixes.entries.map((entry) {
+                final artist = entry.key;
+                final tracks = entry.value;
+                final albums = _personalArtistAlbums[artist] ?? const [];
+                if (tracks.isEmpty && albums.isEmpty) return const SizedBox.shrink();
+                final String firstThumb = albums.isNotEmpty &&
+                        (albums.first['thumbnail'] ?? '').toString().isNotEmpty
+                    ? albums.first['thumbnail'].toString()
+                    : (tracks.isNotEmpty ? (tracks[0]['thumbnail'] ?? '').toString() : '');
+                final int albumCount = albums.take(3).length;
+                return _GlassAccordionMix(
+                  title: '$artist Özel Mixi',
+                  subtitle: albumCount > 0
+                      ? '💿 $albumCount Saf Albüm + ${tracks.length} Şarkı Önerisi'
+                      : '⚡ ${tracks.length} Özel Seçim Şarkı',
+                  imageUrl: firstThumb,
+                  albums: albums.take(3).toList(),
+                  onAlbumTap: _playOrOpenArtistAlbum,
+                  tracks: tracks,
+                  themeColor: widget.themeColor,
+                  onDownloadMixTap: tracks.isNotEmpty
+                      ? () => _downloadMix('$artist Özel Mixi', tracks)
+                      : null,
+                  onTrackTap: (item, list) => _playDirectly(item, contextList: list, isMix: true),
+                  onTrackLongPress: (item) => _startHookSnipPreview(item),
+                  onDownloadTap: (item) {
+                    final videoId = item['videoId'] ?? item['id'];
+                    if (videoId != null && videoId.isNotEmpty) {
+                      _downloadAudio(videoId, item['title'] ?? 'Bilinmeyen');
+                    }
+                  },
+                );
+              }),
+              const SizedBox(height: 14),
+            ],
+
+            // 6. 🎧 DİNLAMEYE ADAY ŞARKILAR MİXİ (Kendi Seçtiği Türler + Trend Filtresi)
+            if (blendedCandidateMix.isNotEmpty)
+              _GlassAccordionMix(
+                title: '📌 Dinlemeye Aday Şarkılar',
+                subtitle: genreFilterLabel,
+                imageUrl: blendedCandidateMix[0]['thumbnail'] ?? '',
+                tracks: blendedCandidateMix,
+                themeColor: widget.themeColor,
+                onDownloadMixTap: () => _downloadMix('Dinlemeye Aday Şarkılar', blendedCandidateMix),
+                onTrackTap: (item, list) => _playDirectly(item, contextList: list, isMix: true),
+                onTrackLongPress: (item) => _startHookSnipPreview(item),
+                onDownloadTap: (item) {
+                  final videoId = item['videoId'] ?? item['id'];
+                  if (videoId != null && videoId.isNotEmpty) {
+                    _downloadAudio(videoId, item['title'] ?? 'Bilinmeyen');
+                  }
+                },
+              ),
+
+            const SizedBox(height: 14),
+
+            // 7. 📻 KESİNTİSİZ KEŞFET AKIŞI (Trendler & Kişisel İstasyon)
+            if (combinedBottomList.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.radar_rounded, color: widget.themeColor, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '📻 Kesintisiz Keşfet Akışı ($genresLabel)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildVerticalList(combinedBottomList),
+            ],
+
+            if (_isLoadingMore)
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Center(child: CircularProgressIndicator(color: widget.themeColor)),
+              )
+          ],
+        ),
+      ),
     );
   }
 
@@ -5908,7 +6845,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           return GestureDetector(
             // 🎯 TIKLAMA ALANI
             onTap: () => _playDirectly(item, contextList: items), 
-            onLongPress: () => _showActionSheet(item),
+            onLongPress: () => _startHookSnipPreview(item),
             child: Container(
               width: 160,
               margin: const EdgeInsets.only(right: 16),
@@ -6110,7 +7047,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               contextList: isSearch ? null : items,
               isFromSearch: isSearch,
             ),
-            onLongPress: () => _showActionSheet(item),
+            onLongPress: () => _startHookSnipPreview(item),
           ),
         );
       },

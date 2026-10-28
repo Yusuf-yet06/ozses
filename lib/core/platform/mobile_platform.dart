@@ -305,7 +305,7 @@ class MobilePlatform implements SiberPlatform {
     // 1. YEREL ÇÖZÜCÜ (youtube_explode_dart) - Hızlı Deneme (Maksimum 4 saniye)
     try {
       print('📱 YEREL ÇÖZÜCÜ: Video akış URL\'si doğrudan telefondan alınıyor...');
-      var manifest = await _yt.videos.streamsClient.getManifest(finalVideoId).timeout(const Duration(seconds: 4));
+      var manifest = await _yt.videos.streamsClient.getManifest(finalVideoId).timeout(const Duration(seconds: 8));
       var audioStreams = manifest.audioOnly;
       var streamInfo = audioStreams.isNotEmpty 
           ? audioStreams.withHighestBitrate() 
@@ -325,7 +325,7 @@ class MobilePlatform implements SiberPlatform {
     try {
       final relayUrl = 'http://$_vpsAudioRelay/stream/$finalVideoId';
       print('🚀 VPS AUDIO RELAY DENENİYOR: $relayUrl');
-      final relayRes = await http.head(Uri.parse(relayUrl)).timeout(const Duration(seconds: 2));
+      final relayRes = await http.head(Uri.parse(relayUrl)).timeout(const Duration(seconds: 4));
       if (relayRes.statusCode == 200 || relayRes.statusCode == 206 || relayRes.statusCode == 302) {
         print('✅ VPS Audio Relay Aktif ve Hazır!');
         final res = {'status': 'basarili', 'stream_url': relayUrl, 'is_file': false};
@@ -348,7 +348,7 @@ class MobilePlatform implements SiberPlatform {
         final pipedRes = await http.get(
           Uri.parse('$instance/streams/$finalVideoId'),
           headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36'}
-        ).timeout(const Duration(seconds: 3));
+        ).timeout(const Duration(seconds: 5));
         
         if (pipedRes.statusCode == 200) {
           try {

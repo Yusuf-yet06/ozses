@@ -105,21 +105,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_secretWrappedTapCount >= 5) {
       _secretWrappedTapCount = 0;
       HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🔓 Siber Laboratuvar Açıldı: 2026 İnteraktif Özeti Devrede!'),
-          backgroundColor: Color(0xFF00FFE0),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const SiberWrappedScreen(),
-        ),
-      );
-    } else if (_secretWrappedTapCount >= 2) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.lock_open_rounded, color: Colors.black, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '🔓 GİZLİ KUTU AÇILDI! 2026 Yıl Sonu Özeti Devrede!',
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF00FFE0),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SiberWrappedScreen(
+              initialCardType: CyberStoryCardType.siberAnaliz,
+              autoOpenStudio: true,
+            ),
+          ),
+        );
+      }
+    } else {
       HapticFeedback.selectionClick();
+      final remaining = 5 - _secretWrappedTapCount;
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _secretWrappedTapCount == 1 
+                  ? '🔒 Gizli Kutu: Kilidi açmak için 3 sn içinde 5 kez tıkla! (1/5)' 
+                  : "🔒 Gizli Kutu: $remaining tık kaldı... ($_secretWrappedTapCount/5)",
+              style: const TextStyle(color: Color(0xFF00FFE0), fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            backgroundColor: const Color(0xFF14151E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0x3300FFE0)),
+            ),
+            duration: const Duration(milliseconds: 700),
+          ),
+        );
+      }
     }
   }
 
@@ -2065,21 +2105,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.auto_awesome_rounded, color: _auraColor),
-            tooltip: '2026 Siber Özet & Hikaye Stüdyosu',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SiberWrappedScreen(
-                    initialCardType: CyberStoryCardType.siberAnaliz,
-                    autoOpenStudio: true,
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
             icon: Icon(Icons.bar_chart_rounded, color: _auraColor),
             tooltip: 'Dinleme İstatistikleri',
             onPressed: () {
@@ -2886,13 +2911,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ), // Screenshot bitişi
 
                 const SizedBox(height: 15),
-                // 📸 SİBER PAYLAŞIM BUTONU (ÖZSES WRAPPED)
+                // 🎁 GİZLİ SİBER KUTU (2026 YIL SONU KAPSÜLÜ - 3 Saniyede 5 Tık Kilidi)
                 _buildProfileButton(
-                  title: 'ÖZETİMİ PAYLAŞ',
-                  subtitle: 'Dinleme istatistiklerini arkadaşlarınla paylaş',
-                  icon: Icons.share,
-                  color: Colors.purpleAccent,
-                  onTap: _shareCyberIdentity,
+                  title: 'GİZLİ SİBER KUTU (2026)',
+                  subtitle: 'Yıl sonu özeti kilitli • Açmak için 3 sn içinde 5 kez bas!',
+                  icon: Icons.lock_clock_rounded,
+                  color: const Color(0xFF00FFE0),
+                  onTap: _handleSecretWrappedTrigger,
                 ),
               ],
             ),

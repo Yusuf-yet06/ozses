@@ -60,7 +60,6 @@ class _MusicListScreenState extends State<MusicListScreen> {
   bool _isPlaying = false;
   List<PlatformFile> _playlist = [];
 
-  bool? get kIsWeb => null;
 
   @override
   void initState() {

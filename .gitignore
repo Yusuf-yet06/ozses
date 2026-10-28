@@ -46,7 +46,7 @@ app.*.map.json
 .vercel
 
 
-# 🔒 SİBER GÜVENLİK: Keystore, Şifreler, Çerezler ve İkili Dosyalar
+# ğŸ”’ SÄ°BER GÃœVENLÄ°K: Keystore, Åifreler, Ã‡erezler ve Ä°kili Dosyalar
 *.jks
 *.keystore
 **/key.properties
@@ -96,11 +96,4 @@ n8n/
 scripts/
 pc_stream_server.js
 
-# Argon Fortress: Binaryler, Cache ve �kili Veritabanlar�
-argon_ai_fortress/tabby_server/
-argon_ai_fortress/qdrant_storage/
-argon_ai_fortress/*.db
-argon_ai_fortress/__pycache__/
-argon_ai_fortress/aider_repo/
-argon_ai_fortress/awesome-free-llm-apis/
-argon_ai_fortress/freellmapi/
+# Argon Fortress: Binaryler, Cache ve İkili Veritabanları

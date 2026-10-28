@@ -31,6 +31,8 @@ class MyAudioHandler extends BaseAudioHandler {
   List<MediaItem> _playlist = [];
   int _currentIndex = -1;
   int _consecutiveErrors = 0;
+  int _singleSongRetryCount = 0; // 🛡️ SİBER SMART RETRY: Aynı şarkı için deneme sayacı
+  int _lastFailedSongIndex = -1;  // 🛡️ SİBER SMART RETRY: Hata alan son şarkı indeksi
   int _songsPlayedSinceLastAd = 0; // 🎯 SİBER REKLAM SAYACI (4-5 şarkıda bir reklam)
   DateTime? _lastInterstitialAdTime; // 🎯 SİBER ZAMANLAYICI: İki reklam arası asgari bekleme süresi (Cooldown)
   bool _adWarningToastShown = false; // 🎯 SİBER KALKAN: Bildirimin mükerrer çıkmasını önler (1-2 defa uyarır)
@@ -777,6 +779,8 @@ class MyAudioHandler extends BaseAudioHandler {
         await _player.play();
       }
       _consecutiveErrors = 0; // 🎯 SİBER KALKAN: Başarılı çalma, hata sayacını anında sıfırla
+      _singleSongRetryCount = 0;
+      _lastFailedSongIndex = -1;
 
       // 🚀 SİBER RADAR: Sıradaki 2 şarkıyı arka planda önceden çöz (Kuyruk geçişi 0 ms olsun)
       _preloadNextQueueTracks(index);
@@ -788,6 +792,22 @@ class MyAudioHandler extends BaseAudioHandler {
       }
       
       print('HATA: Platform oynatma hatası -> $e');
+
+      // 🛡️ SİBER SMART RETRY: Ağ dalgalanmasında hemen atlama! Aynı şarkıyı 1 saniye sonra 1 kez daha dene
+      if (_lastFailedSongIndex != index || _singleSongRetryCount < 1) {
+        _lastFailedSongIndex = index;
+        _singleSongRetryCount++;
+        print('🔄 [SMART RETRY] Ağ dalgalandı veya zaman aşımı oldu, aynı şarkı 1 saniye sonra tekrar deneniyor... ($index, deneme: $_singleSongRetryCount)');
+        await Future.delayed(const Duration(milliseconds: 1000));
+        if (_currentIndex == index) {
+          return skipToQueueItem(index);
+        }
+        return;
+      }
+
+      // 2. deneme de başarısız olduysa sıfırla ve sonrakine geç
+      _singleSongRetryCount = 0;
+      _lastFailedSongIndex = -1;
       _consecutiveErrors++;
 
       try { await _player.pause(); } catch (_) {} // 🛡️ SİBER KALKAN: Servisi kapatma, duraklat
