@@ -2,7 +2,7 @@ name: ozses_v7
 description: "Özses V7 - Müzik Çalar ve Güvenlik Sistemi"
 publish_to: 'none' 
 
-version: 1.0.18+21
+version: 1.0.19+22
 
 # KRİTİK DÜZELTME BURASI:
 environment:
