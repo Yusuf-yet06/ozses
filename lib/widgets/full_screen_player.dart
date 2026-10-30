@@ -179,7 +179,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       );
       if (mounted) {
         setState(() {
-          _dynamicColor = generator.dominantColor?.color ?? (_dynamicColor ?? widget.themeColor);
+          final rawColor = generator.vibrantColor?.color ??
+              generator.lightVibrantColor?.color ??
+              generator.dominantColor?.color ??
+              (_dynamicColor ?? widget.themeColor);
+          final hsl = HSLColor.fromColor(rawColor);
+          _dynamicColor = rawColor.computeLuminance() < 0.18
+              ? hsl.withLightness((hsl.lightness + 0.35).clamp(0.45, 0.75)).withSaturation((hsl.saturation + 0.2).clamp(0.5, 1.0)).toColor()
+              : rawColor;
         });
       }
     } catch (e) {
@@ -343,7 +350,22 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       });
 
       // 1. Önce Lokalden (Kayıttan) Çek (Sistemi Yorma!)
+      // 1. Önce 4-Kademeli Sıfır Gecikmeli RAM & YouTube CC & LRCLIB Motorundan Çek
       String? finalText = await _getLocalLyrics(_songPath);
+      try {
+        final savedOffset = await LyricsService.getLyricsOffset(_songPath);
+        if (mounted) _lyricsOffsetMs = savedOffset;
+        final currentDur = audioHandler.mediaItem.value?.duration;
+        final res = await LyricsService.fetchLyrics(
+          _songPath,
+          _songName,
+          _artistName,
+          duration: currentDur,
+        );
+        if (res != null && res.rawText.trim().isNotEmpty) {
+          finalText = res.rawText;
+        }
+      } catch (_) {}
 
       // 2. Bulamazsa Siber Ağdan HIZLICA Çek
       if (finalText == null || finalText.trim().isEmpty) {
@@ -563,7 +585,10 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                             ),
                             elevation: 12,
                             onSelected: (value) async {
-                              if (value == 'add_playlist') {
+                              if (value == 'floating_vinyl') {
+                                BottomPlayerBar.isFloatingMiniMode.value = true;
+                                Navigator.pop(context);
+                              } else if (value == 'add_playlist') {
                                 widget.onAddToPlaylist(_songPath);
                               } else if (value == 'delete') {
                                 widget.onDelete(_songPath);
@@ -613,12 +638,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                   buildItem('play_next', Icons.skip_next_rounded, 'Sıradakini Çal'),
                                   buildItem('add_queue', Icons.queue_music_rounded, 'Kuyruğa Ekle'),
                                   buildItem('download_song', Icons.download_rounded, 'Şarkıyı İndir'),
+                                  buildItem('floating_vinyl', Icons.disc_full_rounded, 'Yüzen Mini Plak Modu'),
                                   buildItem('analyze_mood', Icons.psychology_rounded, 'Yapay Zeka Analizi'),
                                 ];
                               } else {
                                 return [
                                   buildItem('play_next', Icons.skip_next_rounded, 'Sıradakini Çal'),
                                   buildItem('add_queue', Icons.queue_music_rounded, 'Kuyruğa Ekle'),
+                                  buildItem('floating_vinyl', Icons.disc_full_rounded, 'Yüzen Mini Plak Modu'),
                                   buildItem('add_playlist', Icons.playlist_add_rounded, "Playlist'e Ekle"),
                                   buildItem('delete', Icons.delete_sweep_rounded, 'Sök At (Sil)', isRed: true),
                                 ];
@@ -869,8 +896,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                 horizontal: 16,
                                                                 vertical: 8),
                                                         decoration: BoxDecoration(
-                                                            color: widget
-                                                                .themeColor
+                                                            color: (_dynamicColor ?? widget.themeColor)
                                                                 .withValues(alpha: 
                                                                     0.15),
                                                             borderRadius:
@@ -878,15 +904,13 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                     .circular(
                                                                         20),
                                                             border: Border.all(
-                                                                color: widget
-                                                                    .themeColor
+                                                                color: (_dynamicColor ?? widget.themeColor)
                                                                     .withValues(alpha: 
                                                                         0.8),
                                                                 width: 1.5),
                                                             boxShadow: [
                                                               BoxShadow(
-                                                                  color: widget
-                                                                      .themeColor
+                                                                  color: (_dynamicColor ?? widget.themeColor)
                                                                       .withValues(alpha: 
                                                                           0.4),
                                                                   blurRadius:
@@ -901,16 +925,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                             Icon(
                                                                 Icons
                                                                     .psychology,
-                                                                color: widget
-                                                                    .themeColor,
+                                                                color: (_dynamicColor ?? widget.themeColor),
                                                                 size: 16),
                                                             const SizedBox(
                                                                 width: 8),
                                                             Text(
                                                                 'SİBER ANALİZ: ${_analyzeLineMood(_parsedLyrics[activeIndex].text)}',
                                                                 style: TextStyle(
-                                                                    color: widget
-                                                                        .themeColor,
+                                                                    color: (_dynamicColor ?? widget.themeColor),
                                                                     fontSize:
                                                                         11,
                                                                     fontWeight:
@@ -985,16 +1007,14 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
                                                                             12),
                                                                 decoration: isActive
                                                                     ? BoxDecoration(
-                                                                        color: widget
-                                                                            .themeColor
+                                                                        color: (_dynamicColor ?? widget.themeColor)
                                                                             .withValues(alpha: 
                                                                                 0.2),
                                                                         borderRadius:
                                                                             BorderRadius.circular(
                                                                                 15),
                                                                         border: Border.all(
-                                                                            color: widget
-                                                                                .themeColor
+                                                                            color: (_dynamicColor ?? widget.themeColor)
                                                                                 .withValues(alpha: 
                                                                                     0.8),
                                                                             width:

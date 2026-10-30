@@ -20,6 +20,7 @@ import '../services/analytics_service.dart'; // 📈 SİBER ANALİTİK İÇİN
 import '../services/subscription_manager.dart';
 import 'audio_analysis_service.dart';
 import 'lyrics_service.dart';
+import 'offline_cache_service.dart';
 
 class MyAudioHandler extends BaseAudioHandler {
   late final AudioPlayer
@@ -695,6 +696,23 @@ class MyAudioHandler extends BaseAudioHandler {
       if (item.id.startsWith('yt:')) {
         print("▶️ Siber Mühür Yakalandı: 'yt:' ID'li akış çözülüyor...");
         final videoId = item.id.substring(3);
+        final cachedFilePath = await OfflineCacheService().getCachedFilePath(videoId);
+        if (cachedFilePath != null) {
+          print('⚡ [Sıfır Kesinti] Yerel ön-önbellekten anında oynatılıyor: $cachedFilePath');
+          await _player.setAudioSource(AudioSource.file(cachedFilePath));
+          _lastBass = -1.0;
+          _lastTreble = -1.0;
+          _lastVocal = -1.0;
+          _lastTempo = -1.0;
+          _lastVolume = -1.0;
+          applySiberDSP();
+          await _player.play();
+          _consecutiveErrors = 0;
+          _singleSongRetryCount = 0;
+          _lastFailedSongIndex = -1;
+          _preloadNextQueueTracks(index);
+          return;
+        }
         final bridge = OzsesBridge();
 
         playbackState.add(playbackState.value.copyWith(
@@ -844,6 +862,16 @@ class MyAudioHandler extends BaseAudioHandler {
         if (nextItem.id.startsWith('yt:')) {
           final nextVId = nextItem.id.substring(3);
           OzsesBridge().preWarm(nextVId);
+          LyricsService.preloadLyrics(
+            nextItem.id,
+            nextItem.title,
+            nextItem.artist ?? '',
+            duration: nextItem.duration,
+            videoId: nextVId,
+          );
+          if (offset == 1) {
+            OfflineCacheService().silentPreCacheNext(nextVId);
+          }
         }
       }
     }

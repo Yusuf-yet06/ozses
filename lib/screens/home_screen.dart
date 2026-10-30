@@ -1408,6 +1408,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       duration: 0,
                       title: ''));
               final isCurrentFav = _favoritePaths.contains(currentSong.path);
+              return ValueListenableBuilder<bool>(
+                valueListenable: BottomPlayerBar.isFloatingMiniMode,
+                builder: (context, isMini, _) {
+                  if (isMini) {
+                    return StreamBuilder<Duration>(
+                      stream: AudioService.position,
+                      builder: (context, posSnapshot) {
+                        return FloatingMiniVinyl(
+                          songName: _currentSongName,
+                          coverBytes: _currentCoverBytes,
+                          themeColor: themeColor,
+                          position: posSnapshot.data ?? _pos,
+                          duration: _dur,
+                          isPlaying: _isPlaying,
+                          isBuffering: _isBuffering,
+                          onPlayPause: () => _isPlaying ? audioHandler.pause() : audioHandler.play(),
+                          onNext: () => audioHandler.skipToNext(),
+                          onExpandFullScreen: () => BottomPlayerBar.isFloatingMiniMode.value = false,
+                        );
+                      },
+                    );
+                  }
               return Positioned(
                 bottom: MediaQuery.of(context).padding.bottom + 15,
                 left: 15,
@@ -1547,6 +1569,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 );
+                },
+              );
               })
         ],
       ),

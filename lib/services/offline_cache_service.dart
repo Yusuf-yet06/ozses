@@ -86,6 +86,91 @@ class OfflineCacheService {
     return _cachedSongs.any((s) => s.videoId == videoId);
   }
 
+  // ⚡ SIFIR KESİNTİ: İndirilmiş veya geçici ön-önbelleğe alınmış dosyanın yerel yolunu döndürür
+  final Map<String, String> _tempPreCachePaths = {};
+  final Set<String> _inFlightPreCache = {};
+
+  Future<String?> getCachedFilePath(String videoId) async {
+    if (kIsWeb || videoId.isEmpty) return null;
+    for (final s in _cachedSongs) {
+      if (s.videoId == videoId && s.path != null && s.path!.isNotEmpty) {
+        final f = File(s.path!);
+        if (await f.exists() && await f.length() > 20000) {
+          return s.path;
+        }
+      }
+    }
+    final tempPath = _tempPreCachePaths[videoId];
+    if (tempPath != null) {
+      final f = File(tempPath);
+      if (await f.exists() && await f.length() > 20000) {
+        return tempPath;
+      }
+    }
+    try {
+      final cacheDir = await _cacheDirPath;
+      final preFile = File('$cacheDir/precache_$videoId.m4a');
+      if (await preFile.exists() && await preFile.length() > 20000) {
+        _tempPreCachePaths[videoId] = preFile.path;
+        return preFile.path;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  // 🚀 AKILLI ÖN-ÖNBELLEKLEME: Sıradaki şarkıyı kütüphaneyi kirletmeden sessizce tamponlar (Maks 3 şarkı tutar)
+  Future<void> silentPreCacheNext(String videoId) async {
+    if (kIsWeb || videoId.isEmpty) return;
+    if (isCached(videoId) || _inFlightPreCache.contains(videoId)) return;
+    if (downloadProgress.value.isNotEmpty) return;
+
+    final existing = await getCachedFilePath(videoId);
+    if (existing != null) return;
+
+    _inFlightPreCache.add(videoId);
+    try {
+      final cacheDir = await _cacheDirPath;
+      final targetFile = File('$cacheDir/precache_$videoId.m4a');
+
+      try {
+        final dir = Directory(cacheDir);
+        final preFiles = dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.contains('precache_') && f.path.endsWith('.m4a'))
+            .toList();
+        if (preFiles.length >= 3) {
+          preFiles.sort((a, b) => a.lastModifiedSync().compareTo(b.lastModifiedSync()));
+          for (int i = 0; i <= preFiles.length - 3; i++) {
+            final oldFile = preFiles[i];
+            _tempPreCachePaths.removeWhere((_, v) => v == oldFile.path);
+            try { await oldFile.delete(); } catch (_) {}
+          }
+        }
+      } catch (_) {}
+
+      final res = await SiberPlatform.instance.getStreamUrl(videoId);
+      if (res['status'] == 'basarili' && res['stream_url'] != null) {
+        final streamUrl = res['stream_url'].toString();
+        if (streamUrl.startsWith('http')) {
+          final ok = await _downloadUrlWithResume(
+            url: streamUrl,
+            targetFile: targetFile,
+            videoId: 'precache_$videoId',
+            maxRetries: 2,
+          );
+          if (ok && await targetFile.exists() && await targetFile.length() > 20000) {
+            _tempPreCachePaths[videoId] = targetFile.path;
+            print('⚡ [Sıfır Kesinti] Sıradaki parça sessizce ön-önbelleğe alındı: $videoId');
+          }
+        }
+      }
+    } catch (_) {
+    } finally {
+      _inFlightPreCache.remove(videoId);
+    }
+  }
+
   // INDIRME IPTAL ET
   Future<void> cancelDownload(String videoId) async {
     print('SiberIptal: $videoId indirmesi durduruluyor...');
@@ -215,7 +300,9 @@ class OfflineCacheService {
 
             if (totalBytes > 0) {
               final progress = (receivedBytes / totalBytes).clamp(0.01, 1.0);
-              downloadProgress.value = {...downloadProgress.value, videoId: progress};
+              if (!videoId.startsWith('precache_')) {
+                downloadProgress.value = {...downloadProgress.value, videoId: progress};
+              }
               if (onProgress != null) onProgress(receivedBytes, totalBytes);
             }
           }

@@ -4972,7 +4972,28 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
                 // 🎯 SİBER MİNİ OYNATICI (Sadece şarkı çalarken ortaya çıkar)
                 if (_currentSongName != 'Müzik Seçilmedi' && !_isDesktop)
-                  Positioned(
+                  ValueListenableBuilder<bool>(
+                    valueListenable: BottomPlayerBar.isFloatingMiniMode,
+                    builder: (context, isMini, _) {
+                      if (isMini) {
+                        return StreamBuilder<Duration>(
+                          stream: AudioService.position,
+                          builder: (context, posSnapshot) {
+                            return FloatingMiniVinyl(
+                              songName: _currentSongName,
+                              coverBytes: _currentCoverBytes,
+                              themeColor: widget.themeColor,
+                              position: posSnapshot.data ?? _pos,
+                              duration: _dur,
+                              isPlaying: _isPlaying,
+                              onPlayPause: () => _isPlaying ? audioHandler.pause() : audioHandler.play(),
+                              onNext: () => audioHandler.skipToNext(),
+                              onExpandFullScreen: () => BottomPlayerBar.isFloatingMiniMode.value = false,
+                            );
+                          },
+                        );
+                      }
+                      return Positioned(
                     bottom: 15,
                     left: 15,
                     right: 15,
@@ -5083,7 +5104,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    );
+                    },
+                  ),
               ],
             ),
           ),
